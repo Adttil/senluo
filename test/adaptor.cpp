@@ -1,4 +1,4 @@
-#include <senluo/adaptor_closure.hpp>
+#include <senluo/adaptor.hpp>
 #include "test_tool.hpp"
 
 #include <senluo/macro_define.hpp>

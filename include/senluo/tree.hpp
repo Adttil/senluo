@@ -2,7 +2,7 @@
 #define SENLUO_GET_HPP
 
 #include "general.hpp"
-#include "adaptor_closure.hpp"
+#include "adaptor.hpp"
 #include "array.hpp"
 #include "tuple.hpp"
 #include "math.hpp"
