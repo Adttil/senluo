@@ -73,9 +73,16 @@ namespace senluo
 namespace senluo
 {
 	template<class T>
-	constexpr decltype(auto) to_readonly(T&& t)
+	constexpr auto&& to_readonly(T&& t)
 	{
-		return std::as_const(t);
+		if constexpr(std::is_object_v<T>)
+		{
+			return std::move(std::as_const(t));
+		}
+		else
+		{
+			return std::as_const(t);
+		}
 	}
 }
 

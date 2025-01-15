@@ -149,9 +149,9 @@ namespace senluo
                 {
                     return decltype(wrap(FWD(t))){ unwrap_fwd(FWD(t)) };
                 }
-                else if constexpr(std::is_reference_v<T> && only_input<decltype(std::as_const(t))>())
+                else if constexpr(std::is_reference_v<T> && only_input<decltype(senluo::to_readonly(FWD(t)))>())
                 {
-                    return decltype(wrap(std::as_const(t))){ unwrap_fwd(std::as_const(t)) };
+                    return decltype(wrap(senluo::to_readonly(FWD(t)))){ unwrap_fwd(senluo::to_readonly(FWD(t))) };
                 }
                 else
                 {

@@ -353,7 +353,7 @@ namespace senluo
         }
 
         template<class TSrc>
-        constexpr auto make_data(TSrc&& src)const
+        constexpr decltype(auto) make_data(TSrc&& src)const
         {
             if constexpr(equal(UsageTree, usage_t::none))
             {
@@ -361,7 +361,7 @@ namespace senluo
             }
             else if constexpr(terminal<TSrc>)
             {
-                return FWD(src);
+                return (TSrc)FWD(src);
             }
             else return [&]<size_t...I>(std::index_sequence<I...>)
             {
