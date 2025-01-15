@@ -146,14 +146,14 @@ TEST(tensor, mat_mul_rzx_spec)
     //std::cout << subtree<0, 0>(a) << ", " << subtree<0, 1>(a) << ", " << subtree<1, 0>(a) << ", " << subtree<1, 1>(a) << '\n';
 }
 
-// TEST(tensor, triple_mat_mul)
-// {
-//     static constexpr auto a = tuple{
-//         tuple{ 1, 2 },
-//         tuple{ 3, 4 }
-//     };
+TEST(tensor, triple_mat_mul)
+{
+    static constexpr auto a = tuple{
+        tuple{ 1, 2 },
+        tuple{ 3, 4 }
+    };
 
-//     constexpr auto b = mat_mul(a, mat_mul(a, a)) | make<array<array<int, 2>, 2>>;
+    constexpr auto b = mat_mul(a, mat_mul(a, a)) | make<array<array<int, 2>, 2>>;
 
-//     std::cout << std::format("{},{}\n{},{}\n", subtree<0, 0>(b), subtree<0, 1>(b),  subtree<1, 0>(b), subtree<1, 1>(b));
-// }
+    std::cout << std::format("{},{}\n{},{}\n", subtree<0, 0>(b), subtree<0, 1>(b),  subtree<1, 0>(b), subtree<1, 1>(b));
+}

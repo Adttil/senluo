@@ -224,7 +224,7 @@ namespace senluo
                 //msvc bug
                 constexpr auto i = array_take<FoldedLayout.size() - 1uz>(FoldedLayout);
                 return not std::same_as<decltype(senluo::tag_subtree<i>(operation_tree)), operation_t>
-                || tag_subtree<FoldedLayout>(operation_tree) == operation_t::none;
+                || equal(tag_subtree<FoldedLayout>(operation_tree), operation_t::none);
             }
         }
         else return [&]<size_t...I>(std::index_sequence<I...>)
