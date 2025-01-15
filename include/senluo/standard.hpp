@@ -91,6 +91,22 @@ namespace senluo
                 }
             }
         };
+
+        struct unwrap_fwd_fn : adaptor_closure<unwrap_fwd_fn>
+        {
+            template<class T>
+            constexpr decltype(auto) operator()(T&& tree)const
+            {
+                if constexpr(not wrapped<T>)
+                {
+                    return FWD(tree);
+                }
+                else
+                {
+                    return FWD(tree, base);
+                }
+            }
+        };
     }
 
     inline constexpr detail::unwrap_fn unwrap{};
@@ -98,18 +114,7 @@ namespace senluo
     template<class T>
     using unwrap_t = decltype(unwrap(std::declval<T>()));
 
-    template<class T>
-    constexpr decltype(auto) unwrap_fwd(T&& tree)
-    {
-        if constexpr(not wrapped<T>)
-        {
-            return FWD(tree);
-        }
-        else
-        {
-            return FWD(tree, base);
-        }
-    }
+    inline constexpr detail::unwrap_fwd_fn unwrap_fwd{};
 
     namespace detail 
     {
