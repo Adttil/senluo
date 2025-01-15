@@ -123,11 +123,10 @@ namespace senluo
             }
             else
             {
-                using base_plain_principle_t = 
-                    decltype(to_plain_principle<UsageTree>(FWD(self, base) | senluo::principle<UsageTree, NoCopy>));
+                using base_plain_principle_t = plain_principle<decltype(FWD(self, base) | plainize<UsageTree>)>;
                 
                 return astrict_principle<base_plain_principle_t, FoldedStrictureTree>{ 
-                    to_plain_principle<UsageTree>(FWD(self, base) | senluo::principle<UsageTree, NoCopy>) 
+                    base_plain_principle_t{ FWD(self, base) | plainize<UsageTree> }
                 };
             }
         }

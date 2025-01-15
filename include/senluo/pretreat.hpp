@@ -329,21 +329,19 @@ namespace senluo
     }
 }
 
-namespace senluo 
+namespace senluo
 {
-    template<auto UsageTree>
-    struct detail::to_plain_principle_t : adaptor_closure<to_plain_principle_t<UsageTree>>
+    template<auto UsageTree, template<class...> class Tpl>
+    struct detail::plainize_fn : adaptor_closure<plainize_fn<UsageTree, Tpl>>
     {
-        template<class TPrinciple>
-        constexpr auto operator()(TPrinciple&& principle)const
+        template<class T>
+        constexpr decltype(auto) operator()(T&& tree) const
         {
-            decltype(auto) src = FWD(principle) | sequence_by_usage<UsageTree>;
-
-            return plain_principle<decltype(make_data(FWD(src)))>{ make_data(FWD(src)) };
+            return impl(FWD(tree) | sequence_by_usage<senluo::unfold_tag_tree(UsageTree, shape<T>)>);
         }
 
         template<class TSrc>
-        constexpr decltype(auto) make_data(TSrc&& src)const
+        constexpr decltype(auto) impl(TSrc&& src)const
         {
             if constexpr(equal(UsageTree, usage_t::none))
             {
@@ -355,23 +353,11 @@ namespace senluo
             }
             else return [&]<size_t...I>(std::index_sequence<I...>)
             {
-                return tuple<decltype(to_plain_principle<tag_tree_get<I>(UsageTree)>.make_data(FWD(src) | subtree<I>))...>
+                return tuple<decltype(plainize_fn<tag_tree_get<I>(UsageTree), Tpl>{}.impl(FWD(src) | subtree<I>))...>
                 {
-                    to_plain_principle<tag_tree_get<I>(UsageTree)>.make_data(FWD(src) | subtree<I>)...
+                    plainize_fn<tag_tree_get<I>(UsageTree), Tpl>{}.impl(FWD(src) | subtree<I>)...
                 };
             }(std::make_index_sequence<size<TSrc>>{});
-
-            // if constexpr(std::same_as<decltype(UsageTree), usage_t>)
-            // {
-            //     return std::decay_t<TSrc>{ FWD(src) };
-            // }
-            // else return [&]<size_t...I>(std::index_sequence<I...>)
-            // {
-            //     return tuple<decltype(to_plain_principle<UsageTree | subtree<I>>.make_data(FWD(src) | relayout<I>))...>
-            //     {
-            //         to_plain_principle<UsageTree | subtree<I>>.make_data(FWD(src) | relayout<I>)...
-            //     };
-            // }(std::make_index_sequence<size<decltype(UsageTree)>>{});
         }
     };
 }

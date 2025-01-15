@@ -297,16 +297,14 @@ namespace senluo
 
             if constexpr(is_enable_to_relayout_operation_tree<FoldedLayout>(base_principle_t::operation_tree()))
             {
-                //static_assert(not std::is_rvalue_reference_v<T>);
                 return relayout_principle<base_principle_t, FoldedLayout>{ FWD(self, base) | senluo::principle<base_usage, NoCopy> };
             }
             else
             {
-                using base_plain_principle_t = 
-                    decltype(to_plain_principle<base_usage>(FWD(self, base) | senluo::principle<base_usage, NoCopy>));
+                using base_plain_principle_t = plain_principle<decltype(FWD(self, base) | plainize<UsageTree>)>;
 
                 return relayout_principle<base_plain_principle_t, FoldedLayout>{ 
-                    to_plain_principle<base_usage>(FWD(self, base) | senluo::principle<base_usage, NoCopy>)
+                    base_plain_principle_t{ FWD(self, base) | plainize<UsageTree> }
                 };
             }           
         }

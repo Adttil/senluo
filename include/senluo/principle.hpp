@@ -106,6 +106,19 @@ namespace senluo
         }(std::make_index_sequence<size<decltype(TagTree)>>{});
     }
 
+    template<typename TagTree, typename S>
+    constexpr auto unfold_tag_tree(TagTree tree, S shape = {})
+    {
+        if constexpr(terminal<TagTree>)
+        {
+            return senluo::make_tree_of_same_value(tree, shape);
+        }
+        else return [&]<size_t...I>(std::index_sequence<I...>)
+        {
+            return senluo::make_tuple(senluo::unfold_tag_tree(tree | subtree<I>, shape | subtree<I>)...);
+        }(std::make_index_sequence<size<TagTree>>{});
+    }
+
     template<auto OperationTree>
     constexpr auto fold_operation_tree()
     {
@@ -312,12 +325,12 @@ namespace senluo
 
     namespace detail
     {
-        template<auto UsageTable>
-        struct to_plain_principle_t;
-    };
+        template<auto UsageTree, template<class...> class Tpl>
+        struct plainize_fn;
+    }
 
-    template<auto UsageTable>
-    inline constexpr detail::to_plain_principle_t<UsageTable> to_plain_principle{};
+    template<auto UsageTree = usage_t::once, template<class...> class Tpl = tuple>
+    inline constexpr detail::plainize_fn<UsageTree, Tpl> plainize{};
 }
 
 #include "macro_undef.hpp"
