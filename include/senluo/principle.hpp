@@ -145,7 +145,7 @@ namespace senluo
 namespace senluo
 {
     template<typename PrinciledTree>
-    struct principle_interface{};
+    struct principle_interface : standard_interface<PrinciledTree>{};
 
     namespace detail::principle_t_ns 
     {
@@ -180,49 +180,45 @@ namespace senluo
     template<class T, auto UsageTree>
     concept plain = (detail::principle_t_ns::is_plain<T, UsageTree>());
 
-    struct null_principle
+    struct null_principle : principle_interface<null_principle>
     {
-        static constexpr auto layout(){ return indexes_of_whole; }
-        
-        static constexpr auto stricture_tree(){ return stricture_t::none; }
-        
-        static constexpr auto operation_tree(){ return operation_t::none; }
-
         constexpr auto data() const
         {
             return std::in_place_t{};
         }
-    };
-
-    template<class T>
-    struct plain_principle
-    {
-        T tree;
-
+        
         static constexpr auto layout(){ return indexes_of_whole; }
         
         static constexpr auto stricture_tree(){ return stricture_t::none; }
         
         static constexpr auto operation_tree(){ return operation_t::none; }
+    };
 
+    template<class T>
+    struct plain_principle : based_on<T>, principle_interface<plain_principle<T>>
+    {
         constexpr decltype(auto) data(this auto&& self)
         {
-            return pass(FWD(self, tree));
+            return pass(FWD(self, base));
         }
+        
+        static constexpr auto layout(){ return indexes_of_whole; }
+        
+        static constexpr auto stricture_tree(){ return stricture_t::none; }
+        
+        static constexpr auto operation_tree(){ return operation_t::none; }
     };
 
     template<class T, auto UsageTree>
-    struct trivial_principle
-    {
-        T tree;
-        
+    struct trivial_principle : based_on<T>, principle_interface<trivial_principle<T, UsageTree>>
+    {        
         constexpr auto data(this auto&& self)
         {
             return [&]<size_t...I>(std::index_sequence<I...>)
             {
-                return tuple<decltype((FWD(self, tree) | subtree<I> | principle<tag_tree_get<I>(UsageTree)>).data())...>
+                return tuple<decltype((FWD(self, base) | subtree<I> | principle<tag_tree_get<I>(UsageTree)>).data())...>
                 {
-                    (FWD(self, tree) | subtree<I> | principle<tag_tree_get<I>(UsageTree)>).data()...
+                    (FWD(self, base) | subtree<I> | principle<tag_tree_get<I>(UsageTree)>).data()...
                 };
             }(std::make_index_sequence<size<T>>{});
         }
@@ -259,8 +255,6 @@ namespace senluo
             }(std::make_index_sequence<size<T>>{});
             return fold_operation_tree<raw>();
         }
-
-        
     };
 
     template<auto UsageTree, bool NoCopy>

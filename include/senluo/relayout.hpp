@@ -237,13 +237,16 @@ namespace senluo
 namespace senluo 
 {
     template<typename TBasePrinciple, auto FoldedLayout>
-    struct relayout_principle
+    struct relayout_principle : based_on<TBasePrinciple>, principle_interface<relayout_principle<TBasePrinciple, FoldedLayout>>
     {
-        TBasePrinciple base_principle;
-
+        constexpr decltype(auto) data(this auto&& self)
+        {
+            return FWD(self, base).data();
+        }
+        
         static constexpr auto layout()
         {
-            constexpr auto data_shape = shape<decltype(std::move(base_principle).data())>;
+            constexpr auto data_shape = shape<decltype(std::declval<TBasePrinciple>().data())>;
             constexpr auto base_unfolded_layout = unfold_layout<TBasePrinciple::layout()>(data_shape);
             return fold_layout<apply_layout<FoldedLayout>(base_unfolded_layout)>(data_shape); 
         }
@@ -256,11 +259,6 @@ namespace senluo
         static constexpr auto operation_tree()
         {
             return fold_operation_tree<relayout_tag_tree<FoldedLayout>(TBasePrinciple::operation_tree())>();
-        }
-
-        constexpr decltype(auto) data() &&
-        {
-            return std::move(base_principle).data();
         }
     };
 

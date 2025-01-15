@@ -60,9 +60,12 @@ namespace senluo
 namespace senluo 
 {
     template<typename TBasePrinciple, auto FoldedStrictureTree>
-    struct astrict_principle
+    struct astrict_principle : based_on<TBasePrinciple>, principle_interface<astrict_principle<TBasePrinciple, FoldedStrictureTree>>
     {
-        TBasePrinciple base_principle;
+        constexpr decltype(auto) data(this auto&& self)
+        {
+            return FWD(self, base).data();
+        }
 
         static constexpr auto layout()
         {
@@ -77,11 +80,6 @@ namespace senluo
         static constexpr auto operation_tree()
         {
             return operation_t::none;
-        }
-
-        constexpr decltype(auto) data() &&
-        {
-            return std::move(base_principle).data();
         }
     };
 

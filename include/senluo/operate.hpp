@@ -71,10 +71,13 @@ namespace senluo
 namespace senluo 
 {
     template<typename TBasePrinciple, auto OperationTree>
-    struct operate_principle
+    struct operate_principle : based_on<TBasePrinciple>, principle_interface<operate_principle<TBasePrinciple, OperationTree>>
     {
-        TBasePrinciple base_principle;
-
+        constexpr decltype(auto) data(this auto&& self)
+        {
+            return FWD(self, base).data();
+        }
+        
         static constexpr auto layout()
         {
             return TBasePrinciple::layout();
@@ -88,11 +91,6 @@ namespace senluo
         static constexpr auto operation_tree()
         { 
             return OperationTree;
-        }
-
-        constexpr auto data() &&
-        {
-            return std::move(base_principle).data();
         }
     };
 
