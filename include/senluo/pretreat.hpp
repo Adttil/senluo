@@ -132,25 +132,24 @@ namespace senluo
     template<class Pretreater>
     struct pretreater_interface : adaptor_closure<Pretreater>
     {
-        template<typename T, derived_from<Pretreater> Self>
-        constexpr auto operator()(this Self&& self, T&& tree)
+        constexpr decltype(auto) operator()(this auto&& self, auto&& tree)
         {
-            constexpr auto usage = Pretreater::usage_tree();
+            return self(FWD(tree) | principle<Pretreater::usage_tree()>);
+        }
 
-            auto principle = FWD(tree) | senluo::principle<usage>;
-
-            constexpr auto data_shape = shape<decltype(std::move(principle).data())>;
+        constexpr decltype(auto) operator()(this auto&&, principled auto&& tree)
+        {
+            constexpr auto data_shape = shape<decltype(FWD(tree).data())>;
             
-            constexpr auto layout = principle.layout();
-            constexpr auto raw_stricture_tree = principle.stricture_tree();
+            constexpr auto layout = tree.layout();
+            constexpr auto raw_stricture_tree = tree.stricture_tree();
             constexpr auto stricture_tree = Pretreater::template pretreat_stricture<raw_stricture_tree, layout>(data_shape);
-            constexpr auto operation_tree = principle.operation_tree();
+            constexpr auto operation_tree = tree.operation_tree();
 
-            return decltype(std::move(principle).data() | relayout<layout> | astrict<stricture_tree> | operate<operation_tree>)
+            return decltype(FWD(tree).data() | relayout<layout> | astrict<stricture_tree> | operate<operation_tree>)
             {
-                std::move(principle).data()
+                FWD(tree).data()
             };
-            //return std::move(principle).data() | relayout<layout> | astrict<stricture_tree> | operate<operation_tree>;
         }
     };
 
@@ -338,16 +337,7 @@ namespace senluo
         template<class TPrinciple>
         constexpr auto operator()(TPrinciple&& principle)const
         {
-            constexpr auto data_shape = shape<decltype(std::move(principle).data())>;
-                
-            constexpr auto layout = principle.layout();
-            constexpr auto raw_stricture_tree = principle.stricture_tree();
-            constexpr auto stricture_tree = get_sequence_stricture_tree<raw_stricture_tree, layout, UsageTree>(data_shape);
-            constexpr auto operation_tree = principle.operation_tree();
-
-            static_assert(not std::is_rvalue_reference_v<decltype(unwrap(std::move(principle).data()))>);
-            decltype(auto) src = std::move(principle).data() | relayout<layout> | astrict<stricture_tree> | operate<operation_tree>;
-            static_assert(not std::is_rvalue_reference_v<decltype((std::move(principle).data() | relayout<layout>).base)>);
+            decltype(auto) src = FWD(principle) | sequence_by_usage<UsageTree>;
 
             return plain_principle<decltype(make_data(FWD(src)))>{ make_data(FWD(src)) };
         }

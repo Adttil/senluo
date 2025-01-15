@@ -147,6 +147,16 @@ namespace senluo
     template<typename PrinciledTree>
     struct principle_interface : standard_interface<PrinciledTree>{};
 
+    template<typename T>
+    concept principled = requires(std::remove_cvref_t<T>& t)
+    {
+        { []<class U>(principle_interface<U>&)->U*{}(t) } -> std::same_as<std::remove_cvref_t<T>*>;
+        std::declval<T>().data();
+        std::remove_cvref_t<T>::layout();
+        std::remove_cvref_t<T>::stricture_tree();
+        std::remove_cvref_t<T>::operation_tree();
+    };
+
     namespace detail::principle_t_ns 
     {
         template<auto UsageTree, bool NoCopy>
@@ -281,11 +291,11 @@ namespace senluo
             {
                 return null_principle{};
             }
-            else if constexpr(requires{ FWD(tree).template principle<UsageTree, no_copy>(); })
+            else if constexpr(requires{ { FWD(tree).template principle<UsageTree, no_copy>() } -> principled; })
             {
                 return FWD(tree).template principle<UsageTree, no_copy>();
             }
-            else if constexpr(requires{ principle<UsageTree, no_copy>(FWD(tree)); })
+            else if constexpr(requires{ { principle<UsageTree, no_copy>(FWD(tree)) } -> principled; })
             {
                 return principle<UsageTree, no_copy>(FWD(tree));
             }
