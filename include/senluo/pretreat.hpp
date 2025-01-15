@@ -292,7 +292,7 @@ namespace senluo
             {
                 return [&]<size_t...I>(std::index_sequence<I...>) -> decltype(auto)
                 {
-                    auto&& seperate_args = FWD(args) | seperate;
+                    auto&& seperate_args = FWD(args) | refer | seperate;
                     return FWD(fn)(FWD(seperate_args) | subtree<I>...);
                 }(std::make_index_sequence<size<Args>>{});
             }
@@ -305,7 +305,7 @@ namespace senluo
             {
                 return [&]<size_t...I>(std::index_sequence<I...>) -> decltype(auto)
                 {
-                    auto&& seperate_tree = FWD(tree) | seperate;
+                    auto&& seperate_tree = FWD(tree) | refer | seperate;
                     return (FWD(seperate_tree) | subtree<0uz>)(FWD(seperate_tree) | subtree<I + 1>...);
                 }(std::make_index_sequence<size<T> - 1uz>{});
             }
