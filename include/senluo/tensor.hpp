@@ -8,6 +8,17 @@
 
 namespace senluo
 {
+    using value_t = float;
+
+    template<size_t N, class T = value_t>
+    using vec = array<T, N>;
+
+    template<size_t M, size_t N, class T = value_t>
+    using mat = array<array<T, M>, M>;
+}
+
+namespace senluo
+{
     namespace detail
     {
         struct dot_t : adaptor<dot_t>
@@ -17,8 +28,8 @@ namespace senluo
             {
                 return [&]<size_t...I>(std::index_sequence<I...>) -> decltype(auto)
                 {
-                    auto&& left_seq = FWD(left) | refer | sequence;
-                    auto&& right_seq = FWD(right) | refer | sequence;
+                    auto&& left_seq = FWD(left) | refer | seperate;
+                    auto&& right_seq = FWD(right) | refer | seperate;
                     return (... + ((FWD(left_seq) | subtree<I>) * (FWD(right_seq) | subtree<I>)));
                 }(std::make_index_sequence<senluo::min(size<L>, size<R>)>{});
             }
@@ -55,11 +66,61 @@ namespace senluo
 
     inline constexpr detail::vec_mul_mat_t vec_mul_mat{};
 
-    inline constexpr auto mat_mul = []<class L, class R>(L&& l, R&& r)
-	{
-        constexpr size_t n = size<L>;
-		return zip_transform(vec_mul_mat, FWD(l), FWD(r) | repeat<n>);
-	};
+    namespace detail
+    {
+        struct mat_mul_t : adaptor<mat_mul_t>
+        {
+            template<size_t I, size_t S, size_t J>
+            static constexpr auto get_element_layout()
+            {
+                return []<size_t...K>(std::index_sequence<K...>)
+                {
+                    return tuple
+                    {
+                        array{ 0uz },
+                        array{ 1uz, I },
+                        tuple{ array{ 2uz, K, J }... }
+                    };
+                }(std::make_index_sequence<S>{});
+            }
+
+            template<size_t I, size_t S, size_t N>
+            static constexpr auto get_row_layout()
+            {
+                return []<size_t...J>(std::index_sequence<J...>)
+                {
+                    return senluo::make_tuple(get_element_layout<I, S, J>()...);
+                }(std::make_index_sequence<N>{});
+            }
+
+            template<size_t M, size_t S, size_t N>
+            static constexpr auto get_layout()
+            {
+                return []<size_t...I>(std::index_sequence<I...>)
+                {
+                    return senluo::make_tuple(get_row_layout<I, S, N>()...);
+                }(std::make_index_sequence<M>{});
+            }
+
+            template<class L, class R>
+            constexpr decltype(auto) adapt(L&& l, R&& r)
+            {
+                constexpr size_t m = size<L>;
+                constexpr size_t s = size<R>;
+                constexpr size_t n = tensor_shape<R>[1uz];
+                
+                constexpr auto layout = get_layout<m, s, n>();
+                constexpr auto op_tree = senluo::make_tree_of_same_value(operation_t::apply_invoke, shape<mat<m, n>>);
+
+                return decltype(combine(decltype(dot){}, FWD(l), FWD(r)) | relayout<layout> | operate<op_tree>)
+                {
+                    dot, FWD(l), FWD(r)
+                };
+            }
+        };
+    }
+
+    inline constexpr detail::mat_mul_t mat_mul{};
 }
 
 #include "macro_undef.hpp"
