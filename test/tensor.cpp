@@ -1,5 +1,4 @@
 #include <senluo/tensor.hpp>
-#include <senluo/make.hpp>
 #include <random>
 #include "test_tool.hpp"
 

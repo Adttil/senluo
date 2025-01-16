@@ -1,10 +1,10 @@
 #ifndef SENLUO_WRAP_HPP
 #define SENLUO_WRAP_HPP
 
-#include "general.hpp"
-#include "tree.hpp"
+#include "../general.hpp"
+#include "../tree.hpp"
 
-#include "macro_define.hpp"
+#include "../macro_define.hpp"
 
 namespace senluo 
 {
@@ -145,5 +145,5 @@ namespace senluo
     inline constexpr detail::refer_t refer{};
 }
 
-#include "macro_undef.hpp"
+#include "../macro_undef.hpp"
 #endif

@@ -1,4 +1,4 @@
-#include <senluo/make.hpp>
+#include <senluo/core.hpp>
 #include "test_tool.hpp"
 
 using namespace senluo;

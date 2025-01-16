@@ -2,8 +2,7 @@
 #define SENLUO_TENSOR_HPP
 
 #include "general.hpp"
-#include "pretreat.hpp"
-#include "make.hpp"
+#include "core.hpp"
 
 #include "macro_define.hpp"
 

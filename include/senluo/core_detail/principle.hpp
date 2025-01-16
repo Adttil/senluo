@@ -1,11 +1,11 @@
 #ifndef SENLUO_PRINCIPLE_HPP
 #define SENLUO_PRINCIPLE_HPP
 
-#include "general.hpp"
-#include "tree.hpp"
+#include "../general.hpp"
+#include "../tree.hpp"
 #include "wrap.hpp"
 
-#include "macro_define.hpp"
+#include "../macro_define.hpp"
 
 namespace senluo
 {
@@ -333,5 +333,5 @@ namespace senluo
     inline constexpr detail::plainize_fn<UsageTree, Tpl> plainize{};
 }
 
-#include "macro_undef.hpp"
+#include "../macro_undef.hpp"
 #endif

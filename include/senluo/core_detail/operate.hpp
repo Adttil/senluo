@@ -1,14 +1,13 @@
 #ifndef RUZHOUXIE_OPERATE_HPP
 #define RUZHOUXIE_OPERATE_HPP
 
-#include "tree.hpp"
-#include "constant.hpp"
-#include "general.hpp"
+#include "../tree.hpp"
+#include "../general.hpp"
 #include "principle.hpp"
 #include "wrap.hpp"
 #include "relayout.hpp"
 
-#include "macro_define.hpp"
+#include "../macro_define.hpp"
 
 namespace senluo 
 {
@@ -233,5 +232,5 @@ namespace senluo
     inline constexpr detail::zip_transform_t zip_transform{};
 }
 
-#include "macro_undef.hpp"
+#include "../macro_undef.hpp"
 #endif

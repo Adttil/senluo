@@ -2,15 +2,15 @@
 #define RUZHOUXIE_STANDARD_HPP
 
 #include<functional>
-#include "tree.hpp"
-#include "constant.hpp"
-#include "general.hpp"
+#include "../tree.hpp"
+#include "../constant.hpp"
+#include "../general.hpp"
 #include "principle.hpp"
 #include "wrap.hpp"
 #include "pretreat.hpp"
 #include "make.hpp"
 
-#include "macro_define.hpp"
+#include "../macro_define.hpp"
 
 namespace senluo
 {
@@ -123,5 +123,5 @@ namespace senluo
     inline constexpr auto divides = recursive_zip_binary_fn<std::divides<>>;
 }
 
-#include "macro_undef.hpp"
+#include "../macro_undef.hpp"
 #endif
