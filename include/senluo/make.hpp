@@ -199,7 +199,11 @@ namespace senluo
 
 namespace senluo 
 {
-    
+    template<class To>
+    constexpr const auto& to()
+    {
+        return make<To>;
+    }
 }
 
 namespace senluo 

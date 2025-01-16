@@ -360,6 +360,12 @@ namespace senluo
             }(std::make_index_sequence<size<TSrc>>{});
         }
     };
+
+    template<template<class...> class Tpl = tuple>
+    constexpr const auto& to()
+    {
+        return plainize<usage_t::once, Tpl>;
+    }
 }
 
 #include "macro_undef.hpp"
