@@ -158,9 +158,6 @@ namespace senluo
             }
         };
     }
-
-    template<auto StrictureTree>
-    inline constexpr detail::astrict_t<fold_tag_tree<StrictureTree>()> astrict{};
 }
 
 #include "../macro_undef.hpp"

@@ -10,23 +10,6 @@
 
 namespace senluo 
 {
-    template<size_t I, class L>
-    constexpr auto layout_get(const L& layout)
-    {
-        if constexpr(indexical<L>)
-        {
-            return senluo::array_cat(layout, array{ I });
-        }
-        else if constexpr(I < size<L>)
-        {
-            return layout | subtree<I>;
-        }
-        else
-        {
-            return invalid_index;
-        }
-    }
-
     template<indexical_array auto indexes, class L>
     constexpr auto sublayout(const L& layout)
     {
@@ -329,9 +312,6 @@ namespace senluo
             }
         };
     }
-
-    template<auto Layout>
-    inline constexpr detail::relayout_t<Layout> relayout{};
 
     template<typename T>
     constexpr auto default_unfolded_layout = []()

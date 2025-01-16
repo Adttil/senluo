@@ -23,42 +23,6 @@ namespace senluo
             return (... & senluo::fold_usage(usage_tree | subtree<I>));
         }(std::make_index_sequence<size<U>>{});
     }
-
-    template<auto OperationTree, class U>
-    constexpr auto fit_operation_usage_impl(const U& usage_tree, bool& need_plain)
-    {
-        if constexpr(std::same_as<decltype(OperationTree), operation_t>)
-        {
-            if constexpr(OperationTree == operation_t::none)
-            {
-                return usage_tree;
-            }
-            else
-            {
-                usage_t usage = fold_usage(usage_tree);
-                need_plain = need_plain || usage == usage_t::repeatedly;
-                return usage;
-            }
-        }
-        else return [&]<size_t...I>(std::index_sequence<I...>)
-        {
-            return senluo::make_tuple(fit_operation_usage_impl<OperationTree | subtree<I>>(tag_tree_get<I>(usage_tree), need_plain)...);
-        }(std::make_index_sequence<size<decltype(OperationTree)>>{});
-    }
-
-    template<auto OperationTree, class U>
-    constexpr auto fit_operation_usage(const U& usage_tree)
-    {
-        bool need_plain = false;
-
-        struct result_t
-        {
-            decltype(fit_operation_usage_impl<OperationTree>(usage_tree, need_plain)) usage_tree;
-            bool need_plain;
-        };
-
-        return result_t{ fit_operation_usage_impl<OperationTree>(usage_tree, need_plain), need_plain };
-    }
 }
 
 namespace senluo 
@@ -187,9 +151,6 @@ namespace senluo
             }
         };
     }
-
-    template<auto OperationTree>
-    inline constexpr detail::operate_t<OperationTree> operate{};
 }
 
 namespace senluo
