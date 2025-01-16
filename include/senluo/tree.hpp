@@ -232,7 +232,7 @@ namespace senluo
     namespace detail
     {
         template<indexical_array auto Indexes>
-        struct subtree_t;
+        struct subtree_fn;
 
         //void self();
     }
@@ -244,11 +244,11 @@ namespace senluo
         //inline constexpr detail::subtree_t<senluo::to_indexes(I...)> subtree{};
 
         template<indexical auto...I>
-        inline constexpr auto subtree = detail::subtree_t<senluo::to_indexes(I...)>{};
+        inline constexpr auto subtree = detail::subtree_fn<senluo::to_indexes(I...)>{};
     }
     
     template<indexical_array auto Indexes>
-    struct detail::subtree_t : adaptor_closure<subtree_t<Indexes>>
+    struct detail::subtree_fn : adaptor_closure<subtree_fn<Indexes>>
     {
         template<typename T>
         constexpr decltype(auto) operator()(T&& t)const
@@ -314,14 +314,12 @@ namespace senluo
         }
     }();
 
-    struct leaf_tag_t{};
-
     template<typename T>
     inline constexpr auto shape = []
     {
         if constexpr (terminal<T>)
         {
-            return leaf_tag_t{};
+            return tuple{};
         }
         else return[]<size_t...I>(std::index_sequence<I...>)
         {

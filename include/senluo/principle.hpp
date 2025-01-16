@@ -3,7 +3,7 @@
 
 #include "general.hpp"
 #include "tree.hpp"
-#include "standard.hpp"
+#include "wrap.hpp"
 
 #include "macro_define.hpp"
 
@@ -189,7 +189,7 @@ namespace senluo
             };
             return [&]<size_t...I>(std::index_sequence<I...>)
             {
-                return (no_custom && ... && is_plain<senluo::subtree_t<T, I>, tag_tree_get<I>(UsageTree)>());
+                return (no_custom && ... && is_plain<subtree_t<T, I>, tag_tree_get<I>(UsageTree)>());
             }(std::make_index_sequence<size<T>>{});
         }
     }

@@ -5,7 +5,7 @@
 #include "constant.hpp"
 #include "general.hpp"
 #include "principle.hpp"
-#include "standard.hpp"
+#include "wrap.hpp"
 #include "pretreat.hpp"
 
 #include "macro_define.hpp"
@@ -106,7 +106,7 @@ namespace senluo
 
         template<size_t I, class T>
         struct tuple_element_by_child
-        : storage_type<senluo::subtree_t<T&, I>, senluo::subtree_t<const T&, I>, senluo::subtree_t<T&&, I>, senluo::subtree_t<const T&&, I>>
+        : storage_type<subtree_t<T&, I>, subtree_t<const T&, I>, subtree_t<T&&, I>, subtree_t<const T&&, I>>
         {};
 
         template<size_t I, class T>
@@ -153,22 +153,22 @@ namespace senluo
 
     namespace detail::make_t_ns
     {        
-        template<typename T>
-        constexpr auto get_maker(type_tag<T>)noexcept
-        {
-            if constexpr(aggregate_tree<T>)
-            {
-                return aggregate_maker<T>{};
-            }
-            else if constexpr(requires{ std::tuple_size<T>::value; })
-            {
-                return children_maker<T>{};
-            }
-            else
-            {
+        // template<typename T>
+        // constexpr auto get_maker(type_tag<T>)noexcept
+        // {
+        //     if constexpr(aggregate_tree<T>)
+        //     {
+        //         return aggregate_maker<T>{};
+        //     }
+        //     else if constexpr(requires{ std::tuple_size<T>::value; })
+        //     {
+        //         return children_maker<T>{};
+        //     }
+        //     else
+        //     {
 
-            }
-        }
+        //     }
+        // }
     }
 
     template<typename T, indexical_array auto indexes>
@@ -177,17 +177,25 @@ namespace senluo
         template<typename Arg>
         constexpr T operator()(Arg&& arg)const
         {
-            if constexpr(terminal<senluo::subtree_t<Arg, indexes>>)
+            if constexpr(terminal<subtree_t<Arg, indexes>> || terminal<T>)
             {
                 return FWD(arg) | subtree<indexes>;
             }
-            else if constexpr(std::same_as<std::remove_cvref_t<senluo::subtree_t<Arg, indexes>>, T> && requires{ T{ FWD(arg) | subtree<indexes> }; })
+            else if constexpr(std::same_as<std::remove_cvref_t<subtree_t<Arg, indexes>>, T> && requires{ T{ FWD(arg) | subtree<indexes> }; })
             {
                 return FWD(arg) | subtree<indexes>;
             }
             else if constexpr(requires{ get_maker(type_tag<T>{}); })
             {
                 return get_maker(type_tag<T>{})(FWD(arg) | subtree<indexes>);
+            }
+            else if constexpr(aggregate_tree<T>)
+            {
+                return aggregate_maker<T>{}(FWD(arg) | subtree<indexes>);
+            }
+            else if constexpr(requires{ std::tuple_size<T>::value; })
+            {
+                return children_maker<T>{}(FWD(arg) | subtree<indexes>);
             }
             else
             {

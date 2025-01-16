@@ -5,7 +5,7 @@
 #include "constant.hpp"
 #include "general.hpp"
 #include "principle.hpp"
-#include "standard.hpp"
+#include "wrap.hpp"
 
 #include "macro_define.hpp"
 
@@ -454,10 +454,24 @@ namespace senluo
 
     namespace detail
     {
-        struct zip_t : adaptor<zip_t>
+        struct combine_t
         {
             template<typename...T>
-            constexpr auto adapt(T&&...t) const
+            constexpr auto operator()(T&&...t) const
+            {
+                return tuple<T...>{ FWD(t)... };
+            }
+        };
+    }
+
+    inline constexpr detail::combine_t combine{};  
+
+    namespace detail
+    {
+        struct zip_t
+        {
+            template<typename...T>
+            constexpr auto operator()(T&&...t) const
             {
                 return tuple<T...>{ FWD(t)... } | transpose<>;
             }
