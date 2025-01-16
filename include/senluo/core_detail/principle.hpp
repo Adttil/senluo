@@ -331,6 +331,33 @@ namespace senluo
 
     template<auto UsageTree = usage_t::once, template<class...> class Tpl = tuple>
     inline constexpr detail::plainize_fn<UsageTree, Tpl> plainize{};
+
+    namespace detail
+    {
+        template<auto UsageTree, bool NoCopy, template<class...> class Tpl>
+        struct plainize_principle_fn : adaptor_closure<plainize_principle_fn<UsageTree, NoCopy, Tpl>>
+        {
+            template<class T>
+            constexpr decltype(auto) operator()(T&& tree)const
+            {
+                if constexpr(NoCopy)
+                {
+                    return plain_principle<decltype(FWD(tree) | refer | plainize<UsageTree, Tpl>)>{ 
+                        FWD(tree) | refer | plainize<UsageTree, Tpl> 
+                    };
+                }
+                else
+                {
+                    return plain_principle<decltype(FWD(tree) | plainize<UsageTree, Tpl>)>{ 
+                        FWD(tree) | plainize<UsageTree, Tpl> 
+                    };
+                }
+            }
+        };
+    };
+
+    template<auto UsageTree = usage_t::once, bool NoCopy = false, template<class...> class Tpl = tuple>
+    inline constexpr detail::plainize_principle_fn<UsageTree, NoCopy, Tpl> plainize_principle{};
 }
 
 #include "../macro_undef.hpp"

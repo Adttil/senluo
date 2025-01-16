@@ -140,28 +140,23 @@ namespace senluo
                 }
                 else
                 {
-                    using base_plain_principle_t = plain_principle<decltype(FWD(self, base) | plainize<fittedd_usage>)>;
+                    using base_plain_principle_t = decltype(FWD(self, base) | plainize_principle<fittedd_usage, NoCopy>);
                     return operate_principle<base_plain_principle_t, OperationTree>{ 
-                        FWD(self, base) | plainize<fittedd_usage>
+                        FWD(self, base) | plainize_principle<fittedd_usage, NoCopy>
                     };
                 }
             }
             else
             {
-                auto base_plain = plain_principle<decltype(FWD(self, base) | plainize<fittedd_usage>)>{
-                    FWD(self, base) | plainize<fittedd_usage> 
-                };
-                
-                auto raw_principle = operate_principle<decltype(base_plain), OperationTree>{ std::move(base_plain) };
+                auto base_plain = FWD(self, base) | plainize_principle<fittedd_usage, NoCopy>;
                 if constexpr(not need_plain)
                 {
                     return operate_principle<decltype(base_plain), OperationTree>{ std::move(base_plain) };
                 }
                 else
                 {
-                    return plain_principle<decltype(std::move(raw_principle) | plainize<fittedd_usage>)>{
-                        std::move(raw_principle) | plainize<fittedd_usage>
-                    };
+                    return operate_principle<decltype(base_plain), OperationTree>{ std::move(base_plain) }
+                           | plainize_principle<fittedd_usage>;
                 }
             }
         }

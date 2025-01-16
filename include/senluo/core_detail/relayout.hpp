@@ -300,10 +300,10 @@ namespace senluo
             }
             else
             {
-                using base_plain_principle_t = plain_principle<decltype(FWD(self, base) | plainize<UsageTree>)>;
+                using base_plain_principle_t = decltype(FWD(self, base) | plainize_principle<UsageTree, NoCopy>);
 
                 return relayout_principle<base_plain_principle_t, FoldedLayout>{ 
-                    base_plain_principle_t{ FWD(self, base) | plainize<UsageTree> }
+                    FWD(self, base) | plainize_principle<UsageTree, NoCopy>
                 };
             }           
         }
