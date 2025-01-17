@@ -2,10 +2,6 @@
 #define SENLUO_TUPLE_HPP
 //this tuple is aggregate
 
-#include <type_traits>
-#include <utility>
-#include <cstddef>
-
 #include "general.hpp"
 
 #include "macro_define.hpp"
@@ -15,7 +11,9 @@ namespace senluo
     template<class...T>
     struct tuple;
 
-    template<class T, class...Rest>
+#include "code_generate/tuple_specialization.code"
+
+	template<class T, class...Rest>
     struct tuple<T, Rest...>
 	{
 	    SENLUO(no_unique_address) T              first;
@@ -36,11 +34,6 @@ namespace senluo
 
 	    friend constexpr bool operator==(const tuple&, const tuple&) = default;
 	};
-}
-
-namespace senluo
-{
-#include "code_generate/tuple_specialization.code"
 
 	template<class...T>
     tuple(T...) -> tuple<std::decay_t<T>...>;
@@ -54,15 +47,28 @@ struct std::tuple_element<I, senluo::tuple<T...>> : std::tuple_element<I, std::t
 
 namespace senluo
 {
-	template<class...Args>
-    constexpr auto make_tuple(Args&&...args)
-	AS_EXPRESSION(tuple<std::decay_t<Args>...>{ FWD(args)... });
-
-	template<class...Args>
-    constexpr tuple<Args&&...> fwd_as_tuple(Args&&...args)noexcept
+	namespace detail 
 	{
-	    return { FWD(args)... };
-	};
+		struct make_tuple_fn
+		{
+			template<class...Args>
+    		constexpr auto operator()(Args&&...args) const
+			AS_EXPRESSION(tuple<std::decay_t<Args>...>{ FWD(args)... });
+		};
+
+		struct fwd_as_tuple_fn
+		{
+			template<class...Args>
+    		constexpr tuple<Args&&...> operator()(Args&&...args) const noexcept
+			{
+			    return { FWD(args)... };
+			};
+		};
+	}
+
+	inline constexpr detail::make_tuple_fn make_tuple{};
+
+	inline constexpr detail::fwd_as_tuple_fn fwd_as_tuple{};
 }
 
 #include "macro_undef.hpp"
