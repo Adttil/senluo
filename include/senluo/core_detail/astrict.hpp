@@ -112,20 +112,20 @@ namespace senluo::detail::astrict_ns
             }
         }
 
-        template<auto UsageTree, bool NoCopy, typename Self>
-        constexpr auto principle(this Self&& self)
+        template<auto UsageTree, unwarp_derived_from<tree_t> Self>
+        friend constexpr auto principle(Self&& self)
         {
-            using base_principle_t = decltype(FWD(self, base) | senluo::principle<UsageTree, NoCopy>);
+            using base_principle_t = decltype(FWD(self) | base | senluo::principle<UsageTree>);
             if constexpr(equal(base_principle_t::operation_tree(), operation_t::none))
             {
-                return principle_t<base_principle_t, FoldedStrictureTree>{ FWD(self, base) | senluo::principle<UsageTree, NoCopy> };
+                return principle_t<base_principle_t, FoldedStrictureTree>{ FWD(self) | base | senluo::principle<UsageTree> };
             }
             else
             {
-                using base_plain_principle_t = decltype(FWD(self, base) | plainize_principle<UsageTree, NoCopy>);
+                using base_plain_principle_t = decltype(FWD(self) | base | plainize_principle<UsageTree>);
                 
                 return principle_t<base_plain_principle_t, FoldedStrictureTree>{ 
-                    FWD(self, base) | plainize_principle<UsageTree, NoCopy>
+                    FWD(self) | base | plainize_principle<UsageTree>
                 };
             }
         }

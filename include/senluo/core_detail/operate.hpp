@@ -79,34 +79,34 @@ namespace senluo::detail::operate_ns
             }
         }
 
-        template<auto UsageTree, bool NoCopy, typename Self>
-        constexpr auto principle(this Self&& self)
+        template<auto UsageTree, unwarp_derived_from<tree_t> Self>
+        friend constexpr auto principle(Self&& self)
         {
             constexpr auto fitted_usage_result = fit_operation_usage<OperationTree>(UsageTree);
             constexpr auto fittedd_usage = fitted_usage_result.usage_tree;
             constexpr bool need_plain = fitted_usage_result.need_plain;
 
-            using base_principle_t = decltype(FWD(self, base) | senluo::principle<fittedd_usage, NoCopy>);
+            using base_principle_t = decltype(FWD(self) | base | senluo::principle<fittedd_usage>);
             
             if constexpr(equal(base_principle_t::operation_tree(), operation_t::none))
             {
                 if constexpr(not need_plain)
                 {
                     return principle_t<base_principle_t, OperationTree>{ 
-                        FWD(self, base) | senluo::principle<fittedd_usage, NoCopy> 
+                        FWD(self) | base | senluo::principle<fittedd_usage> 
                     };
                 }
                 else
                 {
-                    using base_plain_principle_t = decltype(FWD(self, base) | plainize_principle<fittedd_usage, NoCopy>);
+                    using base_plain_principle_t = decltype(FWD(self) | base | plainize_principle<fittedd_usage>);
                     return principle_t<base_plain_principle_t, OperationTree>{ 
-                        FWD(self, base) | plainize_principle<fittedd_usage, NoCopy>
+                        FWD(self) | base | plainize_principle<fittedd_usage>
                     };
                 }
             }
             else
             {
-                auto base_plain = FWD(self, base) | plainize_principle<fittedd_usage, NoCopy>;
+                auto base_plain = FWD(self) | base | plainize_principle<fittedd_usage>;
                 if constexpr(not need_plain)
                 {
                     return principle_t<decltype(base_plain), OperationTree>{ std::move(base_plain) };

@@ -247,10 +247,11 @@ namespace senluo::detail::relayout_ns
     template<typename T, auto FoldedLayout>
     struct tree_t : based_on<T>, standard_interface<tree_t<T, FoldedLayout>>
     {
-    private:
-        static constexpr auto unfolded_layout = senluo::unfold_layout<FoldedLayout>(shape<T>);
-    
-    public:
+        static consteval auto layout()
+        {
+            return FoldedLayout;
+        }
+
         template<size_t I, typename Self> 
         constexpr decltype(auto) get(this Self&& self)
         {
@@ -270,23 +271,24 @@ namespace senluo::detail::relayout_ns
             }
         }
 
-        template<auto UsageTree, bool NoCopy, typename Self>
-        constexpr decltype(auto) principle(this Self&& self)
+        template<auto UsageTree, unwarp_derived_from<tree_t> Self>
+        friend constexpr decltype(auto) principle(Self&& self)
         {
+            constexpr auto unfolded_layout = senluo::unfold_layout<FoldedLayout>(shape<T>);
             constexpr auto base_usage = inverse_relayout_usage_tree<unfolded_layout>(UsageTree, shape<T>);
 
-            using base_principle_t = decltype(FWD(self, base) | senluo::principle<base_usage, NoCopy>);
+            using base_principle_t = decltype(FWD(self) | base | senluo::principle<base_usage>);
 
             if constexpr(is_enable_to_relayout_operation_tree<FoldedLayout>(base_principle_t::operation_tree()))
             {
-                return principle_t<base_principle_t, FoldedLayout>{ FWD(self, base) | senluo::principle<base_usage, NoCopy> };
+                return principle_t<base_principle_t, FoldedLayout>{ FWD(self) | base | senluo::principle<base_usage> };
             }
             else
             {
-                using base_plain_principle_t = decltype(FWD(self, base) | plainize_principle<UsageTree, NoCopy>);
+                using base_plain_principle_t = decltype(FWD(self) | base | plainize_principle<UsageTree>);
 
                 return principle_t<base_plain_principle_t, FoldedLayout>{ 
-                    FWD(self, base) | plainize_principle<UsageTree, NoCopy>
+                    FWD(self) | base | plainize_principle<UsageTree>
                 };
             }           
         }

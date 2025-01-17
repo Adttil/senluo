@@ -50,7 +50,7 @@ namespace senluo
 
     namespace detail::principle_t_ns 
     {
-        template<auto UsageTree, bool NoCopy>
+        template<auto UsageTree>
         struct principle_fn;
 
         template<auto UsageTree>
@@ -61,9 +61,9 @@ namespace senluo
         {
             constexpr bool no_custom = not bool
             {
-                requires{ std::declval<unwrap_t<T>>().template principle<UsageTree, false>(); }
+                requires{ std::declval<unwrap_t<T>>().template principle<UsageTree>(); }
                 ||
-                requires{ principle<UsageTree, false>(std::declval<unwrap_t<T>>()); }
+                requires{ principle<UsageTree>(std::declval<unwrap_t<T>>()); }
             };
             return [&]<size_t...I>(std::index_sequence<I...>)
             {
@@ -72,8 +72,8 @@ namespace senluo
         }
     }
     
-    template<auto UsageTree, bool NoCopy = false>
-    inline constexpr detail::principle_t_ns::principle_fn<UsageTree, NoCopy> principle;
+    template<auto UsageTree>
+    inline constexpr detail::principle_t_ns::principle_fn<UsageTree> principle;
     
     template<typename T, auto UsageTree>
     using principle_t = decltype(std::declval<T>() | principle<UsageTree>);
@@ -328,7 +328,7 @@ namespace senluo
     template<typename PrinciledTree>
     struct principle_interface : standard_interface<PrinciledTree>
     {
-        // template<auto UsageTree, bool NoCopy, typename Self>
+        // template<auto UsageTree, typename Self>
         // constexpr decltype(auto) principle(this Self&& self)
         // {
         //     using self_t = std::remove_cvref_t<Self>;
@@ -420,77 +420,52 @@ namespace senluo
         }
     };
 
-    template<auto UsageTree, bool NoCopy>
-    struct detail::principle_t_ns::principle_fn : adaptor_closure<principle_fn<UsageTree, NoCopy>>
+    template<auto UsageTree>
+    struct detail::principle_t_ns::principle_fn : adaptor_closure<principle_fn<UsageTree>>
     {
         template<typename T>
         constexpr auto operator()(T&& tree)const
         {
-            if constexpr(NoCopy)
-            {
-                return FWD(tree) | refer | senluo::principle<UsageTree>;
-            }
-            else
-            {
-                return impl<unwrap_t<T>>(unwrap_fwd(FWD(tree)));
-            }
-        }
-
-        template<typename T>
-        constexpr auto impl(T&& tree)const
-        {
-            constexpr bool no_copy = std::is_rvalue_reference_v<T>;
             if constexpr(senluo::equal(UsageTree, usage_t::none))
             {
                 return null_principle{};
             }
-            else if constexpr(requires{ { FWD(tree).template principle<UsageTree, no_copy>() } -> principled; })
+            else if constexpr(requires{ { FWD(tree).template principle<UsageTree>() } -> principled; })
             {
-                return FWD(tree).template principle<UsageTree, no_copy>();
+                return FWD(tree).template principle<UsageTree>();
             }
-            else if constexpr(requires{ { principle<UsageTree, no_copy>(FWD(tree)) } -> principled; })
+            else if constexpr(requires{ { principle<UsageTree>(FWD(tree)) } -> principled; })
             {
-                return principle<UsageTree, no_copy>(FWD(tree));
+                return principle<UsageTree>(FWD(tree));
             }
             else if constexpr(plain<T, UsageTree>)
             {                
-                return plain_principle<T>{ FWD(tree) };
+                return plain_principle<unwrap_t<T>>{ unwrap_fwd(FWD(tree)) };
             }
             else
             { 
-                return trivial_principle<T, UsageTree>{ FWD(tree) };
+                return trivial_principle<unwrap_t<T>, UsageTree>{ unwrap_fwd(FWD(tree)) };
             }
         }
     };
 
-    
-
     namespace detail
     {
-        template<auto UsageTree, bool NoCopy, template<class...> class Tpl>
-        struct plainize_principle_fn : adaptor_closure<plainize_principle_fn<UsageTree, NoCopy, Tpl>>
+        template<auto UsageTree, template<class...> class Tpl>
+        struct plainize_principle_fn : adaptor_closure<plainize_principle_fn<UsageTree, Tpl>>
         {
             template<class T>
             constexpr decltype(auto) operator()(T&& tree)const
             {
-                if constexpr(NoCopy)
-                {
-                    return plain_principle<decltype(FWD(tree) | refer | plainize<UsageTree, Tpl>)>{ 
-                        FWD(tree) | refer | plainize<UsageTree, Tpl> 
-                    };
-                }
-                else
-                {
-                    return plain_principle<decltype(FWD(tree) | plainize<UsageTree, Tpl>)>{ 
-                        FWD(tree) | plainize<UsageTree, Tpl> 
-                    };
-                }
+                return plain_principle<unwrap_t<decltype(FWD(tree) | plainize<UsageTree, Tpl>)>>{ 
+                    FWD(tree) | plainize<UsageTree, Tpl>
+                };
             }
         };
     };
 
-    template<auto UsageTree = usage_t::once, bool NoCopy = false, template<class...> class Tpl = tuple>
-    inline constexpr detail::plainize_principle_fn<UsageTree, NoCopy, Tpl> plainize_principle{};
+    template<auto UsageTree = usage_t::once, template<class...> class Tpl = tuple>
+    inline constexpr detail::plainize_principle_fn<UsageTree, Tpl> plainize_principle{};
 }
 
 #include "../macro_undef.hpp"

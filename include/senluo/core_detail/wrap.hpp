@@ -143,6 +143,30 @@ namespace senluo
     inline constexpr detail::wrap_t wrap{};
 
     inline constexpr detail::refer_t refer{};
+
+    namespace detail 
+    {
+        struct base_fn : adaptor_closure<base_fn>
+        {
+            template<class T>
+            constexpr decltype(auto) operator()(T&& t) const
+            {
+                if constexpr(std::is_object_v<unwrap_t<T>> && std::is_object_v<decltype(unwrap_fwd(FWD(t)).base)>)
+                {
+                    return FWD(unwrap_fwd(FWD(t)), base);
+                }
+                else
+                {
+                    return FWD(unwrap_fwd(FWD(t)), base) | refer;
+                }
+            }
+        };
+
+        inline constexpr base_fn base{};
+    }
+
+    template<class T, class U>
+    concept unwarp_derived_from = derived_from<unwrap_t<T>, U>;
 }
 
 #include "../macro_undef.hpp"
