@@ -15,9 +15,9 @@ namespace senluo
         struct pass_t : adaptor_closure<pass_t>
         {
             template<class T>
-            constexpr T operator()(T&& t)const
+            constexpr decltype(auto) operator()(T&& t)const
             {
-                return FWD(t);
+                return (T)FWD(t);
             }
         };
 
@@ -45,8 +45,12 @@ namespace senluo
 
 namespace senluo 
 {
-    template<typename PrinciledTree>
-    struct principle_interface;
+    namespace detail
+    {
+        template<typename PrinciledTree>
+        struct principle_interface;
+    }
+    using detail::principle_interface;
 
     template<typename T>
     concept principled = requires(std::remove_cvref_t<unwrap_t<T>> t)
@@ -94,23 +98,25 @@ namespace senluo
     template<class Pretreater>
     struct pretreater_interface : adaptor_closure<Pretreater>
     {
-        constexpr decltype(auto) operator()(this auto&& self, auto&& tree)
-        {
-            return self(FWD(tree) | principle<Pretreater::usage_tree()>);
-        }
+        // constexpr decltype(auto) operator()(this auto&& self, auto&& tree)
+        // {
+        //     return self(FWD(tree) | principle<Pretreater::usage_tree()>);
+        // }
 
-        constexpr decltype(auto) operator()(this auto&&, principled auto&& tree)
+        constexpr decltype(auto) operator()(this auto&&, auto&& tree)
         {
-            constexpr auto data_shape = shape<decltype(data(FWD(tree)))>;
+            decltype(auto) principle = FWD(tree) | refer | senluo::principle<Pretreater::usage_tree()>;
+
+            constexpr auto data_shape = shape<decltype(data(FWD(principle)))>;
             
-            constexpr auto layout = tree.layout();
-            constexpr auto raw_stricture_tree = tree.stricture_tree();
+            constexpr auto layout = principle.layout();
+            constexpr auto raw_stricture_tree = principle.stricture_tree();
             constexpr auto stricture_tree = Pretreater::template pretreat_stricture<raw_stricture_tree, layout>(data_shape);
-            constexpr auto operation_tree = tree.operation_tree();
+            constexpr auto operation_tree = principle.operation_tree();
 
-            return decltype(data(FWD(tree)) | relayout<layout> | astrict<stricture_tree> | operate<operation_tree>)
+            return decltype(data(FWD(principle)) | relayout<layout> | astrict<stricture_tree> | operate<operation_tree>)
             {
-                data(FWD(tree))
+                data(FWD(principle))
             };
         }
     };
@@ -321,26 +327,68 @@ namespace senluo
     {
         return plainize<usage_t::once, Tpl>;
     }
+
+    template<class T>
+    struct plain_principle;
+
+    namespace detail
+    {
+        template<auto UsageTree, template<class...> class Tpl>
+        struct plainize_principle_fn : adaptor_closure<plainize_principle_fn<UsageTree, Tpl>>
+        {
+            template<class T>
+            constexpr decltype(auto) operator()(T&& tree)const
+            {
+                return plain_principle<unwrap_t<decltype(FWD(tree) | plainize<UsageTree, Tpl>)>>{ 
+                    FWD(tree) | plainize<UsageTree, Tpl>
+                };
+            }
+        };
+    };
+
+    template<auto UsageTree = usage_t::once, template<class...> class Tpl = tuple>
+    inline constexpr detail::plainize_principle_fn<UsageTree, Tpl> plainize_principle{};
 }
 
 namespace senluo
 {        
-    template<typename PrinciledTree>
-    struct principle_interface : standard_interface<PrinciledTree>
+    template<typename Princile>
+    struct detail::principle_interface : standard_interface<Princile>
     {
-        // template<auto UsageTree, typename Self>
-        // constexpr decltype(auto) principle(this Self&& self)
-        // {
-        //     using self_t = std::remove_cvref_t<Self>;
-        //     constexpr auto fitted_usage_result = fit_operation_usage<self_t::operation_tree()>(UsageTree);
-        //     constexpr auto fittedd_usage = fitted_usage_result.usage_tree;
-        //     constexpr bool need_plain = fitted_usage_result.need_plain;
+        template<size_t I, typename Self>
+        constexpr decltype(auto) get(this Self&& self)
+        {
+            decltype(auto) tree = data(FWD(self) | refer)
+                | relayout<Princile::layout()> 
+                | astrict<Princile::stricture_tree()>
+                | operate<Princile::operation_tree()>;
+            if constexpr(I >= size<decltype(tree)>)
+            {
+                return end();
+            }
+            else
+            {
+               return FWD(tree) | subtree<I>; 
+            }
+            
+        }
 
-        //     if constexpr(need_plain)
-        //     {
-        //         return FWD(self) | plainize;
-        //     }
-        // }
+        template<auto UsageTree, unwarp_derived_from<Princile> Self>
+        friend constexpr decltype(auto) principle(Self&& self)
+        {
+            constexpr auto fitted_usage_result = fit_operation_usage<Princile::operation_tree()>(UsageTree);
+            constexpr auto fittedd_usage = fitted_usage_result.usage_tree;
+            constexpr bool need_plain = fitted_usage_result.need_plain;
+
+            if constexpr(need_plain)
+            {
+                return FWD(self) | plainize_principle<UsageTree>;
+            }
+            else
+            {
+                return (unwrap_t<Self>)unwrap_fwd(FWD(self));
+            }
+        }
     };
     
     struct null_principle : principle_interface<null_principle>
@@ -362,7 +410,7 @@ namespace senluo
     {
         friend constexpr decltype(auto) data(unwarp_derived_from<plain_principle> auto&& self)
         {
-            return pass(FWD(self, base));
+            return unwrap(FWD(self) | detail::base);
         }
         
         static constexpr auto layout(){ return indexes_of_whole; }
@@ -379,10 +427,10 @@ namespace senluo
         {
             return [&]<size_t...I>(std::index_sequence<I...>)
             {
-                return tuple<decltype(data(FWD(self, base) | subtree<I> | principle<tag_tree_get<I>(UsageTree)>))...>
-                {
-                    data(FWD(self, base) | subtree<I> | principle<tag_tree_get<I>(UsageTree)>)...
-                };
+                return senluo::tuple<decltype(data(FWD(self) | detail::base | subtree<I> | principle<tag_tree_get<I>(UsageTree)>))...>
+                (
+                    data(FWD(self) | detail::base | subtree<I> | principle<tag_tree_get<I>(UsageTree)>)...
+                );
             }(std::make_index_sequence<size<T>>{});
         }
 
@@ -448,24 +496,6 @@ namespace senluo
             }
         }
     };
-
-    namespace detail
-    {
-        template<auto UsageTree, template<class...> class Tpl>
-        struct plainize_principle_fn : adaptor_closure<plainize_principle_fn<UsageTree, Tpl>>
-        {
-            template<class T>
-            constexpr decltype(auto) operator()(T&& tree)const
-            {
-                return plain_principle<unwrap_t<decltype(FWD(tree) | plainize<UsageTree, Tpl>)>>{ 
-                    FWD(tree) | plainize<UsageTree, Tpl>
-                };
-            }
-        };
-    };
-
-    template<auto UsageTree = usage_t::once, template<class...> class Tpl = tuple>
-    inline constexpr detail::plainize_principle_fn<UsageTree, Tpl> plainize_principle{};
 }
 
 #include "../macro_undef.hpp"
