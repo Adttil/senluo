@@ -427,10 +427,10 @@ namespace senluo
         {
             return [&]<size_t...I>(std::index_sequence<I...>)
             {
-                return senluo::tuple<decltype(data(FWD(self) | detail::base | subtree<I> | principle<tag_tree_get<I>(UsageTree)>))...>
-                (
+                return tuple<decltype(data(FWD(self) | detail::base | subtree<I> | principle<tag_tree_get<I>(UsageTree)>))...>
+                {
                     data(FWD(self) | detail::base | subtree<I> | principle<tag_tree_get<I>(UsageTree)>)...
-                );
+                };
             }(std::make_index_sequence<size<T>>{});
         }
 
