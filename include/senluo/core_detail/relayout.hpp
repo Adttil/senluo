@@ -5,6 +5,7 @@
 #include "../general.hpp"
 #include "principle.hpp"
 #include "wrap.hpp"
+#include "make.hpp"
 
 #include "../macro_define.hpp"
 
@@ -247,11 +248,6 @@ namespace senluo::detail::relayout_ns
     template<typename T, auto FoldedLayout>
     struct tree_t : based_on<T>, standard_interface<tree_t<T, FoldedLayout>>
     {
-        static consteval auto layout()
-        {
-            return FoldedLayout;
-        }
-
         template<size_t I, typename Self> 
         constexpr decltype(auto) get(this Self&& self)
         {
@@ -291,6 +287,19 @@ namespace senluo::detail::relayout_ns
                     FWD(self) | base | plainize_principle<UsageTree>
                 };
             }           
+        }
+
+        friend constexpr auto get_maker(type_tag<tree_t>)
+        requires (not std::same_as<decltype(senluo::inverse_layout<unfold_layout<FoldedLayout>(shape<T>)>(shape<T>)), tuple<>>)
+        {
+            return []<class U>(U&& tree)
+            {
+                return tree_t{ 
+                    FWD(tree) 
+                    | relayout<senluo::inverse_layout<unfold_layout<FoldedLayout>(shape<T>)>(shape<T>)> 
+                    | senluo::make<T> 
+                };
+            };
         }
     };
 }

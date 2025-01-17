@@ -14,7 +14,13 @@ namespace senluo
     using vec = array<T, N>;
 
     template<size_t M, size_t N, class T = value_t>
-    using mat = array<array<T, M>, M>;
+    using rmat = array<array<T, N>, M>;
+
+    template<size_t M, size_t N, class T = value_t>
+    using cmat = decltype(std::declval<rmat<N, M>>() | inverse);
+
+    template<size_t M, size_t N, class T = value_t>
+    using mat = rmat<M, N, T>;
 }
 
 namespace senluo

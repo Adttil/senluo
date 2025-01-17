@@ -114,6 +114,37 @@ TEST(tensor, mat_mul_rzx)
     //std::cout << subtree<0, 0>(a) << ", " << subtree<0, 1>(a) << ", " << subtree<1, 0>(a) << ", " << subtree<1, 1>(a) << '\n';
 }
 
+TEST(tensor, cmat_mul_rzx)
+{
+    rnd.seed(s);
+    auto a = tuple{
+        tuple{ 1.0f, 0.0f, 0.0f, 0.0f },
+        tuple{ 0.0f, 1.0f, 0.0f, 0.0f },
+        tuple{ 0.0f, 0.0f, 1.0f, 0.0f },
+        tuple{ 0.0f, 0.0f, 0.0f, 1.0f }
+    } | make<cmat<4, 4, float>>;
+    
+    auto b = tuple{
+        tuple{ dis(rnd), dis(rnd), dis(rnd), dis(rnd) },
+        tuple{ dis(rnd), dis(rnd), dis(rnd), dis(rnd) },
+        tuple{ dis(rnd), dis(rnd), dis(rnd), dis(rnd) },
+        tuple{ 0.0f, 0.0f, 0.0f, 1.0f }
+    };
+
+    for(size_t i = 0; i < N; ++i)
+    {
+        a = mat_mul(a, b) | make<decltype(a)>;
+    }
+
+    std::cout << std::format("{},{},{},{}\n{},{},{},{}\n{},{},{},{}\n,{},{},{},{}",
+                 subtree<0, 0>(a), subtree<0, 1>(a), subtree<0, 2>(a), subtree<0, 3>(a),
+                 subtree<1, 0>(a), subtree<1, 1>(a), subtree<1, 2>(a), subtree<1, 3>(a),
+                 subtree<2, 0>(a), subtree<2, 1>(a), subtree<2, 2>(a), subtree<2, 3>(a),
+                 subtree<3, 0>(a), subtree<3, 1>(a), subtree<3, 2>(a), subtree<3, 3>(a)
+                 );
+    //std::cout << subtree<0, 0>(a) << ", " << subtree<0, 1>(a) << ", " << subtree<1, 0>(a) << ", " << subtree<1, 1>(a) << '\n';
+}
+
 TEST(tensor, mat_mul_rzx_spec)
 {
     rnd.seed(s);
@@ -153,6 +184,18 @@ TEST(tensor, triple_mat_mul)
     };
 
     constexpr auto b = mat_mul(a, mat_mul(a, a)) | make<array<array<int, 2>, 2>>;
+
+    std::cout << std::format("{},{}\n{},{}\n", subtree<0, 0>(b), subtree<0, 1>(b),  subtree<1, 0>(b), subtree<1, 1>(b));
+}
+
+TEST(tensor, cmat)
+{
+    static constexpr auto a = tuple{
+        tuple{ 1, 2 },
+        tuple{ 3, 4 }
+    };
+
+    constexpr auto b = mat_mul(a, mat_mul(a, a)) | make<cmat<2, 2, int>>;
 
     std::cout << std::format("{},{}\n{},{}\n", subtree<0, 0>(b), subtree<0, 1>(b),  subtree<1, 0>(b), subtree<1, 1>(b));
 }

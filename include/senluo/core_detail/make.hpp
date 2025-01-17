@@ -2,10 +2,8 @@
 #define RUZHOUXIE_MAKE_HPP
 
 #include "../tree.hpp"
-#include "../constant.hpp"
 #include "../general.hpp"
-#include "wrap.hpp"
-#include "pretreat.hpp"
+#include "principle.hpp"
 
 #include "../macro_define.hpp"
 

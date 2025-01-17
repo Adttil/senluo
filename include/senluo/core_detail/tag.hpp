@@ -310,5 +310,102 @@ namespace senluo
     }
 }
 
+namespace senluo 
+{
+    template<auto Layout, size_t Depth = 0uz, typename T>
+    constexpr bool inverse_layout_index_len_at(T& result_index_len, size_t& setted_count)
+    {
+        if constexpr(indexical_array<decltype(Layout)>)
+        {
+            if(subtree<Layout>(result_index_len) == invalid_index)
+            {
+                subtree<Layout>(result_index_len) = Depth;
+                ++setted_count;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        else return [&]<size_t...I>(std::index_sequence<I...>)
+        {   
+            return (... && inverse_layout_index_len_at<Layout | subtree<I>, Depth + 1uz>(result_index_len, setted_count));
+        }(std::make_index_sequence<size<decltype(Layout)>>{});
+    }
+
+    template<class S, class T>
+    constexpr auto make_tree_of_same_value_and_set_leaf_count(const T& value, size_t& count, S = {})
+    {
+        if constexpr(terminal<S>)
+        {
+            ++count;
+            return value;
+        }
+        else return [&]<size_t...I>(std::index_sequence<I...>)
+        {
+            return senluo::make_tuple(senluo::make_tree_of_same_value_and_set_leaf_count(value, count, S{} | subtree<I>)...);
+        }(std::make_index_sequence<size<S>>{});
+    }
+
+    template<auto Layout, typename S>
+    constexpr auto inverse_layout_index_len(S = {})
+    {
+        size_t leaf_count = 0uz;
+        auto index_len_tree = senluo::make_tree_of_same_value_and_set_leaf_count(invalid_index, leaf_count, S{});
+        size_t setted_count = 0uz;
+        bool is_injective = senluo::inverse_layout_index_len_at<Layout>(index_len_tree, setted_count);
+        struct result_t
+        {
+            bool is_surjection;
+            decltype(index_len_tree) index_len_tree;
+        };
+        return result_t{ is_injective && (leaf_count == setted_count), index_len_tree  };
+    }
+
+    template<auto IndexLenTree>
+    constexpr auto init_layout()
+    {
+        if constexpr(std::same_as<decltype(IndexLenTree), size_t>)
+        {
+            return array<size_t, IndexLenTree>{};
+        }
+        else return []<size_t...I>(std::index_sequence<I...>)
+        {
+            return senluo::make_tuple(init_layout<IndexLenTree | subtree<I>>()...);
+        }(std::make_index_sequence<size<decltype(IndexLenTree)>>{});
+    }
+
+    template<auto Layout, auto CurIndex = indexes_of_whole, typename R>
+    constexpr void inverse_layout_at(R& result)
+    {
+        if constexpr(indexical_array<decltype(Layout)>)
+        {
+            subtree<Layout>(result) = CurIndex;
+        }
+        else return [&]<size_t...I>(std::index_sequence<I...>)
+        {   
+            return (..., inverse_layout_at<Layout | subtree<I>, senluo::array_cat(CurIndex, array{ I })>(result));
+        }(std::make_index_sequence<size<decltype(Layout)>>{});
+    }
+
+    template<auto UnFoldedLayout, typename S>
+    constexpr auto inverse_layout(S = {})
+    {
+        constexpr auto inverse_layout_index_len_result = inverse_layout_index_len<UnFoldedLayout, S>();
+        
+        if constexpr(inverse_layout_index_len_result.is_surjection)
+        {
+            auto result = init_layout<inverse_layout_index_len_result.index_len_tree>();
+            inverse_layout_at<UnFoldedLayout>(result);
+            return result;
+        }
+        else
+        {
+            return tuple{};
+        }
+    }
+}
+
 #include "../macro_undef.hpp"
 #endif
