@@ -48,6 +48,16 @@ namespace senluo
     template<typename PrinciledTree>
     struct principle_interface;
 
+    template<typename T>
+    concept principled = requires(std::remove_cvref_t<unwrap_t<T>> t)
+    {
+        { []<class U>(principle_interface<U>&)->U*{}(t) } -> std::same_as<decltype(t)*>;
+        data(std::declval<T>());
+        decltype(t)::layout();
+        decltype(t)::stricture_tree();
+        decltype(t)::operation_tree();
+    };
+    
     namespace detail::principle_t_ns 
     {
         template<auto UsageTree>
@@ -81,16 +91,6 @@ namespace senluo
     template<class T, auto UsageTree>
     concept plain = (detail::principle_t_ns::is_plain<T, UsageTree>());
 
-    template<typename T>
-    concept principled = requires(std::remove_cvref_t<T>& t)
-    {
-        { []<class U>(principle_interface<U>&)->U*{}(t) } -> std::same_as<std::remove_cvref_t<T>*>;
-        std::declval<T>().data();
-        std::remove_cvref_t<T>::layout();
-        std::remove_cvref_t<T>::stricture_tree();
-        std::remove_cvref_t<T>::operation_tree();
-    };
-
     template<class Pretreater>
     struct pretreater_interface : adaptor_closure<Pretreater>
     {
@@ -101,16 +101,16 @@ namespace senluo
 
         constexpr decltype(auto) operator()(this auto&&, principled auto&& tree)
         {
-            constexpr auto data_shape = shape<decltype(FWD(tree).data())>;
+            constexpr auto data_shape = shape<decltype(data(FWD(tree)))>;
             
             constexpr auto layout = tree.layout();
             constexpr auto raw_stricture_tree = tree.stricture_tree();
             constexpr auto stricture_tree = Pretreater::template pretreat_stricture<raw_stricture_tree, layout>(data_shape);
             constexpr auto operation_tree = tree.operation_tree();
 
-            return decltype(FWD(tree).data() | relayout<layout> | astrict<stricture_tree> | operate<operation_tree>)
+            return decltype(data(FWD(tree)) | relayout<layout> | astrict<stricture_tree> | operate<operation_tree>)
             {
-                FWD(tree).data()
+                data(FWD(tree))
             };
         }
     };
@@ -345,7 +345,7 @@ namespace senluo
     
     struct null_principle : principle_interface<null_principle>
     {
-        constexpr auto data() const
+        friend constexpr auto data(const null_principle&)
         {
             return std::in_place_t{};
         }
@@ -360,7 +360,7 @@ namespace senluo
     template<class T>
     struct plain_principle : based_on<T>, principle_interface<plain_principle<T>>
     {
-        constexpr decltype(auto) data(this auto&& self)
+        friend constexpr decltype(auto) data(unwarp_derived_from<plain_principle> auto&& self)
         {
             return pass(FWD(self, base));
         }
@@ -375,13 +375,13 @@ namespace senluo
     template<class T, auto UsageTree>
     struct trivial_principle : based_on<T>, principle_interface<trivial_principle<T, UsageTree>>
     {        
-        constexpr auto data(this auto&& self)
+        friend constexpr auto data(unwarp_derived_from<trivial_principle> auto&& self)
         {
             return [&]<size_t...I>(std::index_sequence<I...>)
             {
-                return tuple<decltype((FWD(self, base) | subtree<I> | principle<tag_tree_get<I>(UsageTree)>).data())...>
+                return tuple<decltype(data(FWD(self, base) | subtree<I> | principle<tag_tree_get<I>(UsageTree)>))...>
                 {
-                    (FWD(self, base) | subtree<I> | principle<tag_tree_get<I>(UsageTree)>).data()...
+                    data(FWD(self, base) | subtree<I> | principle<tag_tree_get<I>(UsageTree)>)...
                 };
             }(std::make_index_sequence<size<T>>{});
         }
@@ -394,7 +394,7 @@ namespace senluo
                     senluo::layout_add_prefix(principle_t<subtree_t<T, I>, tag_tree_get<I>(UsageTree)>::layout(), array{ I })...
                 );
             }(std::make_index_sequence<size<T>>{});
-            return fold_layout<raw>(shape<decltype(std::declval<trivial_principle>().data())>);
+            return fold_layout<raw>(shape<decltype(data(std::declval<trivial_principle>()))>);
         }
 
         static constexpr auto stricture_tree()

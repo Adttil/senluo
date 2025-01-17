@@ -221,14 +221,14 @@ namespace senluo::detail::relayout_ns
     template<typename TBasePrinciple, auto FoldedLayout>
     struct principle_t : based_on<TBasePrinciple>, principle_interface<principle_t<TBasePrinciple, FoldedLayout>>
     {
-        constexpr decltype(auto) data(this auto&& self)
+        friend constexpr decltype(auto) data(unwarp_derived_from<principle_t> auto&& self)
         {
-            return FWD(self, base).data();
+            return data(FWD(self) | base);
         }
         
         static constexpr auto layout()
         {
-            constexpr auto data_shape = shape<decltype(std::declval<TBasePrinciple>().data())>;
+            constexpr auto data_shape = shape<decltype(data(std::declval<TBasePrinciple>()))>;
             constexpr auto base_unfolded_layout = unfold_layout<TBasePrinciple::layout()>(data_shape);
             return fold_layout<apply_layout<FoldedLayout>(base_unfolded_layout)>(data_shape); 
         }

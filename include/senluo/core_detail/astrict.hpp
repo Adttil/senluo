@@ -61,9 +61,9 @@ namespace senluo::detail::astrict_ns
     template<typename TBasePrinciple, auto FoldedStrictureTree>
     struct principle_t : based_on<TBasePrinciple>, principle_interface<principle_t<TBasePrinciple, FoldedStrictureTree>>
     {
-        constexpr decltype(auto) data(this auto&& self)
+        friend constexpr decltype(auto) data(unwarp_derived_from<principle_t> auto&& self)
         {
-            return FWD(self, base).data();
+            return data(FWD(self) | base);
         }
 
         static constexpr auto layout()

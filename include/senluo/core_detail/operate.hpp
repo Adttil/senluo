@@ -30,9 +30,9 @@ namespace senluo::detail::operate_ns
     template<typename TBasePrinciple, auto OperationTree>
     struct principle_t : based_on<TBasePrinciple>, principle_interface<principle_t<TBasePrinciple, OperationTree>>
     {
-        constexpr decltype(auto) data(this auto&& self)
+        friend constexpr decltype(auto) data(unwarp_derived_from<principle_t> auto&& self)
         {
-            return FWD(self, base).data();
+            return data(FWD(self) | base);
         }
         
         static constexpr auto layout()
