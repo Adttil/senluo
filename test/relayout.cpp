@@ -15,8 +15,8 @@ TEST(relayout, array)
     MAGIC_CHECK(relayout_a | subtree<0>, 2);
     MAGIC_CHECK(relayout_a | subtree<1>, 1);
 
-    MAGIC_TCHECK(decltype(std::move(a) | refer | relayout<layout>), relayout_tree<array<int, 2>&&, layout>);
-    MAGIC_TCHECK(decltype(std::move(a) | relayout<layout>), relayout_tree<array<int, 2>, layout>);
+    MAGIC_TCHECK(decltype(std::move(a) | refer | relayout<layout>), detail::relayout_ns::tree_t<array<int, 2>&&, layout>);
+    MAGIC_TCHECK(decltype(std::move(a) | relayout<layout>), detail::relayout_ns::tree_t<array<int, 2>, layout>);
 }
 
 TEST(relayout, repeat)

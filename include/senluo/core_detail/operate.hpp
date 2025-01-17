@@ -25,16 +25,10 @@ namespace senluo
     }
 }
 
-namespace senluo 
-{
-    template<operation_t operation>
-    constexpr auto get_operation_functor();
-}
-
-namespace senluo 
+namespace senluo::detail::operate_ns 
 {
     template<typename TBasePrinciple, auto OperationTree>
-    struct operate_principle : based_on<TBasePrinciple>, principle_interface<operate_principle<TBasePrinciple, OperationTree>>
+    struct principle_t : based_on<TBasePrinciple>, principle_interface<principle_t<TBasePrinciple, OperationTree>>
     {
         constexpr decltype(auto) data(this auto&& self)
         {
@@ -58,7 +52,7 @@ namespace senluo
     };
 
     template<typename T, auto OperationTree>
-    struct operate_tree : based_on<T>, standard_interface<operate_tree<T, OperationTree>>
+    struct tree_t : based_on<T>, standard_interface<tree_t<T, OperationTree>>
     {
         template<size_t I, typename Self> 
         constexpr decltype(auto) get(this Self&& self)
@@ -70,7 +64,7 @@ namespace senluo
             }
             else if constexpr(not std::same_as<decltype(op_subtree), const operation_t>)
             {
-                return operate_tree<decltype(FWD(self, base) | subtree<I>), op_subtree>
+                return tree_t<decltype(FWD(self, base) | subtree<I>), op_subtree>
                 {
                     FWD(self, base) | subtree<I>
                 };
@@ -81,7 +75,7 @@ namespace senluo
             }
             else
             {
-                return get_operation_functor<tag_tree_get<I>(OperationTree)>()(FWD(self, base) | subtree<I>);
+                return apply_invoke(FWD(self, base) | subtree<I>);
             }
         }
 
@@ -98,14 +92,14 @@ namespace senluo
             {
                 if constexpr(not need_plain)
                 {
-                    return operate_principle<base_principle_t, OperationTree>{ 
+                    return principle_t<base_principle_t, OperationTree>{ 
                         FWD(self, base) | senluo::principle<fittedd_usage, NoCopy> 
                     };
                 }
                 else
                 {
                     using base_plain_principle_t = decltype(FWD(self, base) | plainize_principle<fittedd_usage, NoCopy>);
-                    return operate_principle<base_plain_principle_t, OperationTree>{ 
+                    return principle_t<base_plain_principle_t, OperationTree>{ 
                         FWD(self, base) | plainize_principle<fittedd_usage, NoCopy>
                     };
                 }
@@ -115,42 +109,42 @@ namespace senluo
                 auto base_plain = FWD(self, base) | plainize_principle<fittedd_usage, NoCopy>;
                 if constexpr(not need_plain)
                 {
-                    return operate_principle<decltype(base_plain), OperationTree>{ std::move(base_plain) };
+                    return principle_t<decltype(base_plain), OperationTree>{ std::move(base_plain) };
                 }
                 else
                 {
-                    return operate_principle<decltype(base_plain), OperationTree>{ std::move(base_plain) }
+                    return principle_t<decltype(base_plain), OperationTree>{ std::move(base_plain) }
                            | plainize_principle<fittedd_usage>;
                 }
             }
         }
     };
+}
 
-    namespace detail
+namespace senluo 
+{
+    template<auto OperationTree>
+    struct detail::operate_t : adaptor_closure<operate_t<OperationTree>>
     {
-        template<auto OperationTree>
-        struct operate_t : adaptor_closure<operate_t<OperationTree>>
+        template<typename T>
+        constexpr decltype(auto) operator()(T&& t)const
         {
-            template<typename T>
-            constexpr decltype(auto) operator()(T&& t)const
+            if constexpr(not std::same_as<decltype(OperationTree), operation_t>)
             {
-                if constexpr(not std::same_as<decltype(OperationTree), operation_t>)
-                {
-                    return operate_tree<senluo::unwrap_t<T>, OperationTree>{ unwrap_fwd(FWD(t)) };
-                }
-                else if constexpr(OperationTree == operation_t::none)
-                {
-                    return decltype(wrap(FWD(t))){ unwrap_fwd(FWD(t)) };
-                }
-                else
-                {
-                    return decltype(wrap(get_operation_functor<OperationTree>()(FWD(t)))){ 
-                        unwrap_fwd(get_operation_functor<OperationTree>()(FWD(t))) 
-                    };
-                }
+                return operate_ns::tree_t<senluo::unwrap_t<T>, OperationTree>{ unwrap_fwd(FWD(t)) };
             }
-        };
-    }
+            else if constexpr(OperationTree == operation_t::none)
+            {
+                return decltype(wrap(FWD(t))){ unwrap_fwd(FWD(t)) };
+            }
+            else
+            {
+                return decltype(wrap(apply_invoke(FWD(t)))){ 
+                    unwrap_fwd(apply_invoke(FWD(t))) 
+                };
+            }
+        }
+    };
 }
 
 namespace senluo

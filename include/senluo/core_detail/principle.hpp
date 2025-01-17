@@ -276,19 +276,6 @@ namespace senluo
     inline constexpr detail::apply_t apply{};
 
     inline constexpr detail::apply_invoke_t apply_invoke{};
-
-    template<operation_t operation>
-    constexpr auto get_operation_functor()
-    {
-        if constexpr(operation == operation_t::none)
-        {
-            return pass;
-        }
-        else if constexpr(operation == operation_t::apply_invoke)
-        {
-            return apply_invoke;
-        }
-    }
 }
 
 namespace senluo

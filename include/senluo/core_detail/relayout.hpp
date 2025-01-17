@@ -216,10 +216,10 @@ namespace senluo
     };
 }
 
-namespace senluo 
+namespace senluo::detail::relayout_ns
 {
     template<typename TBasePrinciple, auto FoldedLayout>
-    struct relayout_principle : based_on<TBasePrinciple>, principle_interface<relayout_principle<TBasePrinciple, FoldedLayout>>
+    struct principle_t : based_on<TBasePrinciple>, principle_interface<principle_t<TBasePrinciple, FoldedLayout>>
     {
         constexpr decltype(auto) data(this auto&& self)
         {
@@ -245,7 +245,7 @@ namespace senluo
     };
 
     template<typename T, auto FoldedLayout>
-    struct relayout_tree : based_on<T>, standard_interface<relayout_tree<T, FoldedLayout>>
+    struct tree_t : based_on<T>, standard_interface<tree_t<T, FoldedLayout>>
     {
     private:
         static constexpr auto unfolded_layout = senluo::unfold_layout<FoldedLayout>(shape<T>);
@@ -266,7 +266,7 @@ namespace senluo
             }
             else
             {
-                return relayout_tree<decltype(FWD(self, base)), sublayout>{ FWD(self, base) };
+                return tree_t<decltype(FWD(self, base)), sublayout>{ FWD(self, base) };
             }
         }
 
@@ -279,39 +279,39 @@ namespace senluo
 
             if constexpr(is_enable_to_relayout_operation_tree<FoldedLayout>(base_principle_t::operation_tree()))
             {
-                return relayout_principle<base_principle_t, FoldedLayout>{ FWD(self, base) | senluo::principle<base_usage, NoCopy> };
+                return principle_t<base_principle_t, FoldedLayout>{ FWD(self, base) | senluo::principle<base_usage, NoCopy> };
             }
             else
             {
                 using base_plain_principle_t = decltype(FWD(self, base) | plainize_principle<UsageTree, NoCopy>);
 
-                return relayout_principle<base_plain_principle_t, FoldedLayout>{ 
+                return principle_t<base_plain_principle_t, FoldedLayout>{ 
                     FWD(self, base) | plainize_principle<UsageTree, NoCopy>
                 };
             }           
         }
     };
+}
 
-    namespace detail
+namespace senluo
+{
+    template<auto Layout>
+    struct detail::relayout_t : adaptor_closure<relayout_t<Layout>>
     {
-        template<auto Layout>
-        struct relayout_t : adaptor_closure<relayout_t<Layout>>
+        template<typename T>
+        constexpr decltype(auto) operator()(T&& t)const
         {
-            template<typename T>
-            constexpr decltype(auto) operator()(T&& t)const
+            constexpr auto folded_layout = senluo::fold_layout<Layout>(shape<T>);
+            if constexpr(indexical<decltype(folded_layout)>)
             {
-                constexpr auto folded_layout = senluo::fold_layout<Layout>(shape<T>);
-                if constexpr(indexical<decltype(folded_layout)>)
-                {
-                    return decltype(wrap(FWD(t) | subtree<folded_layout>)){ unwrap_fwd(FWD(t) | subtree<folded_layout>) };
-                }
-                else
-                {
-                    return relayout_tree<senluo::unwrap_t<T>, folded_layout>{ unwrap_fwd(FWD(t)) };
-                }
+                return decltype(wrap(FWD(t) | subtree<folded_layout>)){ unwrap_fwd(FWD(t) | subtree<folded_layout>) };
             }
-        };
-    }
+            else
+            {
+                return relayout_ns::tree_t<senluo::unwrap_t<T>, folded_layout>{ unwrap_fwd(FWD(t)) };
+            }
+        }
+    };
 
     template<typename T>
     constexpr auto default_unfolded_layout = []()

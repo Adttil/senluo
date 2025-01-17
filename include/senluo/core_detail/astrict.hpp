@@ -56,10 +56,10 @@ namespace senluo
     }
 }
 
-namespace senluo 
+namespace senluo::detail::astrict_ns
 {
     template<typename TBasePrinciple, auto FoldedStrictureTree>
-    struct astrict_principle : based_on<TBasePrinciple>, principle_interface<astrict_principle<TBasePrinciple, FoldedStrictureTree>>
+    struct principle_t : based_on<TBasePrinciple>, principle_interface<principle_t<TBasePrinciple, FoldedStrictureTree>>
     {
         constexpr decltype(auto) data(this auto&& self)
         {
@@ -83,7 +83,7 @@ namespace senluo
     };
 
     template<typename T, auto FoldedStrictureTree>
-    struct astrict_tree : based_on<T>, standard_interface<astrict_tree<T, FoldedStrictureTree>>
+    struct tree_t : based_on<T>, standard_interface<tree_t<T, FoldedStrictureTree>>
     {
         template<size_t I, typename Self> 
         constexpr decltype(auto) get(this Self&& self)
@@ -95,7 +95,7 @@ namespace senluo
             }
             else if constexpr(not std::same_as<decltype(stricture_subtree), const stricture_t>)
             {
-                return astrict_tree<decltype(FWD(self, base) | subtree<I>), stricture_subtree>{ FWD(self, base) | subtree<I> };
+                return tree_t<decltype(FWD(self, base) | subtree<I>), stricture_subtree>{ FWD(self, base) | subtree<I> };
             }
             else if constexpr(stricture_subtree == stricture_t::none || only_input<decltype(FWD(self, base) | subtree<I>)>())
             {
@@ -108,7 +108,7 @@ namespace senluo
             }
             else
             {
-                return astrict_tree<decltype(FWD(self, base) | subtree<I>), stricture_t::readonly>{ FWD(self, base) | subtree<I> };
+                return tree_t<decltype(FWD(self, base) | subtree<I>), stricture_t::readonly>{ FWD(self, base) | subtree<I> };
             }
         }
 
@@ -118,46 +118,46 @@ namespace senluo
             using base_principle_t = decltype(FWD(self, base) | senluo::principle<UsageTree, NoCopy>);
             if constexpr(equal(base_principle_t::operation_tree(), operation_t::none))
             {
-                return astrict_principle<base_principle_t, FoldedStrictureTree>{ FWD(self, base) | senluo::principle<UsageTree, NoCopy> };
+                return principle_t<base_principle_t, FoldedStrictureTree>{ FWD(self, base) | senluo::principle<UsageTree, NoCopy> };
             }
             else
             {
                 using base_plain_principle_t = decltype(FWD(self, base) | plainize_principle<UsageTree, NoCopy>);
                 
-                return astrict_principle<base_plain_principle_t, FoldedStrictureTree>{ 
+                return principle_t<base_plain_principle_t, FoldedStrictureTree>{ 
                     FWD(self, base) | plainize_principle<UsageTree, NoCopy>
                 };
             }
         }
     };
+}
 
-    namespace detail
+namespace senluo 
+{
+    template<auto FoldedStrictureTree>
+    struct detail::astrict_t : adaptor_closure<astrict_t<FoldedStrictureTree>>
     {
-        template<auto FoldedStrictureTree>
-        struct astrict_t : adaptor_closure<astrict_t<FoldedStrictureTree>>
+        template<typename T>
+        constexpr decltype(auto) operator()(T&& t)const
         {
-            template<typename T>
-            constexpr decltype(auto) operator()(T&& t)const
+            if constexpr(not std::same_as<decltype(FoldedStrictureTree), stricture_t>)
             {
-                if constexpr(not std::same_as<decltype(FoldedStrictureTree), stricture_t>)
-                {
-                    return astrict_tree<senluo::unwrap_t<T>, FoldedStrictureTree>{ unwrap_fwd(FWD(t)) };
-                }
-                else if constexpr(FoldedStrictureTree == stricture_t::none || only_input<T>())
-                {
-                    return decltype(wrap(FWD(t))){ unwrap_fwd(FWD(t)) };
-                }
-                else if constexpr(std::is_reference_v<T> && only_input<decltype(senluo::to_readonly(FWD(t)))>())
-                {
-                    return decltype(wrap(senluo::to_readonly(FWD(t)))){ unwrap_fwd(senluo::to_readonly(FWD(t))) };
-                }
-                else
-                {
-                    return astrict_tree<senluo::unwrap_t<T>, stricture_t::readonly>{ unwrap_fwd(FWD(t)) };
-                }
+                return astrict_ns::tree_t<senluo::unwrap_t<T>, FoldedStrictureTree>{ unwrap_fwd(FWD(t)) };
             }
-        };
-    }
+            else if constexpr(FoldedStrictureTree == stricture_t::none || only_input<T>())
+            {
+                return decltype(wrap(FWD(t))){ unwrap_fwd(FWD(t)) };
+            }
+            else if constexpr(std::is_reference_v<T> && only_input<decltype(senluo::to_readonly(FWD(t)))>())
+            {
+                return decltype(wrap(senluo::to_readonly(FWD(t)))){ unwrap_fwd(senluo::to_readonly(FWD(t))) };
+            }
+            else
+            {
+                return astrict_ns::tree_t<senluo::unwrap_t<T>, stricture_t::readonly>{ unwrap_fwd(FWD(t)) };
+            }
+        }
+    };
 }
 
 #include "../macro_undef.hpp"
