@@ -63,7 +63,7 @@ namespace senluo
     {
         if constexpr(indexical<L>)
         {
-            return senluo::array_cat(layout, array{ I });
+            return detail::array_cat(layout, array{ I });
         }
         else if constexpr(I < size<L>)
         {
@@ -84,7 +84,7 @@ namespace senluo
         }
         else
         {
-            return tag_subtree<array_drop<1uz>(indexes)>(tag_tree_get<indexes[0]>(tag_tree));
+            return tag_subtree<detail::array_drop<1uz>(indexes)>(tag_tree_get<indexes[0]>(tag_tree));
         }
     }
 
@@ -93,7 +93,7 @@ namespace senluo
     {
         if constexpr(indexical_array<TLayout>)
         {
-            return senluo::array_cat(prefix, layout);
+            return detail::array_cat(prefix, layout);
         }
         else return[&]<size_t...I>(std::index_sequence<I...>)
         {
@@ -385,7 +385,7 @@ namespace senluo
         }
         else return [&]<size_t...I>(std::index_sequence<I...>)
         {   
-            return (..., inverse_layout_at<Layout | subtree<I>, senluo::array_cat(CurIndex, array{ I })>(result));
+            return (..., inverse_layout_at<Layout | subtree<I>, detail::array_cat(CurIndex, array{ I })>(result));
         }(std::make_index_sequence<size<decltype(Layout)>>{});
     }
 

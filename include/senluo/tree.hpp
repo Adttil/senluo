@@ -32,7 +32,7 @@ namespace senluo
         }
         else if constexpr(sizeof...(indexes) > 1uz)
         {
-            return senluo::array_cat(to_indexes(indexes)...);
+            return detail::array_cat(to_indexes(indexes)...);
         }
         else if constexpr(indexical_array<decltype((..., indexes))>)
         {
@@ -284,7 +284,7 @@ namespace senluo
             }
             else
             {
-                return get<normalize_index(Indexes[0], size<T>)>(FWD(t)) | subtree<array_drop<1uz>(Indexes)>;
+                return get<normalize_index(Indexes[0], size<T>)>(FWD(t)) | subtree<detail::array_drop<1uz>(Indexes)>;
             }
         }
     };

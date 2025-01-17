@@ -78,7 +78,7 @@ namespace senluo
                 {
                     return []<size_t...I>(std::index_sequence<I...>)
                     {
-                        return tuple{ array_cat(array{ I }, Layout)... };
+                        return tuple{ detail::array_cat(array{ I }, Layout)... };
                     }(std::make_index_sequence<N + 1uz>{});
                 }
                 else return []<size_t...I>(std::index_sequence<I...>)

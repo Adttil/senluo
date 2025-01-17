@@ -20,7 +20,7 @@ namespace senluo
         }
         else
         {
-            return sublayout<array_drop<1uz>(indexes)>(layout_get<indexes[0]>(layout));
+            return sublayout<detail::array_drop<1uz>(indexes)>(layout_get<indexes[0]>(layout));
         }
     }
 
@@ -35,7 +35,7 @@ namespace senluo
         {
             return array<size_t, Indices.size()>
             {
-                normalize_index(Indices[I], size<subtree_t<Shape, senluo::array_take<I>(Indices)>>)...
+                normalize_index(Indices[I], size<subtree_t<Shape, detail::array_take<I>(Indices)>>)...
             };
         }(std::make_index_sequence<Indices.size()>{});
     }
@@ -57,8 +57,8 @@ namespace senluo
                 && (... && (n == size<decltype(child_relayout | subtree<I>)>))
             )
             {
-                constexpr auto prefix = senluo::array_take<n - 1uz>(child_relayout | subtree<0uz>);
-                if constexpr((... && (prefix == senluo::array_take<n - 1uz>(child_relayout | subtree<I>)))
+                constexpr auto prefix = detail::array_take<n - 1uz>(child_relayout | subtree<0uz>);
+                if constexpr((... && (prefix == detail::array_take<n - 1uz>(child_relayout | subtree<I>)))
                     && (... && ((child_relayout | subtree<I>)[n - 1uz] == I))
                 )
                 {
@@ -90,7 +90,7 @@ namespace senluo
             else return [&]<size_t...I>(std::index_sequence<I...>)
             {
                 constexpr auto indexes = normalize_indices<Layout>(Shape{});
-                return senluo::make_tuple(unfold_layout<array_cat(indexes, array{ I })>(shape)...);
+                return senluo::make_tuple(unfold_layout<detail::array_cat(indexes, array{ I })>(shape)...);
             }(std::make_index_sequence<size<subshape_t>>{});
         }
         else return [&]<size_t...I>(std::index_sequence<I...>)
@@ -118,7 +118,9 @@ namespace senluo
             else
             {
                 auto indexes = to_indexes(layout);
-                return senluo::make_tuple(unfold_layout_by_relayouted_shape(array_cat(indexes, array{ I }) , shape | subtree<I>)...);
+                return senluo::make_tuple(
+                    unfold_layout_by_relayouted_shape(detail::array_cat(indexes, array{ I }) , shape | subtree<I>)...
+                );
             }
         }(std::make_index_sequence<size<Shape>>{});
     }
@@ -205,7 +207,7 @@ namespace senluo
             else
             {
                 //msvc bug
-                constexpr auto i = array_take<FoldedLayout.size() - 1uz>(FoldedLayout);
+                constexpr auto i = detail::array_take<FoldedLayout.size() - 1uz>(FoldedLayout);
                 return not std::same_as<decltype(senluo::tag_subtree<i>(operation_tree)), operation_t>
                 || detail::equal(tag_subtree<FoldedLayout>(operation_tree), operation_t::none);
             }

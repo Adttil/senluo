@@ -110,7 +110,7 @@ struct std::tuple_element<I, senluo::array<T, N>>{
 
 #endif
 
-namespace senluo
+namespace senluo::detail
 {
     template<size_t N, class A>
     constexpr auto array_take(const A& arr)
@@ -136,30 +136,27 @@ namespace senluo
         return result;
     }
 
-    namespace detail
+    template<class A1, class A2>
+    constexpr auto two_array_cat(const A1& arr1, const A2& arr2)
     {
-        template<class A1, class A2>
-        constexpr auto two_array_cat(const A1& arr1, const A2& arr2)
+        using type1 = A1::value_type;
+        using type2 = A2::value_type;
+        constexpr size_t n1 = std::tuple_size_v<A1>;
+        constexpr size_t n2 = std::tuple_size_v<A2>;
+        array<std::common_type_t<type1, type2>, n1 + n2> result;
+
+        for (size_t i = 0; i < n1; ++i)
         {
-            using type1 = A1::value_type;
-            using type2 = A2::value_type;
-            constexpr size_t n1 = std::tuple_size_v<A1>;
-            constexpr size_t n2 = std::tuple_size_v<A2>;
-            array<std::common_type_t<type1, type2>, n1 + n2> result;
-
-            for (size_t i = 0; i < n1; ++i)
-            {
-                result[i] = arr1[i];
-            }
-            for (size_t i = 0; i < n2; ++i)
-            {
-                result[n1 + i] = arr2[i];
-            }
-
-            return result;
+            result[i] = arr1[i];
         }
-    }
+        for (size_t i = 0; i < n2; ++i)
+        {
+            result[n1 + i] = arr2[i];
+        }
 
+        return result;
+    }
+    
     template<class A, class...Rest>
     constexpr auto array_cat(const A& arr, const Rest&...rest)
     {
@@ -169,7 +166,7 @@ namespace senluo
         }
         else
         {
-            return detail::two_array_cat(arr, array_cat(rest...));
+            return detail::two_array_cat(arr, detail::array_cat(rest...));
         }
     }
 }
