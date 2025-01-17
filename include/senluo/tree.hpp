@@ -11,6 +11,21 @@
 
 namespace senluo
 {
+    constexpr size_t normalize_index(std::integral auto index, size_t size)noexcept
+    {
+        if(index >= 0)
+        {
+            return static_cast<size_t>(index % size);
+        }
+        else
+        {
+            return static_cast<size_t>(size - -index % size);
+        }
+    }
+}
+
+namespace senluo
+{
     template<typename T>
     concept indexical_array = requires(std::remove_cvref_t<T> t, size_t i)
     {
@@ -352,7 +367,7 @@ namespace senluo
         }
         else return[]<size_t...I>(std::index_sequence<I...>)
         {
-            return 1uz + senluo::min(tensor_rank<subtree_t<T, I>>...);
+            return 1uz + detail::min(tensor_rank<subtree_t<T, I>>...);
         }(std::make_index_sequence<size<T>>{});
     }();
 
@@ -371,7 +386,7 @@ namespace senluo
             constexpr auto subshapes = tuple{ tensor_shape<subtree_t<T, I>>... };
             for (size_t i = 0uz; i < rank - 1uz; ++i)
             {
-                result[i + 1uz] = senluo::min((subshapes | subtree<I>)[i]...);
+                result[i + 1uz] = detail::min((subshapes | subtree<I>)[i]...);
             }
 
             return result;

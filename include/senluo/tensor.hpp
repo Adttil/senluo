@@ -37,7 +37,7 @@ namespace senluo
                     auto&& left_seq = FWD(left) | refer | seperate;
                     auto&& right_seq = FWD(right) | refer | seperate;
                     return (... + ((FWD(left_seq) | subtree<I>) * (FWD(right_seq) | subtree<I>)));
-                }(std::make_index_sequence<senluo::min(size<L>, size<R>)>{});
+                }(std::make_index_sequence<detail::min(size<L>, size<R>)>{});
             }
         };
     }

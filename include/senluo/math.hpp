@@ -7,20 +7,8 @@
 
 #include "macro_define.hpp"
 
-namespace senluo
+namespace senluo::detail
 {
-    constexpr size_t normalize_index(std::integral auto index, size_t size)noexcept
-    {
-        if(index >= 0)
-        {
-            return static_cast<size_t>(index % size);
-        }
-        else
-        {
-            return static_cast<size_t>(size - -index % size);
-        }
-    }
-
     constexpr auto&& max(auto&& arg0, auto&&...rest)
     {
         if constexpr(sizeof...(rest) == 0)
@@ -29,7 +17,7 @@ namespace senluo
         }
         else
         {
-            auto&& rest_max = max(FWD(rest)...);
+            auto&& rest_max = detail::max(FWD(rest)...);
             if(arg0 > rest_max)
             {
                 return FWD(arg0);
@@ -49,14 +37,14 @@ namespace senluo
         }
         else
         {
-            auto&& rest_max = max(FWD(rest)...);
-            if(arg0 < rest_max)
+            auto&& rest_min = detail::min(FWD(rest)...);
+            if(arg0 < rest_min)
             {
                 return FWD(arg0);
             }
             else
             {
-                return FWD(rest_max);
+                return FWD(rest_min);
             }
         }
     }
