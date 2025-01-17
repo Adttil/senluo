@@ -14,7 +14,7 @@ struct tuple<>
 template<class T0>
 struct tuple<T0>
 {
-    SENLUO(no_unique_address) T0 e0;
+    RUZHOUXIE(no_unique_address) T0 e0;
 
     template<size_t I, derived_from<tuple> Self> requires (I < 1uz)
     friend constexpr auto&& get(Self&& self) noexcept
@@ -28,8 +28,8 @@ struct tuple<T0>
 template<class T0, class T1>
 struct tuple<T0, T1>
 {
-    SENLUO(no_unique_address) T0 e0;
-    SENLUO(no_unique_address) T1 e1;
+    RUZHOUXIE(no_unique_address) T0 e0;
+    RUZHOUXIE(no_unique_address) T1 e1;
 
     template<size_t I, derived_from<tuple> Self> requires (I < 2uz)
     friend constexpr auto&& get(Self&& self) noexcept
@@ -44,9 +44,9 @@ struct tuple<T0, T1>
 template<class T0, class T1, class T2>
 struct tuple<T0, T1, T2>
 {
-    SENLUO(no_unique_address) T0 e0;
-    SENLUO(no_unique_address) T1 e1;
-    SENLUO(no_unique_address) T2 e2;
+    RUZHOUXIE(no_unique_address) T0 e0;
+    RUZHOUXIE(no_unique_address) T1 e1;
+    RUZHOUXIE(no_unique_address) T2 e2;
 
     template<size_t I, derived_from<tuple> Self> requires (I < 3uz)
     friend constexpr auto&& get(Self&& self) noexcept
@@ -62,10 +62,10 @@ struct tuple<T0, T1, T2>
 template<class T0, class T1, class T2, class T3>
 struct tuple<T0, T1, T2, T3>
 {
-    SENLUO(no_unique_address) T0 e0;
-    SENLUO(no_unique_address) T1 e1;
-    SENLUO(no_unique_address) T2 e2;
-    SENLUO(no_unique_address) T3 e3;
+    RUZHOUXIE(no_unique_address) T0 e0;
+    RUZHOUXIE(no_unique_address) T1 e1;
+    RUZHOUXIE(no_unique_address) T2 e2;
+    RUZHOUXIE(no_unique_address) T3 e3;
 
     template<size_t I, derived_from<tuple> Self> requires (I < 4uz)
     friend constexpr auto&& get(Self&& self) noexcept
@@ -82,11 +82,11 @@ struct tuple<T0, T1, T2, T3>
 template<class T0, class T1, class T2, class T3, class T4>
 struct tuple<T0, T1, T2, T3, T4>
 {
-    SENLUO(no_unique_address) T0 e0;
-    SENLUO(no_unique_address) T1 e1;
-    SENLUO(no_unique_address) T2 e2;
-    SENLUO(no_unique_address) T3 e3;
-    SENLUO(no_unique_address) T4 e4;
+    RUZHOUXIE(no_unique_address) T0 e0;
+    RUZHOUXIE(no_unique_address) T1 e1;
+    RUZHOUXIE(no_unique_address) T2 e2;
+    RUZHOUXIE(no_unique_address) T3 e3;
+    RUZHOUXIE(no_unique_address) T4 e4;
 
     template<size_t I, derived_from<tuple> Self> requires (I < 5uz)
     friend constexpr auto&& get(Self&& self) noexcept
@@ -104,12 +104,12 @@ struct tuple<T0, T1, T2, T3, T4>
 template<class T0, class T1, class T2, class T3, class T4, class T5>
 struct tuple<T0, T1, T2, T3, T4, T5>
 {
-    SENLUO(no_unique_address) T0 e0;
-    SENLUO(no_unique_address) T1 e1;
-    SENLUO(no_unique_address) T2 e2;
-    SENLUO(no_unique_address) T3 e3;
-    SENLUO(no_unique_address) T4 e4;
-    SENLUO(no_unique_address) T5 e5;
+    RUZHOUXIE(no_unique_address) T0 e0;
+    RUZHOUXIE(no_unique_address) T1 e1;
+    RUZHOUXIE(no_unique_address) T2 e2;
+    RUZHOUXIE(no_unique_address) T3 e3;
+    RUZHOUXIE(no_unique_address) T4 e4;
+    RUZHOUXIE(no_unique_address) T5 e5;
 
     template<size_t I, derived_from<tuple> Self> requires (I < 6uz)
     friend constexpr auto&& get(Self&& self) noexcept
@@ -128,13 +128,13 @@ struct tuple<T0, T1, T2, T3, T4, T5>
 template<class T0, class T1, class T2, class T3, class T4, class T5, class T6>
 struct tuple<T0, T1, T2, T3, T4, T5, T6>
 {
-    SENLUO(no_unique_address) T0 e0;
-    SENLUO(no_unique_address) T1 e1;
-    SENLUO(no_unique_address) T2 e2;
-    SENLUO(no_unique_address) T3 e3;
-    SENLUO(no_unique_address) T4 e4;
-    SENLUO(no_unique_address) T5 e5;
-    SENLUO(no_unique_address) T6 e6;
+    RUZHOUXIE(no_unique_address) T0 e0;
+    RUZHOUXIE(no_unique_address) T1 e1;
+    RUZHOUXIE(no_unique_address) T2 e2;
+    RUZHOUXIE(no_unique_address) T3 e3;
+    RUZHOUXIE(no_unique_address) T4 e4;
+    RUZHOUXIE(no_unique_address) T5 e5;
+    RUZHOUXIE(no_unique_address) T6 e6;
 
     template<size_t I, derived_from<tuple> Self> requires (I < 7uz)
     friend constexpr auto&& get(Self&& self) noexcept
@@ -154,14 +154,14 @@ struct tuple<T0, T1, T2, T3, T4, T5, T6>
 template<class T0, class T1, class T2, class T3, class T4, class T5, class T6, class T7>
 struct tuple<T0, T1, T2, T3, T4, T5, T6, T7>
 {
-    SENLUO(no_unique_address) T0 e0;
-    SENLUO(no_unique_address) T1 e1;
-    SENLUO(no_unique_address) T2 e2;
-    SENLUO(no_unique_address) T3 e3;
-    SENLUO(no_unique_address) T4 e4;
-    SENLUO(no_unique_address) T5 e5;
-    SENLUO(no_unique_address) T6 e6;
-    SENLUO(no_unique_address) T7 e7;
+    RUZHOUXIE(no_unique_address) T0 e0;
+    RUZHOUXIE(no_unique_address) T1 e1;
+    RUZHOUXIE(no_unique_address) T2 e2;
+    RUZHOUXIE(no_unique_address) T3 e3;
+    RUZHOUXIE(no_unique_address) T4 e4;
+    RUZHOUXIE(no_unique_address) T5 e5;
+    RUZHOUXIE(no_unique_address) T6 e6;
+    RUZHOUXIE(no_unique_address) T7 e7;
 
     template<size_t I, derived_from<tuple> Self> requires (I < 8uz)
     friend constexpr auto&& get(Self&& self) noexcept
@@ -182,15 +182,15 @@ struct tuple<T0, T1, T2, T3, T4, T5, T6, T7>
 template<class T0, class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8>
 struct tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8>
 {
-    SENLUO(no_unique_address) T0 e0;
-    SENLUO(no_unique_address) T1 e1;
-    SENLUO(no_unique_address) T2 e2;
-    SENLUO(no_unique_address) T3 e3;
-    SENLUO(no_unique_address) T4 e4;
-    SENLUO(no_unique_address) T5 e5;
-    SENLUO(no_unique_address) T6 e6;
-    SENLUO(no_unique_address) T7 e7;
-    SENLUO(no_unique_address) T8 e8;
+    RUZHOUXIE(no_unique_address) T0 e0;
+    RUZHOUXIE(no_unique_address) T1 e1;
+    RUZHOUXIE(no_unique_address) T2 e2;
+    RUZHOUXIE(no_unique_address) T3 e3;
+    RUZHOUXIE(no_unique_address) T4 e4;
+    RUZHOUXIE(no_unique_address) T5 e5;
+    RUZHOUXIE(no_unique_address) T6 e6;
+    RUZHOUXIE(no_unique_address) T7 e7;
+    RUZHOUXIE(no_unique_address) T8 e8;
 
     template<size_t I, derived_from<tuple> Self> requires (I < 9uz)
     friend constexpr auto&& get(Self&& self) noexcept
@@ -212,16 +212,16 @@ struct tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8>
 template<class T0, class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8, class T9>
 struct tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>
 {
-    SENLUO(no_unique_address) T0 e0;
-    SENLUO(no_unique_address) T1 e1;
-    SENLUO(no_unique_address) T2 e2;
-    SENLUO(no_unique_address) T3 e3;
-    SENLUO(no_unique_address) T4 e4;
-    SENLUO(no_unique_address) T5 e5;
-    SENLUO(no_unique_address) T6 e6;
-    SENLUO(no_unique_address) T7 e7;
-    SENLUO(no_unique_address) T8 e8;
-    SENLUO(no_unique_address) T9 e9;
+    RUZHOUXIE(no_unique_address) T0 e0;
+    RUZHOUXIE(no_unique_address) T1 e1;
+    RUZHOUXIE(no_unique_address) T2 e2;
+    RUZHOUXIE(no_unique_address) T3 e3;
+    RUZHOUXIE(no_unique_address) T4 e4;
+    RUZHOUXIE(no_unique_address) T5 e5;
+    RUZHOUXIE(no_unique_address) T6 e6;
+    RUZHOUXIE(no_unique_address) T7 e7;
+    RUZHOUXIE(no_unique_address) T8 e8;
+    RUZHOUXIE(no_unique_address) T9 e9;
 
     template<size_t I, derived_from<tuple> Self> requires (I < 10uz)
     friend constexpr auto&& get(Self&& self) noexcept
@@ -244,17 +244,17 @@ struct tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>
 template<class T0, class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8, class T9, class T10>
 struct tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>
 {
-    SENLUO(no_unique_address) T0 e0;
-    SENLUO(no_unique_address) T1 e1;
-    SENLUO(no_unique_address) T2 e2;
-    SENLUO(no_unique_address) T3 e3;
-    SENLUO(no_unique_address) T4 e4;
-    SENLUO(no_unique_address) T5 e5;
-    SENLUO(no_unique_address) T6 e6;
-    SENLUO(no_unique_address) T7 e7;
-    SENLUO(no_unique_address) T8 e8;
-    SENLUO(no_unique_address) T9 e9;
-    SENLUO(no_unique_address) T10 e10;
+    RUZHOUXIE(no_unique_address) T0 e0;
+    RUZHOUXIE(no_unique_address) T1 e1;
+    RUZHOUXIE(no_unique_address) T2 e2;
+    RUZHOUXIE(no_unique_address) T3 e3;
+    RUZHOUXIE(no_unique_address) T4 e4;
+    RUZHOUXIE(no_unique_address) T5 e5;
+    RUZHOUXIE(no_unique_address) T6 e6;
+    RUZHOUXIE(no_unique_address) T7 e7;
+    RUZHOUXIE(no_unique_address) T8 e8;
+    RUZHOUXIE(no_unique_address) T9 e9;
+    RUZHOUXIE(no_unique_address) T10 e10;
 
     template<size_t I, derived_from<tuple> Self> requires (I < 11uz)
     friend constexpr auto&& get(Self&& self) noexcept
@@ -278,18 +278,18 @@ struct tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>
 template<class T0, class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8, class T9, class T10, class T11>
 struct tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>
 {
-    SENLUO(no_unique_address) T0 e0;
-    SENLUO(no_unique_address) T1 e1;
-    SENLUO(no_unique_address) T2 e2;
-    SENLUO(no_unique_address) T3 e3;
-    SENLUO(no_unique_address) T4 e4;
-    SENLUO(no_unique_address) T5 e5;
-    SENLUO(no_unique_address) T6 e6;
-    SENLUO(no_unique_address) T7 e7;
-    SENLUO(no_unique_address) T8 e8;
-    SENLUO(no_unique_address) T9 e9;
-    SENLUO(no_unique_address) T10 e10;
-    SENLUO(no_unique_address) T11 e11;
+    RUZHOUXIE(no_unique_address) T0 e0;
+    RUZHOUXIE(no_unique_address) T1 e1;
+    RUZHOUXIE(no_unique_address) T2 e2;
+    RUZHOUXIE(no_unique_address) T3 e3;
+    RUZHOUXIE(no_unique_address) T4 e4;
+    RUZHOUXIE(no_unique_address) T5 e5;
+    RUZHOUXIE(no_unique_address) T6 e6;
+    RUZHOUXIE(no_unique_address) T7 e7;
+    RUZHOUXIE(no_unique_address) T8 e8;
+    RUZHOUXIE(no_unique_address) T9 e9;
+    RUZHOUXIE(no_unique_address) T10 e10;
+    RUZHOUXIE(no_unique_address) T11 e11;
 
     template<size_t I, derived_from<tuple> Self> requires (I < 12uz)
     friend constexpr auto&& get(Self&& self) noexcept
@@ -314,19 +314,19 @@ struct tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>
 template<class T0, class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8, class T9, class T10, class T11, class T12>
 struct tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>
 {
-    SENLUO(no_unique_address) T0 e0;
-    SENLUO(no_unique_address) T1 e1;
-    SENLUO(no_unique_address) T2 e2;
-    SENLUO(no_unique_address) T3 e3;
-    SENLUO(no_unique_address) T4 e4;
-    SENLUO(no_unique_address) T5 e5;
-    SENLUO(no_unique_address) T6 e6;
-    SENLUO(no_unique_address) T7 e7;
-    SENLUO(no_unique_address) T8 e8;
-    SENLUO(no_unique_address) T9 e9;
-    SENLUO(no_unique_address) T10 e10;
-    SENLUO(no_unique_address) T11 e11;
-    SENLUO(no_unique_address) T12 e12;
+    RUZHOUXIE(no_unique_address) T0 e0;
+    RUZHOUXIE(no_unique_address) T1 e1;
+    RUZHOUXIE(no_unique_address) T2 e2;
+    RUZHOUXIE(no_unique_address) T3 e3;
+    RUZHOUXIE(no_unique_address) T4 e4;
+    RUZHOUXIE(no_unique_address) T5 e5;
+    RUZHOUXIE(no_unique_address) T6 e6;
+    RUZHOUXIE(no_unique_address) T7 e7;
+    RUZHOUXIE(no_unique_address) T8 e8;
+    RUZHOUXIE(no_unique_address) T9 e9;
+    RUZHOUXIE(no_unique_address) T10 e10;
+    RUZHOUXIE(no_unique_address) T11 e11;
+    RUZHOUXIE(no_unique_address) T12 e12;
 
     template<size_t I, derived_from<tuple> Self> requires (I < 13uz)
     friend constexpr auto&& get(Self&& self) noexcept
@@ -352,20 +352,20 @@ struct tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>
 template<class T0, class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8, class T9, class T10, class T11, class T12, class T13>
 struct tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>
 {
-    SENLUO(no_unique_address) T0 e0;
-    SENLUO(no_unique_address) T1 e1;
-    SENLUO(no_unique_address) T2 e2;
-    SENLUO(no_unique_address) T3 e3;
-    SENLUO(no_unique_address) T4 e4;
-    SENLUO(no_unique_address) T5 e5;
-    SENLUO(no_unique_address) T6 e6;
-    SENLUO(no_unique_address) T7 e7;
-    SENLUO(no_unique_address) T8 e8;
-    SENLUO(no_unique_address) T9 e9;
-    SENLUO(no_unique_address) T10 e10;
-    SENLUO(no_unique_address) T11 e11;
-    SENLUO(no_unique_address) T12 e12;
-    SENLUO(no_unique_address) T13 e13;
+    RUZHOUXIE(no_unique_address) T0 e0;
+    RUZHOUXIE(no_unique_address) T1 e1;
+    RUZHOUXIE(no_unique_address) T2 e2;
+    RUZHOUXIE(no_unique_address) T3 e3;
+    RUZHOUXIE(no_unique_address) T4 e4;
+    RUZHOUXIE(no_unique_address) T5 e5;
+    RUZHOUXIE(no_unique_address) T6 e6;
+    RUZHOUXIE(no_unique_address) T7 e7;
+    RUZHOUXIE(no_unique_address) T8 e8;
+    RUZHOUXIE(no_unique_address) T9 e9;
+    RUZHOUXIE(no_unique_address) T10 e10;
+    RUZHOUXIE(no_unique_address) T11 e11;
+    RUZHOUXIE(no_unique_address) T12 e12;
+    RUZHOUXIE(no_unique_address) T13 e13;
 
     template<size_t I, derived_from<tuple> Self> requires (I < 14uz)
     friend constexpr auto&& get(Self&& self) noexcept
@@ -392,21 +392,21 @@ struct tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>
 template<class T0, class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8, class T9, class T10, class T11, class T12, class T13, class T14>
 struct tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>
 {
-    SENLUO(no_unique_address) T0 e0;
-    SENLUO(no_unique_address) T1 e1;
-    SENLUO(no_unique_address) T2 e2;
-    SENLUO(no_unique_address) T3 e3;
-    SENLUO(no_unique_address) T4 e4;
-    SENLUO(no_unique_address) T5 e5;
-    SENLUO(no_unique_address) T6 e6;
-    SENLUO(no_unique_address) T7 e7;
-    SENLUO(no_unique_address) T8 e8;
-    SENLUO(no_unique_address) T9 e9;
-    SENLUO(no_unique_address) T10 e10;
-    SENLUO(no_unique_address) T11 e11;
-    SENLUO(no_unique_address) T12 e12;
-    SENLUO(no_unique_address) T13 e13;
-    SENLUO(no_unique_address) T14 e14;
+    RUZHOUXIE(no_unique_address) T0 e0;
+    RUZHOUXIE(no_unique_address) T1 e1;
+    RUZHOUXIE(no_unique_address) T2 e2;
+    RUZHOUXIE(no_unique_address) T3 e3;
+    RUZHOUXIE(no_unique_address) T4 e4;
+    RUZHOUXIE(no_unique_address) T5 e5;
+    RUZHOUXIE(no_unique_address) T6 e6;
+    RUZHOUXIE(no_unique_address) T7 e7;
+    RUZHOUXIE(no_unique_address) T8 e8;
+    RUZHOUXIE(no_unique_address) T9 e9;
+    RUZHOUXIE(no_unique_address) T10 e10;
+    RUZHOUXIE(no_unique_address) T11 e11;
+    RUZHOUXIE(no_unique_address) T12 e12;
+    RUZHOUXIE(no_unique_address) T13 e13;
+    RUZHOUXIE(no_unique_address) T14 e14;
 
     template<size_t I, derived_from<tuple> Self> requires (I < 15uz)
     friend constexpr auto&& get(Self&& self) noexcept
@@ -434,22 +434,22 @@ struct tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>
 template<class T0, class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8, class T9, class T10, class T11, class T12, class T13, class T14, class T15>
 struct tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>
 {
-    SENLUO(no_unique_address) T0 e0;
-    SENLUO(no_unique_address) T1 e1;
-    SENLUO(no_unique_address) T2 e2;
-    SENLUO(no_unique_address) T3 e3;
-    SENLUO(no_unique_address) T4 e4;
-    SENLUO(no_unique_address) T5 e5;
-    SENLUO(no_unique_address) T6 e6;
-    SENLUO(no_unique_address) T7 e7;
-    SENLUO(no_unique_address) T8 e8;
-    SENLUO(no_unique_address) T9 e9;
-    SENLUO(no_unique_address) T10 e10;
-    SENLUO(no_unique_address) T11 e11;
-    SENLUO(no_unique_address) T12 e12;
-    SENLUO(no_unique_address) T13 e13;
-    SENLUO(no_unique_address) T14 e14;
-    SENLUO(no_unique_address) T15 e15;
+    RUZHOUXIE(no_unique_address) T0 e0;
+    RUZHOUXIE(no_unique_address) T1 e1;
+    RUZHOUXIE(no_unique_address) T2 e2;
+    RUZHOUXIE(no_unique_address) T3 e3;
+    RUZHOUXIE(no_unique_address) T4 e4;
+    RUZHOUXIE(no_unique_address) T5 e5;
+    RUZHOUXIE(no_unique_address) T6 e6;
+    RUZHOUXIE(no_unique_address) T7 e7;
+    RUZHOUXIE(no_unique_address) T8 e8;
+    RUZHOUXIE(no_unique_address) T9 e9;
+    RUZHOUXIE(no_unique_address) T10 e10;
+    RUZHOUXIE(no_unique_address) T11 e11;
+    RUZHOUXIE(no_unique_address) T12 e12;
+    RUZHOUXIE(no_unique_address) T13 e13;
+    RUZHOUXIE(no_unique_address) T14 e14;
+    RUZHOUXIE(no_unique_address) T15 e15;
 
     template<size_t I, derived_from<tuple> Self> requires (I < 16uz)
     friend constexpr auto&& get(Self&& self) noexcept

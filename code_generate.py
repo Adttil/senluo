@@ -47,8 +47,8 @@ def generate_aggregate_getter_invoker(max_memeber_count):
     return generate_sequence(max_memeber_count, lambda i : generate_aggregate_getter_invoker_for(i + 1), "else ")
 
 
-with open("include/ruzhouxie/code_generate/tuple_specialization.code", 'w') as file:
+with open("include/senluo/code_generate/tuple_specialization.code", 'w') as file:
     file.write(generate_tuple_specialization_implement(16))
 
-with open("include/ruzhouxie/code_generate/aggregate_getter_invoker.code", 'w') as file:
+with open("include/senluo/code_generate/aggregate_getter_invoker.code", 'w') as file:
     file.write(generate_aggregate_getter_invoker(64))
