@@ -14,7 +14,7 @@ namespace senluo
     template<indexical_array auto indexes, class L>
     constexpr auto sublayout(const L& layout)
     {
-        if constexpr(senluo::equal(indexes, indexes_of_whole))
+        if constexpr(detail::equal(indexes, indexes_of_whole))
         {
             return layout;
         }
@@ -207,7 +207,7 @@ namespace senluo
                 //msvc bug
                 constexpr auto i = array_take<FoldedLayout.size() - 1uz>(FoldedLayout);
                 return not std::same_as<decltype(senluo::tag_subtree<i>(operation_tree)), operation_t>
-                || equal(tag_subtree<FoldedLayout>(operation_tree), operation_t::none);
+                || detail::equal(tag_subtree<FoldedLayout>(operation_tree), operation_t::none);
             }
         }
         else return [&]<size_t...I>(std::index_sequence<I...>)
@@ -252,7 +252,7 @@ namespace senluo::detail::relayout_ns
         constexpr decltype(auto) get(this Self&& self)
         {
             constexpr auto sublayout = layout_get<I>(FoldedLayout);
-            if constexpr(senluo::equal(sublayout, invalid_index))
+            if constexpr(detail::equal(sublayout, invalid_index))
             {
                 return end();
             }

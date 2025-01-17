@@ -102,9 +102,9 @@ namespace senluo::detail::astrict_ns
                 return FWD(self, base) | subtree<I>;
             }
             else if constexpr(std::is_reference_v<decltype(FWD(self, base) | subtree<I>)> 
-                              && only_input<decltype(senluo::to_readonly(FWD(self, base) | subtree<I>))>())
+                              && only_input<decltype(detail::to_readonly(FWD(self, base) | subtree<I>))>())
             {
-                return senluo::to_readonly(FWD(self, base) | subtree<I>);
+                return detail::to_readonly(FWD(self, base) | subtree<I>);
             }
             else
             {
@@ -116,7 +116,7 @@ namespace senluo::detail::astrict_ns
         friend constexpr auto principle(Self&& self)
         {
             using base_principle_t = decltype(FWD(self) | base | senluo::principle<UsageTree>);
-            if constexpr(equal(base_principle_t::operation_tree(), operation_t::none))
+            if constexpr(detail::equal(base_principle_t::operation_tree(), operation_t::none))
             {
                 return principle_t<base_principle_t, FoldedStrictureTree>{ FWD(self) | base | senluo::principle<UsageTree> };
             }
@@ -148,9 +148,9 @@ namespace senluo
             {
                 return decltype(wrap(FWD(t))){ unwrap_fwd(FWD(t)) };
             }
-            else if constexpr(std::is_reference_v<T> && only_input<decltype(senluo::to_readonly(FWD(t)))>())
+            else if constexpr(std::is_reference_v<T> && only_input<decltype(detail::to_readonly(FWD(t)))>())
             {
-                return decltype(wrap(senluo::to_readonly(FWD(t)))){ unwrap_fwd(senluo::to_readonly(FWD(t))) };
+                return decltype(wrap(detail::to_readonly(FWD(t)))){ unwrap_fwd(detail::to_readonly(FWD(t))) };
             }
             else
             {

@@ -78,7 +78,7 @@ namespace senluo
     template<indexical_array auto indexes, class T>
     constexpr auto tag_subtree(const T& tag_tree)
     {
-        if constexpr(senluo::equal(indexes, indexes_of_whole))
+        if constexpr(detail::equal(indexes, indexes_of_whole))
         {
             return tag_tree;
         }
@@ -111,7 +111,7 @@ namespace senluo
         else return []<size_t...I>(std::index_sequence<I...>)
         {
             constexpr auto subresults = senluo::make_tuple(fold_tag_tree<TagTree | subtree<I>>()...);
-            if constexpr((... && senluo::equal(subresults | subtree<I>, subresults | subtree<0uz>)))
+            if constexpr((... && detail::equal(subresults | subtree<I>, subresults | subtree<0uz>)))
             {
                 return subresults | subtree<0uz>;
             }
@@ -145,7 +145,7 @@ namespace senluo
         else return[]<size_t...I>(std::index_sequence<I...>)
         {
             constexpr auto subresults = senluo::make_tuple(fold_operation_tree<OperationTree | subtree<I>>()...);
-            if constexpr((... && senluo::equal(subresults | subtree<I>, operation_t::none)))
+            if constexpr((... && detail::equal(subresults | subtree<I>, operation_t::none)))
             {
                 return operation_t::none;
             }
@@ -230,7 +230,7 @@ namespace senluo
             {
                 return stricture_t::none;
             }
-            else if constexpr(equal(RawStrictureTree, stricture_t::readonly))
+            else if constexpr(detail::equal(RawStrictureTree, stricture_t::readonly))
             {
                 set_data_stricture_tree_by_layout<Layout>(cur_tree);
                 return stricture_t::readonly;
@@ -264,7 +264,7 @@ namespace senluo
             {
                 return stricture_t::none;
             }
-            else if constexpr(equal(RawStrictureTree, stricture_t::readonly))
+            else if constexpr(detail::equal(RawStrictureTree, stricture_t::readonly))
             {
                 set_data_stricture_tree_by_layout<Layout>(cur_tree);
                 return stricture_t::readonly;

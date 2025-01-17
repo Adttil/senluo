@@ -88,7 +88,7 @@ namespace senluo::detail::operate_ns
 
             using base_principle_t = decltype(FWD(self) | base | senluo::principle<fittedd_usage>);
             
-            if constexpr(equal(base_principle_t::operation_tree(), operation_t::none))
+            if constexpr(detail::equal(base_principle_t::operation_tree(), operation_t::none))
             {
                 if constexpr(not need_plain)
                 {

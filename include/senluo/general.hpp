@@ -47,9 +47,8 @@ namespace senluo
 	};
 }
 
-namespace senluo
+namespace senluo::detail
 {
-
     template<size_t I>
     constexpr auto&& arg_at(auto&&...args)noexcept
 	{
@@ -57,7 +56,6 @@ namespace senluo
 	}
 
     constexpr bool equal(auto&& x, auto&& y) 
-	    //noexcept(not requires{ FWD(x) == FWD(y); } || requires{ requires noexcept(FWD(x) == FWD(y)); })
 	{
 	    if constexpr(requires{ FWD(x) == FWD(y); })
 		{
@@ -68,10 +66,7 @@ namespace senluo
 		    return false;
 		}
 	}
-}
 
-namespace senluo
-{
 	template<class T>
 	constexpr auto&& to_readonly(T&& t)
 	{
@@ -85,7 +80,6 @@ namespace senluo
 		}
 	}
 }
-
 
 #include "macro_undef.hpp"
 #endif

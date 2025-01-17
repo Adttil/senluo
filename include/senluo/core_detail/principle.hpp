@@ -300,7 +300,7 @@ namespace senluo
             template<class TSrc>
             constexpr decltype(auto) impl(TSrc&& src)const
             {
-                if constexpr(equal(UsageTree, usage_t::none))
+                if constexpr(detail::equal(UsageTree, usage_t::none))
                 {
                     return tuple{};
                 }
@@ -474,7 +474,7 @@ namespace senluo
         template<typename T>
         constexpr auto operator()(T&& tree)const
         {
-            if constexpr(senluo::equal(UsageTree, usage_t::none))
+            if constexpr(detail::equal(UsageTree, usage_t::none))
             {
                 return null_principle{};
             }
