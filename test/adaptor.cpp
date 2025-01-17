@@ -1,33 +1,40 @@
 #include <senluo/adaptor.hpp>
 #include "test_tool.hpp"
 
-#include <senluo/macro_define.hpp>
+using namespace senluo;
 
-struct AddOne : senluo::adaptor_closure<AddOne>
+struct Square : adaptor_closure<Square>
 {
-    auto operator()(auto x)const
-    {
-        return x + 1;
-    }
-};
-
-struct Square : senluo::adaptor_closure<Square>
-{
-    auto operator()(auto x)const
+    auto operator()(auto x) const
     {
         return x * x;
     }
 };
+inline  constexpr Square square{};
 
-TEST(adaptor_closure, _)
+TEST(adaptor, adaptor_closure)
 {
-    //using namespace senluo;
-    static constexpr AddOne add_one{};
-    static constexpr Square square{};
-    constexpr auto mix = add_one | square;
+    MAGIC_CHECK(square(2), 4);
+    MAGIC_CHECK(2 | square, 4);
+    MAGIC_CHECK(2 | square | square, 16);
+    MAGIC_CHECK(2 | (square | square), 16);
+}
 
-    MAGIC_CHECK(1 | add_one, 2);
-    MAGIC_CHECK(1 | add_one | square, 4);
-    MAGIC_CHECK(1 | (add_one | square), 4);
-    MAGIC_CHECK(1 | mix, 4);
+struct Add : adaptor<Add>
+{
+    auto adapt(auto x, auto y) const
+    {
+        return x + y;
+    }
+};
+inline constexpr Add add{};
+
+TEST(adaptor, adaptor)
+{
+    MAGIC_CHECK(add(2, 3), 5);
+    MAGIC_CHECK(2 | add(3), 5);
+    MAGIC_CHECK(2 | add(3) | add(4), 9);
+    MAGIC_CHECK(2 | (add(3) | add(4)), 9);
+    MAGIC_CHECK(2 | add(3) | square, 25);
+    MAGIC_CHECK(2 | (add(3) | square), 25);
 }
