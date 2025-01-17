@@ -10,7 +10,7 @@ def generate_tuple_specialization(i):
     result = "template<" + generate_sequence(i, lambda i : "class T" + str(i)) + ">\n"
     result += "struct tuple<" + generate_sequence(i, lambda i : "T" + str(i)) + ">\n{\n"
 
-    result += generate_sequence(i, lambda i : "    RUZHOUXIE(no_unique_address) T" + str(i) + " e" + str(i) + ";\n" , "")
+    result += generate_sequence(i, lambda i : "    SENLUO(no_unique_address) T" + str(i) + " e" + str(i) + ";\n" , "")
     result += '\n'
 
     result += "    template<size_t I, derived_from<tuple> Self> requires (I < " + str(i) + "uz)\n"
@@ -37,7 +37,7 @@ def generate_aggregate_getter_invoker_for(memeber_count):
     result += generate_sequence(memeber_count, lambda i : "m" + str(i))
     result += "] = FWD(t);\n"
 	
-    result += "    return ::rzx::arg_at<I>(";
+    result += "    return ::senluo::arg_at<I>(";
     result += generate_sequence(memeber_count, lambda i : "FWDLIKE(t, m" + str(i) + ')')
 
     result += ");\n}\n"
