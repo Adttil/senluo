@@ -1,15 +1,14 @@
-#ifndef SENLUO_GET_HPP
-#define SENLUO_GET_HPP
+#ifndef SENLUO_TREE_HPP
+#define SENLUO_TREE_HPP
 
-#include "general.hpp"
 #include "adaptor.hpp"
 #include "array.hpp"
-#include "tuple.hpp"
 #include "math.hpp"
+#include "tuple.hpp"
 
 #include "macro_define.hpp"
 
-namespace senluo
+namespace senluo::detail
 {
     constexpr size_t normalize_index(std::integral auto index, size_t size)noexcept
     {
@@ -22,34 +21,19 @@ namespace senluo
             return static_cast<size_t>(size - -index % size);
         }
     }
-}
 
-namespace senluo
-{
-    template<typename T>
-    concept indexical_array = requires(std::remove_cvref_t<T> t, size_t i)
+    template<class...TIndexes>
+    constexpr auto to_indexes(const TIndexes&...indexes)noexcept
     {
-        requires std::integral<typename std::remove_cvref_t<T>::value_type>;
-        std::tuple_size_v<std::remove_cvref_t<T>>;
-        { t[i] } -> std::same_as<typename std::remove_cvref_t<T>::value_type&>;
-    };
-
-    template<typename T>
-    concept indexical = std::integral<T> || indexical_array<T>;
-
-    inline constexpr array<size_t, 0uz> indexes_of_whole{};
-    
-    constexpr auto to_indexes(indexical auto...indexes)noexcept
-    {
-        if constexpr(sizeof...(indexes) == 0uz)
+        if constexpr(sizeof...(TIndexes) == 0uz)
         {
-            return indexes_of_whole;
+            return array<size_t, 0uz>{};
         }
         else if constexpr(sizeof...(indexes) > 1uz)
         {
-            return detail::array_cat(to_indexes(indexes)...);
+            return detail::array_cat(detail::to_indexes(indexes)...);
         }
-        else if constexpr(indexical_array<decltype((..., indexes))>)
+        else if constexpr(requires{ (..., indexes[0]); })
         {
             return (..., indexes);
         }
@@ -58,6 +42,35 @@ namespace senluo
             return array{ indexes... };
         }
     }
+
+    template<class S, class T>
+    constexpr auto make_tree_of_same_value(const T& value, S = {})
+    {
+        if constexpr(std::same_as<S, tuple<>>)
+        {
+            return value;
+        }
+        else return [&]<size_t...I>(std::index_sequence<I...>)
+        {
+            return make_tuple(detail::make_tree_of_same_value(value, get<I>(S{}))...);
+        }(std::make_index_sequence<std::tuple_size_v<S>>{});
+    }
+    
+    template<class T>
+    concept indexical_array = requires(std::remove_cvref_t<T> t, size_t i)
+    {
+        requires std::integral<typename std::remove_cvref_t<T>::value_type>;
+        std::tuple_size_v<std::remove_cvref_t<T>>;
+        { t[i] } -> std::same_as<typename std::remove_cvref_t<T>::value_type&>;
+    };
+}
+
+namespace senluo
+{
+    template<class T>
+    concept indexical = std::integral<T> || detail::indexical_array<T>;
+
+    inline constexpr array<size_t, 0uz> indexes_of_whole{};
 
     struct end_t
     {
@@ -74,13 +87,13 @@ namespace senluo
         {
             //Can not use "requires" in clang here.
             //https://github.com/llvm/llvm-project/issues/76415
-            template <typename T, typename = std::enable_if_t<std::is_copy_constructible_v<T>>>
+            template <class T, class = std::enable_if_t<std::is_copy_constructible_v<T>>>
             operator T&();
 
-            template <typename T, typename = std::enable_if_t<std::is_move_constructible_v<T>>>
+            template <class T, class = std::enable_if_t<std::is_move_constructible_v<T>>>
             operator T&&();
 
-            template <typename T, typename = std::enable_if_t<!std::is_copy_constructible_v<T> && !std::is_move_constructible_v<T>>>
+            template <class T, class = std::enable_if_t<!std::is_copy_constructible_v<T> && !std::is_move_constructible_v<T>>>
             operator T();
         };
 
@@ -142,7 +155,7 @@ namespace senluo
         struct get_t
         {
             //consteval coused error in msvc.
-            template<typename T>
+            template<class T>
             static constexpr choice_t<strategy_t> choose()
             {
                 using type = std::remove_cvref_t<T>;
@@ -177,7 +190,7 @@ namespace senluo
                 {
                     return { strategy_t::adl, noexcept(get<I>(std::declval<T>())) };
                 }
-                else if constexpr(std::is_aggregate_v<type>)
+                else if constexpr(std::is_aggregate_v<type> && aggregate_member_count<T> != 0uz)
                 {
                     return { strategy_t::aggregate, true };
                 }
@@ -187,7 +200,7 @@ namespace senluo
                 }
             }
 
-            template<typename T>
+            template<class T>
             constexpr decltype(auto) operator()(T&& t)const
             noexcept(choose<T>().nothrow)
             {
@@ -228,13 +241,13 @@ namespace senluo
     namespace detail 
     {
         template<size_t I>
-        inline constexpr get_ns::get_t<I> get{};
+        inline constexpr get_ns::get_t<I> raw_get{};
     }
 
-    template<typename T>
+    template<class T>
     inline constexpr size_t size = []<size_t N = 0uz>(this auto&& self)
     {
-        if constexpr (std::same_as<decltype(detail::get<N>(std::declval<T>())), end_t>)
+        if constexpr (std::same_as<decltype(detail::raw_get<N>(std::declval<T>())), end_t>)
         {
             return N;
         }
@@ -246,74 +259,49 @@ namespace senluo
     
     namespace detail
     {
-        template<indexical_array auto Indexes>
+        template<auto Indexes>
         struct subtree_fn;
-
-        //void self();
     }
 
-    inline namespace functors
-    {
-        //msvc bug: https://developercommunity.visualstudio.com/t/MSVC-cannot-correctly-recognize-NTTP-in/10722592
-        //template<indexical auto...I>
-        //inline constexpr detail::subtree_t<senluo::to_indexes(I...)> subtree{};
+    // msvc bug: https://developercommunity.visualstudio.com/t/MSVC-cannot-correctly-recognize-NTTP-in/10722592
+    // template<indexical auto...I>
+    // inline constexpr detail::subtree_t<senluo::to_indexes(I...)> subtree{};
 
-        template<indexical auto...I>
-        inline constexpr auto subtree = detail::subtree_fn<senluo::to_indexes(I...)>{};
-    }
+    template<indexical auto...I>
+    inline constexpr auto subtree = detail::subtree_fn<detail::to_indexes(I...)>{};
     
-    template<indexical_array auto Indexes>
+    template<auto Indexes>
     struct detail::subtree_fn : adaptor_closure<subtree_fn<Indexes>>
     {
-        template<typename T>
-        constexpr decltype(auto) operator()(T&& t)const
+        template<class T> requires (Indexes.size() == 0uz)
+        constexpr T&& operator()(T&& t) const noexcept
         {
-            if constexpr(Indexes.size() == 0uz)
-            {
-                return FWD(t);
-                // if constexpr(requires{ FWD(t).self(custom_t{}); })
-                // {
-                //     return FWD(t).self(custom_t{});
-                // }
-                // else if constexpr(requires{ self(FWD(t), custom_t{}); })
-                // {
-                //     return self(FWD(t), custom_t{});
-                // }
-                // else if constexpr(requires{ FWD(t).self(); })
-                // {
-                //     return FWD(t).self();
-                // }
-                // else if constexpr(requires{ self(FWD(t)); })
-                // {
-                //     return self(FWD(t));
-                // }
-                // else
-                // {
-                //     return FWD(t);
-                // }
-            }
-            else if constexpr(Indexes.size() == 1uz)
-            {
-                static_assert(size<T> > 0);
-                return get<normalize_index(Indexes[0], size<T>)>(FWD(t));
-            }
-            else
-            {
-                return get<normalize_index(Indexes[0], size<T>)>(FWD(t)) | subtree<detail::array_drop<1uz>(Indexes)>;
-            }
+            return FWD(t);
         }
+
+        template<class T> requires (Indexes.size() == 1uz && size<T> > 0)
+        constexpr auto operator()(T&& t) const
+        AS_EXPRESSION(
+            raw_get<detail::normalize_index(Indexes[0], size<T>)>(FWD(t))
+        )
+
+        template<class T> requires (Indexes.size() > 1uz && size<T> > 0)
+        constexpr auto operator()(T&& t) const
+        AS_EXPRESSION(
+            raw_get<detail::normalize_index(Indexes[0], size<T>)>(FWD(t)) | subtree<detail::array_drop<1uz>(Indexes)>
+        )
     };
 
-    template<typename T, indexical auto...I>
-    using subtree_t = decltype(std::declval<T>() | subtree<I...>);
+    template<class T, indexical auto...I>
+    using subtree_t = decltype(subtree<I...>(std::declval<T>()));
 
-    template<typename T>
-    concept terminal = size<T> == 0uz;
+    template<class T>
+    concept terminal = (size<T> == 0uz);
 
-    template<typename T>
+    template<class T>
     concept branched = not terminal<T>;
 
-    template<typename T>
+    template<class T>
     inline constexpr size_t leaf_count = []
     {
         if constexpr (terminal<T>)
@@ -329,7 +317,7 @@ namespace senluo
         }
     }();
 
-    template<typename T>
+    template<class T>
     inline constexpr auto shape = []
     {
         if constexpr (terminal<T>)
@@ -342,23 +330,10 @@ namespace senluo
         }(std::make_index_sequence<size<T>>{});
     }();
 
-    template<typename T>
+    template<class T>
     using shape_t = std::remove_const_t<decltype(shape<T>)>;
 
-    template<typename S, typename T>
-    constexpr auto make_tree_of_same_value(const T& value, S shape = {})
-    {
-        if constexpr(terminal<S>)
-        {
-            return value;
-        }
-        else return [&]<size_t...I>(std::index_sequence<I...>)
-        {
-            return senluo::make_tuple(senluo::make_tree_of_same_value(value, shape | subtree<I>)...);
-        }(std::make_index_sequence<size<S>>{});
-    }
-
-    template<typename T>
+    template<class T>
     inline constexpr size_t tensor_rank = []
     {
         if constexpr (terminal<T>)
@@ -371,7 +346,7 @@ namespace senluo
         }(std::make_index_sequence<size<T>>{});
     }();
 
-    template<typename T>
+    template<class T>
     inline constexpr auto tensor_shape = []
     {
         if constexpr (terminal<T>)
@@ -386,7 +361,7 @@ namespace senluo
             constexpr auto subshapes = tuple{ tensor_shape<subtree_t<T, I>>... };
             for (size_t i = 0uz; i < rank - 1uz; ++i)
             {
-                result[i + 1uz] = detail::min((subshapes | subtree<I>)[i]...);
+                result[i + 1uz] = detail::min(get<I>(subshapes)[i]...);
             }
 
             return result;

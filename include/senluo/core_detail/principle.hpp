@@ -182,13 +182,13 @@ namespace senluo
     inline constexpr detail::seperate_by_usage_t<UsageTree> seperate_by_usage{};
 
     template<class Tree>
-    inline constexpr detail::sequence_by_usage_t<make_tree_of_same_value(usage_t::once, shape<Tree>)> sequence_by_shape{};
+    inline constexpr detail::sequence_by_usage_t<detail::make_tree_of_same_value(usage_t::once, shape<Tree>)> sequence_by_shape{};
 
     template<class Tree>
-    inline constexpr detail::inverse_sequence_by_usage_t<make_tree_of_same_value(usage_t::once, shape<Tree>)> inverse_sequence_by_shape{};
+    inline constexpr detail::inverse_sequence_by_usage_t<detail::make_tree_of_same_value(usage_t::once, shape<Tree>)> inverse_sequence_by_shape{};
 
     template<class Tree>
-    inline constexpr detail::seperate_by_usage_t<make_tree_of_same_value(usage_t::once, shape<Tree>)> seperate_by_shape{};
+    inline constexpr detail::seperate_by_usage_t<detail::make_tree_of_same_value(usage_t::once, shape<Tree>)> seperate_by_shape{};
 
     namespace detail
     {
@@ -197,7 +197,7 @@ namespace senluo
             template<branched T>
             constexpr decltype(auto) operator()(T&& tree)const
             {
-                constexpr auto usage_tree = make_tree_of_same_value(usage_t::once, shape<array<int, size<T>>>);
+                constexpr auto usage_tree = detail::make_tree_of_same_value(usage_t::once, shape<array<int, size<T>>>);
                 return FWD(tree) | sequence_by_usage<usage_tree>;
             }
 
@@ -213,7 +213,7 @@ namespace senluo
             template<branched T>
             constexpr decltype(auto) operator()(T&& tree)const
             {
-                constexpr auto usage_tree = make_tree_of_same_value(usage_t::once, shape<array<int, size<T>>>);
+                constexpr auto usage_tree = detail::make_tree_of_same_value(usage_t::once, shape<array<int, size<T>>>);
                 return FWD(tree) | inverse_sequence_by_usage<usage_tree>;
             }
 
@@ -229,7 +229,7 @@ namespace senluo
             template<branched T>
             constexpr decltype(auto) operator()(T&& tree)const
             {
-                constexpr auto usage_tree = make_tree_of_same_value(usage_t::once, shape<array<int, size<T>>>);
+                constexpr auto usage_tree = detail::make_tree_of_same_value(usage_t::once, shape<array<int, size<T>>>);
                 return FWD(tree) | seperate_by_usage<usage_tree>;
             }
 
@@ -260,7 +260,7 @@ namespace senluo
                 return [&]<size_t...I>(std::index_sequence<I...>) -> decltype(auto)
                 {
                     auto&& seperate_args = FWD(args) | refer | seperate;
-                    return FWD(fn)(FWD(seperate_args) | subtree<I>...);
+                    return FWD(fn)(subtree<I>(FWD(seperate_args))...);
                 }(std::make_index_sequence<size<Args>>{});
             }
         };
@@ -273,7 +273,7 @@ namespace senluo
                 return [&]<size_t...I>(std::index_sequence<I...>) -> decltype(auto)
                 {
                     auto&& seperate_tree = FWD(tree) | refer | seperate;
-                    return (FWD(seperate_tree) | subtree<0uz>)(FWD(seperate_tree) | subtree<I + 1>...);
+                    return subtree<0uz>(FWD(seperate_tree))(subtree<I + 1>(FWD(seperate_tree))...);
                 }(std::make_index_sequence<size<T> - 1uz>{});
             }
         };
@@ -310,9 +310,9 @@ namespace senluo
                 }
                 else return [&]<size_t...I>(std::index_sequence<I...>)
                 {
-                    return tuple<decltype(plainize_fn<tag_tree_get<I>(UsageTree), Tpl>{}.impl(FWD(src) | subtree<I>))...>
+                    return tuple<decltype(plainize_fn<tag_tree_get<I>(UsageTree), Tpl>{}.impl(subtree<I>(FWD(src))))...>
                     {
-                        plainize_fn<tag_tree_get<I>(UsageTree), Tpl>{}.impl(FWD(src) | subtree<I>)...
+                        plainize_fn<tag_tree_get<I>(UsageTree), Tpl>{}.impl(subtree<I>(FWD(src)))...
                     };
                 }(std::make_index_sequence<size<TSrc>>{});
             }
@@ -368,7 +368,7 @@ namespace senluo
             }
             else
             {
-               return FWD(tree) | subtree<I>; 
+               return subtree<I>(FWD(tree)); 
             }
             
         }
@@ -427,6 +427,7 @@ namespace senluo
         {
             return [&]<size_t...I>(std::index_sequence<I...>)
             {
+                //todo... maybe daling and no need to use detail::base
                 return tuple<decltype(data(FWD(self) | detail::base | subtree<I> | principle<tag_tree_get<I>(UsageTree)>))...>
                 {
                     data(FWD(self) | detail::base | subtree<I> | principle<tag_tree_get<I>(UsageTree)>)...

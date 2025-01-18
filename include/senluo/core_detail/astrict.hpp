@@ -29,11 +29,11 @@ namespace senluo
             //static_assert(size<S1> > 0);
             if constexpr(std::same_as<S2, stricture_t>)
             {
-                return senluo::make_tuple(senluo::merge_stricture_tree(tree1 | subtree<I>, tree2)...);
+                return senluo::make_tuple(senluo::merge_stricture_tree(get<I>(tree1), tree2)...);
             }
             else
             {
-                return senluo::make_tuple(senluo::merge_stricture_tree(tree1 | subtree<I>, tree2 | subtree<I>)...);
+                return senluo::make_tuple(senluo::merge_stricture_tree(get<I>(tree1), get<I>(tree2))...);
             }
         }(std::make_index_sequence<size<S1>>{});
     }
@@ -95,20 +95,20 @@ namespace senluo::detail::astrict_ns
             }
             else if constexpr(not std::same_as<decltype(stricture_subtree), const stricture_t>)
             {
-                return tree_t<decltype(FWD(self, base) | subtree<I>), stricture_subtree>{ FWD(self, base) | subtree<I> };
+                return tree_t<decltype(subtree<I>(FWD(self, base))), stricture_subtree>{ subtree<I>(FWD(self, base)) };
             }
-            else if constexpr(stricture_subtree == stricture_t::none || only_input<decltype(FWD(self, base) | subtree<I>)>())
+            else if constexpr(stricture_subtree == stricture_t::none || only_input<decltype(subtree<I>(FWD(self, base)))>())
             {
-                return FWD(self, base) | subtree<I>;
+                return subtree<I>(FWD(self, base));
             }
-            else if constexpr(std::is_reference_v<decltype(FWD(self, base) | subtree<I>)> 
-                              && only_input<decltype(detail::to_readonly(FWD(self, base) | subtree<I>))>())
+            else if constexpr(std::is_reference_v<decltype(subtree<I>(FWD(self, base)))> 
+                              && only_input<decltype(detail::to_readonly(subtree<I>(FWD(self, base))))>())
             {
-                return detail::to_readonly(FWD(self, base) | subtree<I>);
+                return detail::to_readonly(subtree<I>(FWD(self, base)));
             }
             else
             {
-                return tree_t<decltype(FWD(self, base) | subtree<I>), stricture_t::readonly>{ FWD(self, base) | subtree<I> };
+                return tree_t<decltype(subtree<I>(FWD(self, base))), stricture_t::readonly>{ subtree<I>(FWD(self, base)) };
             }
         }
 

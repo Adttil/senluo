@@ -83,7 +83,7 @@ namespace senluo
                 }
                 else return []<size_t...I>(std::index_sequence<I...>)
                 {
-                    return senluo::make_tuple(get_layout<N, subtree_t<Shape, I>, Layout | subtree<I>>()...);
+                    return senluo::make_tuple(get_layout<N, subtree_t<Shape, I>, get<I>(Layout)>()...);
                 }(std::make_index_sequence<size<Shape>>{});
             }
 
@@ -91,9 +91,9 @@ namespace senluo
             constexpr decltype(auto) operator()(F&& f, T&&...t)const
             {
                 constexpr auto shape = op_shape<F, T...>();
-                constexpr auto op_layout = senluo::make_tree_of_same_value(indexes_of_whole, shape);
+                constexpr auto op_layout = detail::make_tree_of_same_value(indexes_of_whole, shape);
                 constexpr auto layout = get_layout<sizeof...(T), decltype(shape)>();
-                constexpr auto op_tree = senluo::make_tree_of_same_value(operation_t::apply_invoke, shape);
+                constexpr auto op_tree = detail::make_tree_of_same_value(operation_t::apply_invoke, shape);
                 return combine(FWD(f) | relayout<op_layout>, FWD(t)...) | relayout<layout> | operate<op_tree>; 
             }
         };

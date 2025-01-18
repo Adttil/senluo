@@ -3,7 +3,35 @@
 
 using namespace senluo;
 
-TEST(subtree, aggregate)
+TEST(tree, indexical)
+{
+    MAGIC_CHECK(true, indexical<int>);
+    MAGIC_CHECK(true, indexical<char>);
+    MAGIC_CHECK(true, indexical<size_t>);
+    MAGIC_CHECK(true, indexical<array<int, 0>>);
+    MAGIC_CHECK(true, indexical<array<unsigned char, 3>>);
+    MAGIC_CHECK(true, indexical<std::array<int, 0>>);
+    MAGIC_CHECK(true, indexical<std::array<unsigned char, 3>>);
+}
+
+TEST(tree, size)
+{
+    MAGIC_CHECK(0, size<int>);
+    MAGIC_CHECK(0, size<tuple<>>);
+    MAGIC_CHECK(0, size<std::tuple<>>);
+    MAGIC_CHECK(0, size<array<int, 0>>);
+    MAGIC_CHECK(0, size<decltype([]{})>);
+    
+    MAGIC_CHECK(3, size<int[3]>);
+    MAGIC_CHECK(2, size<tuple<int, float>>);
+    MAGIC_CHECK(2, size<std::tuple<int, float>>);
+    MAGIC_CHECK(4, size<array<int, 4>>);
+
+    struct X{ int x; int& y; int&& z; float& w; std::tuple<int, float> u; };
+    MAGIC_CHECK(5, size<X>);
+}
+
+TEST(tree, subtree)
 {
     struct X { int x; float& y; double&& z; };
     float y{ 3.1f };

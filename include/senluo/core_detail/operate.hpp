@@ -11,18 +11,7 @@
 
 namespace senluo 
 {
-    template<class U>
-    constexpr usage_t fold_usage(const U& usage_tree)
-    {
-        if constexpr(std::same_as<U, usage_t>)
-        {
-            return usage_tree;
-        }
-        else return [&]<size_t...I>(std::index_sequence<I...>)
-        {
-            return (... & senluo::fold_usage(usage_tree | subtree<I>));
-        }(std::make_index_sequence<size<U>>{});
-    }
+    
 }
 
 namespace senluo::detail::operate_ns 
@@ -64,18 +53,18 @@ namespace senluo::detail::operate_ns
             }
             else if constexpr(not std::same_as<decltype(op_subtree), const operation_t>)
             {
-                return tree_t<decltype(FWD(self, base) | subtree<I>), op_subtree>
+                return tree_t<decltype(subtree<I>(FWD(self, base))), op_subtree>
                 {
-                    FWD(self, base) | subtree<I>
+                    subtree<I>(FWD(self, base))
                 };
             }
             else if constexpr(op_subtree == operation_t::none)
             {
-                return FWD(self, base) | subtree<I>;
+                return subtree<I>(FWD(self, base));
             }
             else
             {
-                return apply_invoke(FWD(self, base) | subtree<I>);
+                return apply_invoke(subtree<I>(FWD(self, base)));
             }
         }
 
@@ -158,7 +147,7 @@ namespace senluo
             {
                 constexpr size_t n = size<ArgTable>;
                 return zip(FWD(fn) | repeat<n>, FWD(arg_table)) 
-                    | operate<make_tree_of_same_value(operation_t::apply_invoke, shape<array<size_t, n>>)>;
+                    | operate<detail::make_tree_of_same_value(operation_t::apply_invoke, shape<array<size_t, n>>)>;
             }
         };
     }
@@ -174,7 +163,7 @@ namespace senluo
             {
                 constexpr size_t n = size<Args>;
                 return zip(FWD(fn) | repeat<n>, FWD(args), FWD(rest)...) 
-                    | operate<make_tree_of_same_value(operation_t::apply_invoke, shape<array<size_t, n>>)>;
+                    | operate<detail::make_tree_of_same_value(operation_t::apply_invoke, shape<array<size_t, n>>)>;
             }
         };
     }

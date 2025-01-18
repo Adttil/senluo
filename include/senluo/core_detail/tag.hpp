@@ -54,7 +54,7 @@ namespace senluo
         }
         else
         {
-            return tag_tree | subtree<I>;
+            return subtree<I>(tag_tree);
         }
     }
 
@@ -67,7 +67,7 @@ namespace senluo
         }
         else if constexpr(I < size<L>)
         {
-            return layout | subtree<I>;
+            return get<I>(layout);
         }
         else
         {
@@ -75,7 +75,7 @@ namespace senluo
         }
     }
 
-    template<indexical_array auto indexes, class T>
+    template<auto indexes, class T>
     constexpr auto tag_subtree(const T& tag_tree)
     {
         if constexpr(detail::equal(indexes, indexes_of_whole))
@@ -91,13 +91,13 @@ namespace senluo
     template<typename TLayout, size_t N>
     constexpr auto layout_add_prefix(const TLayout& layout, const array<size_t, N>& prefix)
     {
-        if constexpr(indexical_array<TLayout>)
+        if constexpr(detail::indexical_array<TLayout>)
         {
             return detail::array_cat(prefix, layout);
         }
         else return[&]<size_t...I>(std::index_sequence<I...>)
         {
-            return senluo::make_tuple(senluo::layout_add_prefix(layout | subtree<I>, prefix)...);
+            return make_tuple(senluo::layout_add_prefix(get<I>(layout), prefix)...);
         }(std::make_index_sequence<size<TLayout>>{});
     }
 
@@ -110,10 +110,10 @@ namespace senluo
         }
         else return []<size_t...I>(std::index_sequence<I...>)
         {
-            constexpr auto subresults = senluo::make_tuple(fold_tag_tree<TagTree | subtree<I>>()...);
-            if constexpr((... && detail::equal(subresults | subtree<I>, subresults | subtree<0uz>)))
+            constexpr auto subresults = make_tuple(fold_tag_tree<subtree<I>(TagTree)>()...);
+            if constexpr((... && detail::equal(get<I>(subresults), get<0uz>(subresults))))
             {
-                return subresults | subtree<0uz>;
+                return get<0uz>(subresults);
             }
             else
             {
@@ -123,15 +123,15 @@ namespace senluo
     }
 
     template<typename TagTree, typename S>
-    constexpr auto unfold_tag_tree(TagTree tree, S shape = {})
+    constexpr auto unfold_tag_tree(TagTree tree, S = {})
     {
         if constexpr(terminal<TagTree>)
         {
-            return senluo::make_tree_of_same_value(tree, shape);
+            return detail::make_tree_of_same_value(tree, S{});
         }
         else return [&]<size_t...I>(std::index_sequence<I...>)
         {
-            return senluo::make_tuple(senluo::unfold_tag_tree(tree | subtree<I>, shape | subtree<I>)...);
+            return senluo::make_tuple(senluo::unfold_tag_tree(get<I>(tree), get<I>(S{}))...);
         }(std::make_index_sequence<size<TagTree>>{});
     }
 
@@ -144,8 +144,8 @@ namespace senluo
         }
         else return[]<size_t...I>(std::index_sequence<I...>)
         {
-            constexpr auto subresults = senluo::make_tuple(fold_operation_tree<OperationTree | subtree<I>>()...);
-            if constexpr((... && detail::equal(subresults | subtree<I>, operation_t::none)))
+            constexpr auto subresults = make_tuple(fold_operation_tree<subtree<I>(OperationTree)>()...);
+            if constexpr((... && detail::equal(get<I>(subresults), operation_t::none)))
             {
                 return operation_t::none;
             }
@@ -154,6 +154,19 @@ namespace senluo
                 return subresults;
             }
         }(std::make_index_sequence<size<decltype(OperationTree)>>{});
+    }
+
+    template<class U>
+    constexpr usage_t fold_usage(const U& usage_tree)
+    {
+        if constexpr(std::same_as<U, usage_t>)
+        {
+            return usage_tree;
+        }
+        else return [&]<size_t...I>(std::index_sequence<I...>)
+        {
+            return (... & senluo::fold_usage(get<I>(usage_tree)));
+        }(std::make_index_sequence<size<U>>{});
     }
 
     template<auto OperationTree, class U>
@@ -174,7 +187,7 @@ namespace senluo
         }
         else return [&]<size_t...I>(std::index_sequence<I...>)
         {
-            return senluo::make_tuple(fit_operation_usage_impl<OperationTree | subtree<I>>(tag_tree_get<I>(usage_tree), need_plain)...);
+            return senluo::make_tuple(fit_operation_usage_impl<get<I>(OperationTree)>(tag_tree_get<I>(usage_tree), need_plain)...);
         }(std::make_index_sequence<size<decltype(OperationTree)>>{});
     }
 
@@ -204,7 +217,7 @@ namespace senluo
         }
         else return [&]<size_t...I>(std::index_sequence<I...>)
         {
-            (..., set_data_stricture_tree(tree | subtree<I>));
+            (..., set_data_stricture_tree(get<I>(tree)));
         }(std::make_index_sequence<size<DataStrictureTree>>{});
     }
 
@@ -213,11 +226,11 @@ namespace senluo
     {
         if constexpr(indexical<decltype(Layout)>)
         {
-            set_data_stricture_tree(tree | subtree<Layout>);
+            set_data_stricture_tree(subtree<Layout>(tree));
         }
         else return [&]<size_t...I>(std::index_sequence<I...>)
         {
-            (..., set_data_stricture_tree_by_layout<Layout | subtree<I>>(tree));
+            (..., set_data_stricture_tree_by_layout<get<I>(Layout)>(tree));
         }(std::make_index_sequence<size<decltype(Layout)>>{});
     }
 
@@ -246,11 +259,11 @@ namespace senluo
         {
             return tuple<decltype(get_inverse_sequence_stricture_tree_impl<tag_tree_get<I>(RawStrictureTree)
                                                         , layout_get<I>(Layout)
-                                                        , UsageTree | subtree<I>>(cur_tree))...>
+                                                        , get<I>(UsageTree)>(cur_tree))...>
             {
                 get_inverse_sequence_stricture_tree_impl<tag_tree_get<I>(RawStrictureTree)
                                                         , layout_get<I>(Layout)
-                                                        , UsageTree | subtree<I>>(cur_tree)...
+                                                        , get<I>(UsageTree)>(cur_tree)...
             };
         }(std::make_index_sequence<size<decltype(UsageTree)>>{});
     }
@@ -283,29 +296,29 @@ namespace senluo
         {
             static_assert(size<decltype(UsageTree)> > 0);
             constexpr size_t last = size<decltype(UsageTree)> - 1uz;
-            auto inverse_resilt = tuple<decltype(get_sequence_stricture_tree_impl<tag_tree_get<last - I>(RawStrictureTree)
+            auto inverse_result = tuple<decltype(get_sequence_stricture_tree_impl<tag_tree_get<last - I>(RawStrictureTree)
                                                         , layout_get<last - I>(Layout)
-                                                        , UsageTree | subtree<last - I>>(cur_tree))...>
+                                                        , get<last - I>(UsageTree)>(cur_tree))...>
             {
                 get_sequence_stricture_tree_impl<tag_tree_get<last - I>(RawStrictureTree)
                                                         , layout_get<last - I>(Layout)
-                                                        , UsageTree | subtree<last - I>>(cur_tree)...
+                                                        , get<last - I>(UsageTree)>(cur_tree)...
             };
-            return make_tuple(inverse_resilt | subtree<last - I>...);
+            return make_tuple(get<last - I>(inverse_result)...);
         }(std::make_index_sequence<size<decltype(UsageTree)>>{});
     }
 
     template<auto RawStrictureTree, auto Layout, auto UsageTree, class DataShape>
     constexpr auto get_inverse_sequence_stricture_tree(DataShape data_shape = {})
     {
-        auto data_stricture_tree = make_tree_of_same_value(stricture_t::none, data_shape);
+        auto data_stricture_tree = detail::make_tree_of_same_value(stricture_t::none, data_shape);
         return get_inverse_sequence_stricture_tree_impl<RawStrictureTree, Layout, UsageTree>(data_stricture_tree);
     }
 
     template<auto RawStrictureTree, auto Layout, auto UsageTree, class DataShape>
     constexpr auto get_sequence_stricture_tree(DataShape data_shape = {})
     {
-        auto data_stricture_tree = make_tree_of_same_value(stricture_t::none, data_shape);
+        auto data_stricture_tree = detail::make_tree_of_same_value(stricture_t::none, data_shape);
         return get_sequence_stricture_tree_impl<RawStrictureTree, Layout, UsageTree>(data_stricture_tree);
     }
 }
@@ -315,7 +328,7 @@ namespace senluo
     template<auto Layout, size_t Depth = 0uz, typename T>
     constexpr bool inverse_layout_index_len_at(T& result_index_len, size_t& setted_count)
     {
-        if constexpr(indexical_array<decltype(Layout)>)
+        if constexpr(detail::indexical_array<decltype(Layout)>)
         {
             if(subtree<Layout>(result_index_len) == invalid_index)
             {
@@ -330,7 +343,7 @@ namespace senluo
         }
         else return [&]<size_t...I>(std::index_sequence<I...>)
         {   
-            return (... && inverse_layout_index_len_at<Layout | subtree<I>, Depth + 1uz>(result_index_len, setted_count));
+            return (... && inverse_layout_index_len_at<get<I>(Layout), Depth + 1uz>(result_index_len, setted_count));
         }(std::make_index_sequence<size<decltype(Layout)>>{});
     }
 
@@ -344,7 +357,7 @@ namespace senluo
         }
         else return [&]<size_t...I>(std::index_sequence<I...>)
         {
-            return senluo::make_tuple(senluo::make_tree_of_same_value_and_set_leaf_count(value, count, S{} | subtree<I>)...);
+            return senluo::make_tuple(senluo::make_tree_of_same_value_and_set_leaf_count(value, count, get<I>(S{}))...);
         }(std::make_index_sequence<size<S>>{});
     }
 
@@ -372,20 +385,20 @@ namespace senluo
         }
         else return []<size_t...I>(std::index_sequence<I...>)
         {
-            return senluo::make_tuple(init_layout<IndexLenTree | subtree<I>>()...);
+            return make_tuple(init_layout<get<I>(IndexLenTree)>()...);
         }(std::make_index_sequence<size<decltype(IndexLenTree)>>{});
     }
 
     template<auto Layout, auto CurIndex = indexes_of_whole, typename R>
     constexpr void inverse_layout_at(R& result)
     {
-        if constexpr(indexical_array<decltype(Layout)>)
+        if constexpr(detail::indexical_array<decltype(Layout)>)
         {
             subtree<Layout>(result) = CurIndex;
         }
         else return [&]<size_t...I>(std::index_sequence<I...>)
         {   
-            return (..., inverse_layout_at<Layout | subtree<I>, detail::array_cat(CurIndex, array{ I })>(result));
+            return (..., inverse_layout_at<get<I>(Layout), detail::array_cat(CurIndex, array{ I })>(result));
         }(std::make_index_sequence<size<decltype(Layout)>>{});
     }
 

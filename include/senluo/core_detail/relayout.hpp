@@ -11,7 +11,7 @@
 
 namespace senluo 
 {
-    template<indexical_array auto indexes, class L>
+    template<auto indexes, class L>
     constexpr auto sublayout(const L& layout)
     {
         if constexpr(detail::equal(indexes, indexes_of_whole))
@@ -29,13 +29,13 @@ namespace senluo
     {
         if constexpr(std::integral<decltype(Indices)>)
         {
-            return array{ normalize_index(Indices, size<Shape>) };
+            return array{ detail::normalize_index(Indices, size<Shape>) };
         }
         else return []<size_t...I>(std::index_sequence<I...>)
         {
             return array<size_t, Indices.size()>
             {
-                normalize_index(Indices[I], size<subtree_t<Shape, detail::array_take<I>(Indices)>>)...
+                detail::normalize_index(Indices[I], size<subtree_t<Shape, detail::array_take<I>(Indices)>>)...
             };
         }(std::make_index_sequence<Indices.size()>{});
     }
@@ -43,23 +43,23 @@ namespace senluo
     template<auto Layout, class Shape>
     constexpr auto fold_layout(Shape shape = {})
     {
-        if constexpr(indexical_array<decltype(Layout)> || std::integral<decltype(Layout)>)
+        if constexpr(indexical<decltype(Layout)>)
         {
             return normalize_indices<Layout>(shape);
         }
         else return []<size_t...I>(std::index_sequence<I...>)
         {
-            constexpr auto child_relayout = senluo::make_tuple(fold_layout<Layout | subtree<I>>(Shape{})...);
-            constexpr size_t n = size<decltype(child_relayout | subtree<0uz>)>;
+            constexpr auto child_relayout = make_tuple(fold_layout<subtree<I>(Layout)>(Shape{})...);
+            constexpr size_t n = size<decltype(get<0uz>(child_relayout))>;
 
             if constexpr(n > 0uz
-                && (... && indexical_array<decltype(child_relayout | subtree<I>)>)
-                && (... && (n == size<decltype(child_relayout | subtree<I>)>))
+                && (... && detail::indexical_array<decltype(get<I>(child_relayout))>)
+                && (... && (n == size<decltype(get<I>(child_relayout))>))
             )
             {
-                constexpr auto prefix = detail::array_take<n - 1uz>(child_relayout | subtree<0uz>);
-                if constexpr((... && (prefix == detail::array_take<n - 1uz>(child_relayout | subtree<I>)))
-                    && (... && ((child_relayout | subtree<I>)[n - 1uz] == I))
+                constexpr auto prefix = detail::array_take<n - 1uz>(get<0uz>(child_relayout));
+                if constexpr((... && (prefix == detail::array_take<n - 1uz>(get<I>(child_relayout))))
+                    && (... && (get<I>(child_relayout)[n - 1uz] == I))
                 )
                 {
                     return prefix;
@@ -95,7 +95,7 @@ namespace senluo
         }
         else return [&]<size_t...I>(std::index_sequence<I...>)
         {
-            return senluo::make_tuple(unfold_layout<Layout | subtree<I>>(shape)...);
+            return senluo::make_tuple(unfold_layout<get<I>(Layout)>(shape)...);
         }(std::make_index_sequence<size<decltype(Layout)>>{});
     }
 
@@ -105,21 +105,20 @@ namespace senluo
     {
         if constexpr(terminal<Shape>)
         {
-            static_assert(indexical<Layout>, "Invalid layout.");
-            return to_indexes(layout);
+            static_assert(detail::indexical_array<Layout>, "Invalid layout.");
+            return layout;
         }
         else return [&]<size_t...I>(std::index_sequence<I...>)
         {
-            if constexpr(not indexical<Layout>)
+            if constexpr(not detail::indexical_array<Layout>)
             {
                 static_assert(size<Shape> == size<Layout>, "Invalid layout.");
-                return senluo::make_tuple(unfold_layout_by_relayouted_shape(layout | subtree<I>, shape | subtree<I>)...);
+                return make_tuple(unfold_layout_by_relayouted_shape(get<I>(layout), get<I>(shape))...);
             }
             else
             {
-                auto indexes = to_indexes(layout);
-                return senluo::make_tuple(
-                    unfold_layout_by_relayouted_shape(detail::array_cat(indexes, array{ I }) , shape | subtree<I>)...
+                return make_tuple(
+                    unfold_layout_by_relayouted_shape(detail::array_cat(layout, array{ I }) , get<I>(shape))...
                 );
             }
         }(std::make_index_sequence<size<Shape>>{});
@@ -131,11 +130,11 @@ namespace senluo
         using layout_type = decltype(Layout);
         if constexpr(indexical<layout_type>)
         {
-            return view | subtree<Layout>;
+            return subtree<Layout>(view);
         }
         else return[&]<size_t...I>(std::index_sequence<I...>)
         {
-            return make_tuple(apply_layout<Layout | subtree<I>>(view)...);
+            return make_tuple(apply_layout<get<I>(Layout)>(view)...);
         }(std::make_index_sequence<size<layout_type>>{});
     }
 
@@ -148,7 +147,7 @@ namespace senluo
         }
         else return [&]<size_t...I>(std::index_sequence<I...>)
         {
-            return senluo::make_tuple(senluo::relayout_tag_tree<Layout | subtree<I>>(tag_tree)...);
+            return senluo::make_tuple(senluo::relayout_tag_tree<get<I>(Layout)>(tag_tree)...);
         }(std::make_index_sequence<size<decltype(Layout)>>{});
     }
 
@@ -157,26 +156,26 @@ namespace senluo
     {
         if constexpr(indexical<decltype(UnfoldedLayout)>)
         {
-            auto&& subresult = result | subtree<UnfoldedLayout>;
+            auto&& subresult = subtree<UnfoldedLayout>(result);
             if constexpr(terminal<decltype(subresult)>)
             {
                 subresult = subresult & usage_tree;
             }
             else return [&]<size_t...I>(std::index_sequence<I...>)
             {
-                (..., inverse_relayout_usage_tree_at<indexes_of_whole>(usage_tree, subresult | subtree<I>));
+                (..., inverse_relayout_usage_tree_at<indexes_of_whole>(usage_tree, get<I>(subresult)));
             }(std::make_index_sequence<size<decltype(subresult)>>{});
         }
         else return[&]<size_t...I>(std::index_sequence<I...>)
         {
-            (..., inverse_relayout_usage_tree_at<UnfoldedLayout | subtree<I>>(tag_tree_get<I>(usage_tree), result));
+            (..., inverse_relayout_usage_tree_at<get<I>(UnfoldedLayout)>(tag_tree_get<I>(usage_tree), result));
         }(std::make_index_sequence<size<decltype(UnfoldedLayout)>>{});
     }
 
     template<auto UnfoldedLayout, typename U, typename S>
     constexpr auto inverse_relayout_usage_tree(const U& usage_tree, const S& shape)
     {
-        auto result = senluo::make_tree_of_same_value(usage_t::none, shape);
+        auto result = detail::make_tree_of_same_value(usage_t::none, shape);
         inverse_relayout_usage_tree_at<UnfoldedLayout>(usage_tree, result);
         return result;
     }
@@ -190,7 +189,7 @@ namespace senluo
     //     }
     //     else return [&]<size_t...I>(std::index_sequence<I...>)
     //     {
-    //         return senluo::make_tuple(senluo::relayout_layout<Layout | subtree<I>>(layout)...);
+    //         return senluo::make_tuple(senluo::relayout_layout<get<I>(Layout)>(layout)...);
     //     }(std::make_index_sequence<size<decltype(Layout)>>{});
     // }
 
@@ -214,7 +213,7 @@ namespace senluo
         }
         else return [&]<size_t...I>(std::index_sequence<I...>)
         {
-            return (... && senluo::is_enable_to_relayout_operation_tree<FoldedLayout | subtree<I>>(operation_tree));
+            return (... && senluo::is_enable_to_relayout_operation_tree<get<I>(FoldedLayout)>(operation_tree));
         }(std::make_index_sequence<size<decltype(FoldedLayout)>>{});
     };
 }
@@ -260,7 +259,7 @@ namespace senluo::detail::relayout_ns
             }
             else if constexpr(indexical<decltype(sublayout)>)
             {
-                return FWD(self, base) | subtree<sublayout>;
+                return subtree<sublayout>(FWD(self, base));
                 
             }
             else
@@ -317,7 +316,7 @@ namespace senluo
             constexpr auto folded_layout = senluo::fold_layout<Layout>(shape<T>);
             if constexpr(indexical<decltype(folded_layout)>)
             {
-                return decltype(wrap(FWD(t) | subtree<folded_layout>)){ unwrap_fwd(FWD(t) | subtree<folded_layout>) };
+                return decltype(wrap(subtree<folded_layout>(FWD(t)))){ unwrap_fwd(subtree<folded_layout>(FWD(t))) };
             }
             else
             {
@@ -382,14 +381,14 @@ namespace senluo
                 if constexpr (Axis == 0uz)
                 {
                     static_assert(I < size<T>, "Component index out of range.");
-                    return tree | subtree<I>;
+                    return subtree<I>(tree);
                 }
                 else
                 {
                     static_assert(branched<T>, "Axis index out of range.");
                     return[&]<size_t...J>(std::index_sequence<J...>)
                     {
-                        return make_tuple(component_t<I, Axis - 1uz>::relayout(tree | subtree<J>)...);
+                        return make_tuple(component_t<I, Axis - 1uz>::relayout(subtree<J>(tree))...);
                     }(std::make_index_sequence<size<T>>{});
                 }
             }
@@ -417,7 +416,7 @@ namespace senluo
                 }
                 else return[&]<size_t...I>(std::index_sequence<I...>)
                 {
-                    return senluo::make_tuple(transpose_t<Axis1 - 1uz, Axis2 - 1uz>::relayout(tree | subtree<I>)...);
+                    return senluo::make_tuple(transpose_t<Axis1 - 1uz, Axis2 - 1uz>::relayout(subtree<I>(tree))...);
                 }(std::make_index_sequence<size<T>>{});
             }
         };
@@ -436,7 +435,7 @@ namespace senluo
                 return[&]<size_t...I>(std::index_sequence<I...>)
                 {
                     constexpr auto last_index = size<T> - 1uz;
-                    return senluo::make_tuple(tree | subtree<last_index - I> ...);
+                    return make_tuple(subtree<last_index - I>(tree)...);
                 }(std::make_index_sequence<size<T>>{});
             }
         };

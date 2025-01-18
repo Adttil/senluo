@@ -11,12 +11,12 @@ namespace senluo
 {
     namespace detail::make_t_ns
     {
-        template<typename T, indexical_array auto indexes>
+        template<typename T, auto indexes>
         struct make_t;
     }
 
     template<typename T, indexical auto...indexes>
-    inline constexpr auto make = detail::make_t_ns::make_t<T, to_indexes(indexes...)>{};
+    inline constexpr auto make = detail::make_t_ns::make_t<T, detail::to_indexes(indexes...)>{};
     
     template<typename T>
     struct sequence_maker
@@ -168,7 +168,7 @@ namespace senluo
         // }
     }
 
-    template<typename T, indexical_array auto indexes>
+    template<typename T, auto indexes>
     struct detail::make_t_ns::make_t : adaptor_closure<make_t<T, indexes>>
     {
         template<typename Arg>
@@ -176,23 +176,23 @@ namespace senluo
         {
             if constexpr(terminal<subtree_t<Arg, indexes>> || terminal<T>)
             {
-                return FWD(arg) | subtree<indexes>;
+                return (T)subtree<indexes>(FWD(arg));
             }
-            else if constexpr(std::same_as<std::remove_cvref_t<subtree_t<Arg, indexes>>, T> && requires{ T{ FWD(arg) | subtree<indexes> }; })
+            else if constexpr(std::same_as<std::remove_cvref_t<subtree_t<Arg, indexes>>, T> && requires{ T{ subtree<indexes>(FWD(arg)) }; })
             {
-                return FWD(arg) | subtree<indexes>;
+                return (T)subtree<indexes>(FWD(arg));
             }
             else if constexpr(requires{ get_maker(type_tag<T>{}); })
             {
-                return get_maker(type_tag<T>{})(FWD(arg) | subtree<indexes>);
+                return get_maker(type_tag<T>{})(subtree<indexes>(FWD(arg)));
             }
             else if constexpr(aggregate_tree<T>)
             {
-                return aggregate_maker<T>{}(FWD(arg) | subtree<indexes>);
+                return aggregate_maker<T>{}(subtree<indexes>(FWD(arg)));
             }
             else if constexpr(requires{ std::tuple_size<T>::value; })
             {
-                return children_maker<T>{}(FWD(arg) | subtree<indexes>);
+                return children_maker<T>{}(subtree<indexes>(FWD(arg)));
             }
             else
             {

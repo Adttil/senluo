@@ -36,7 +36,7 @@ namespace senluo
                 {
                     auto&& left_seq = FWD(left) | refer | seperate;
                     auto&& right_seq = FWD(right) | refer | seperate;
-                    return (... + ((FWD(left_seq) | subtree<I>) * (FWD(right_seq) | subtree<I>)));
+                    return (... + (subtree<I>(FWD(left_seq)) * subtree<I>(FWD(right_seq))));
                 }(std::make_index_sequence<detail::min(size<L>, size<R>)>{});
             }
         };
@@ -116,7 +116,7 @@ namespace senluo
                 constexpr size_t n = tensor_shape<R>[1uz];
                 
                 constexpr auto layout = get_layout<m, s, n>();
-                constexpr auto op_tree = senluo::make_tree_of_same_value(operation_t::apply_invoke, shape<mat<m, n>>);
+                constexpr auto op_tree = detail::make_tree_of_same_value(operation_t::apply_invoke, shape<mat<m, n>>);
 
                 return decltype(combine(decltype(dot){}, FWD(l), FWD(r)) | relayout<layout> | operate<op_tree>)
                 {

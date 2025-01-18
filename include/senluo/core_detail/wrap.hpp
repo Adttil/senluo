@@ -35,7 +35,7 @@ namespace senluo
         {
             if constexpr(I < size<T>)
             {
-                return FWD(self, base) | subtree<I>;
+                return subtree<I>(FWD(self, base));
             }
             else
             {
