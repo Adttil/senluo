@@ -52,9 +52,10 @@ namespace senluo
             constexpr auto child_relayout = make_tuple(fold_layout<subtree<I>(Layout)>(Shape{})...);
             constexpr size_t n = size<decltype(get<0uz>(child_relayout))>;
 
+            // Use subtree instead of get for msvc adl bug: https://gcc.godbolt.org/z/GYvdrbooW.
             if constexpr(n > 0uz
-                && (... && detail::indexical_array<decltype(get<I>(child_relayout))>)
-                && (... && (n == size<decltype(get<I>(child_relayout))>))
+                && (... && detail::indexical_array<decltype(subtree<I>(child_relayout))>)
+                && (... && (n == size<decltype(subtree<I>(child_relayout))>))
             )
             {
                 constexpr auto prefix = detail::array_take<n - 1uz>(get<0uz>(child_relayout));
@@ -168,7 +169,8 @@ namespace senluo
         }
         else return[&]<size_t...I>(std::index_sequence<I...>)
         {
-            (..., inverse_relayout_usage_tree_at<get<I>(UnfoldedLayout)>(tag_tree_get<I>(usage_tree), result));
+            (..., inverse_relayout_usage_tree_at<subtree<I>(UnfoldedLayout)>(tag_tree_get<I>(usage_tree), result));
+            //                                   ^^^^^^^ instead of get for msvc adl bug: https://gcc.godbolt.org/z/GYvdrbooW
         }(std::make_index_sequence<size<decltype(UnfoldedLayout)>>{});
     }
 
@@ -213,7 +215,8 @@ namespace senluo
         }
         else return [&]<size_t...I>(std::index_sequence<I...>)
         {
-            return (... && senluo::is_enable_to_relayout_operation_tree<get<I>(FoldedLayout)>(operation_tree));
+            return (... && senluo::is_enable_to_relayout_operation_tree<subtree<I>(FoldedLayout)>(operation_tree));
+            //                                                          ^^^^^^^ instead of get for msvc adl bug: https://gcc.godbolt.org/z/GYvdrbooW
         }(std::make_index_sequence<size<decltype(FoldedLayout)>>{});
     };
 }

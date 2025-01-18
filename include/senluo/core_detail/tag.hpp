@@ -217,7 +217,8 @@ namespace senluo
         }
         else return [&]<size_t...I>(std::index_sequence<I...>)
         {
-            (..., set_data_stricture_tree(get<I>(tree)));
+            (..., set_data_stricture_tree(subtree<I>(tree)));
+            //                            ^^^^^^^ instead of get for msvc adl bug: https://gcc.godbolt.org/z/GYvdrbooW
         }(std::make_index_sequence<size<DataStrictureTree>>{});
     }
 
@@ -230,7 +231,8 @@ namespace senluo
         }
         else return [&]<size_t...I>(std::index_sequence<I...>)
         {
-            (..., set_data_stricture_tree_by_layout<get<I>(Layout)>(tree));
+            (..., set_data_stricture_tree_by_layout<subtree<I>(Layout)>(tree));
+            //                                      ^^^^^^^ instead of get for msvc adl bug: https://gcc.godbolt.org/z/GYvdrbooW
         }(std::make_index_sequence<size<decltype(Layout)>>{});
     }
 
@@ -259,7 +261,8 @@ namespace senluo
         {
             return tuple<decltype(get_inverse_sequence_stricture_tree_impl<tag_tree_get<I>(RawStrictureTree)
                                                         , layout_get<I>(Layout)
-                                                        , get<I>(UsageTree)>(cur_tree))...>
+                                                        , subtree<I>(UsageTree)>(cur_tree))...>
+                                                        //^^^^^^^ instead of get for msvc adl bug: https://gcc.godbolt.org/z/GYvdrbooW
             {
                 get_inverse_sequence_stricture_tree_impl<tag_tree_get<I>(RawStrictureTree)
                                                         , layout_get<I>(Layout)
@@ -343,7 +346,8 @@ namespace senluo
         }
         else return [&]<size_t...I>(std::index_sequence<I...>)
         {   
-            return (... && inverse_layout_index_len_at<get<I>(Layout), Depth + 1uz>(result_index_len, setted_count));
+            return (... && inverse_layout_index_len_at<subtree<I>(Layout), Depth + 1uz>(result_index_len, setted_count));
+            //                                         ^^^^^^^ instead of get for msvc adl bug: https://gcc.godbolt.org/z/GYvdrbooW
         }(std::make_index_sequence<size<decltype(Layout)>>{});
     }
 
@@ -398,7 +402,8 @@ namespace senluo
         }
         else return [&]<size_t...I>(std::index_sequence<I...>)
         {   
-            return (..., inverse_layout_at<get<I>(Layout), detail::array_cat(CurIndex, array{ I })>(result));
+            return (..., inverse_layout_at<subtree<I>(Layout), detail::array_cat(CurIndex, array{ I })>(result));
+            //                             ^^^^^^^ instead of get for msvc adl bug: https://gcc.godbolt.org/z/GYvdrbooW
         }(std::make_index_sequence<size<decltype(Layout)>>{});
     }
 
