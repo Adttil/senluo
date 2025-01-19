@@ -1,9 +1,9 @@
 #ifndef RUZHOUXIE_ASTRICT_HPP
 #define RUZHOUXIE_ASTRICT_HPP
 
-#include "../tree.hpp"
 #include "../general.hpp"
 #include "principle.hpp"
+#include "tree.hpp"
 #include "wrap.hpp"
 
 #include "../macro_define.hpp"
@@ -85,8 +85,8 @@ namespace senluo::detail::astrict_ns
     template<typename T, auto FoldedStrictureTree>
     struct tree_t : based_on<T>, standard_interface<tree_t<T, FoldedStrictureTree>>
     {
-        template<size_t I, typename Self> 
-        constexpr decltype(auto) get(this Self&& self)
+        template<size_t I, unwarp_derived_from<tree_t> Self> 
+        friend constexpr decltype(auto) subtree(Self&& self)
         {
             constexpr auto stricture_subtree = tag_tree_get<I>(FoldedStrictureTree);
             if constexpr(I >= size<T>)
@@ -95,20 +95,20 @@ namespace senluo::detail::astrict_ns
             }
             else if constexpr(not std::same_as<decltype(stricture_subtree), const stricture_t>)
             {
-                return tree_t<decltype(subtree<I>(FWD(self, base))), stricture_subtree>{ subtree<I>(FWD(self, base)) };
+                return tree_t<decltype(FWD(self) | base | senluo::subtree<I>), stricture_subtree>{ FWD(self) | base | senluo::subtree<I> };
             }
-            else if constexpr(stricture_subtree == stricture_t::none || only_input<decltype(subtree<I>(FWD(self, base)))>())
+            else if constexpr(stricture_subtree == stricture_t::none || only_input<decltype(FWD(self) | base | senluo::subtree<I>)>())
             {
-                return subtree<I>(FWD(self, base));
+                return FWD(self) | base | senluo::subtree<I>;
             }
-            else if constexpr(std::is_reference_v<decltype(subtree<I>(FWD(self, base)))> 
-                              && only_input<decltype(detail::to_readonly(subtree<I>(FWD(self, base))))>())
+            else if constexpr(std::is_reference_v<decltype(FWD(self) | base | senluo::subtree<I>)> 
+                              && only_input<decltype(detail::to_readonly(detail::to_readonly(FWD(self)) | base | senluo::subtree<I>))>())
             {
-                return detail::to_readonly(subtree<I>(FWD(self, base)));
+                return detail::to_readonly(detail::to_readonly(FWD(self)) | base | senluo::subtree<I>);
             }
             else
             {
-                return tree_t<decltype(subtree<I>(FWD(self, base))), stricture_t::readonly>{ subtree<I>(FWD(self, base)) };
+                return tree_t<decltype(FWD(self) | base | senluo::subtree<I>), stricture_t::readonly>{ FWD(self) | base | senluo::subtree<I> };
             }
         }
 

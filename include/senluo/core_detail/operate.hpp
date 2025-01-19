@@ -1,10 +1,10 @@
 #ifndef RUZHOUXIE_OPERATE_HPP
 #define RUZHOUXIE_OPERATE_HPP
 
-#include "../tree.hpp"
 #include "../general.hpp"
 #include "principle.hpp"
 #include "wrap.hpp"
+#include "tree.hpp"
 #include "relayout.hpp"
 
 #include "../macro_define.hpp"
@@ -43,8 +43,8 @@ namespace senluo::detail::operate_ns
     template<typename T, auto OperationTree>
     struct tree_t : based_on<T>, standard_interface<tree_t<T, OperationTree>>
     {
-        template<size_t I, typename Self> 
-        constexpr decltype(auto) get(this Self&& self)
+        template<size_t I, unwarp_derived_from<tree_t> Self> 
+        friend constexpr decltype(auto) subtree(Self&& self)
         {
             constexpr auto op_subtree = tag_tree_get<I>(OperationTree);
             if constexpr(I >= size<decltype(OperationTree)>)
@@ -53,18 +53,18 @@ namespace senluo::detail::operate_ns
             }
             else if constexpr(not std::same_as<decltype(op_subtree), const operation_t>)
             {
-                return tree_t<decltype(subtree<I>(FWD(self, base))), op_subtree>
+                return tree_t<decltype(FWD(self) | base | senluo::subtree<I>), op_subtree>
                 {
-                    subtree<I>(FWD(self, base))
+                    FWD(self) | base | senluo::subtree<I>
                 };
             }
             else if constexpr(op_subtree == operation_t::none)
             {
-                return subtree<I>(FWD(self, base));
+                return FWD(self) | base | senluo::subtree<I>;
             }
             else
             {
-                return apply_invoke(subtree<I>(FWD(self, base)));
+                return apply_invoke(FWD(self) | base | senluo::subtree<I>);
             }
         }
 

@@ -1,4 +1,4 @@
-#include <senluo\tree.hpp>
+#include <senluo\core.hpp>
 #include "test_tool.hpp"
 
 using namespace senluo;
@@ -48,8 +48,9 @@ TEST(tree, subtree)
 
     MAGIC_TCHECK(decltype(x | subtree<0>), int&);
     MAGIC_TCHECK(decltype(std::as_const(x) | subtree<0>), const int&);
-    MAGIC_TCHECK(decltype(std::move(x) | subtree<0>), int&&);
-    MAGIC_TCHECK(decltype(std::move(std::as_const(x)) | subtree<0>), const int&&);
+    MAGIC_TCHECK(decltype(std::move(x) | subtree<0>), int);
+    MAGIC_TCHECK(decltype(std::move(x) | refer | subtree<0>), int&&);
+    MAGIC_TCHECK(decltype(std::move(std::as_const(x)) | refer | subtree<0>), const int&&);
 
     MAGIC_TCHECK(decltype(x | subtree<1>), float&);
     MAGIC_TCHECK(decltype(std::as_const(x) | subtree<1>), float&);

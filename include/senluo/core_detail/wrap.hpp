@@ -2,7 +2,7 @@
 #define SENLUO_WRAP_HPP
 
 #include "../general.hpp"
-#include "../tree.hpp"
+#include "../adaptor.hpp"
 
 #include "../macro_define.hpp"
 
@@ -30,18 +30,18 @@ namespace senluo
     template<class T>
     struct wrapper : based_on<T>, standard_interface<wrapper<T>>
     {
-        template<size_t I, class Self>
-        constexpr decltype(auto) get(this Self&& self)
-        {
-            if constexpr(I < size<T>)
-            {
-                return subtree<I>(FWD(self, base));
-            }
-            else
-            {
-                return end();
-            } 
-        }
+        // template<size_t I, class Self>
+        // constexpr decltype(auto) get(this Self&& self)
+        // {
+        //     if constexpr(I < size<T>)
+        //     {
+        //         return subtree<I>(FWD(self, base));
+        //     }
+        //     else
+        //     {
+        //         return end();
+        //     } 
+        // }
 
         template<class Self>
         constexpr explicit operator std::decay_t<T>(this Self&& self)
@@ -71,8 +71,39 @@ namespace senluo
         { []<class V>(wrapper<V>&)->wrapper<V>*{ return nullptr; }(t) } -> std::same_as<std::remove_cvref_t<T>*>;
     };
 
+    namespace detail
+    {
+        struct pass_t : adaptor_closure<pass_t>
+        {
+            template<class T>
+            constexpr auto operator()(T&& t)const
+            AS_EXPRESSION(
+                (T)FWD(t)
+            )
+        };
+    }
+
+    inline constexpr detail::pass_t pass{};
+
     namespace detail 
     {
+        template<class T>
+        constexpr auto unwrap_t_tag()
+        {
+            if constexpr(not wrapped<T>)
+            {
+                return type_tag<std::remove_const_t<T>>{};
+            }
+            else if constexpr(std::is_object_v<T> && requires{ requires std::is_object_v<decltype(std::declval<T>().base)>; })
+            {
+                return type_tag<std::remove_const_t<decltype(std::declval<T>().base)>>{};
+            }
+            else
+            {
+                return type_tag<decltype(FWD(std::declval<T>(), base))>{};
+            }
+        }
+
         struct unwrap_fn : adaptor_closure<unwrap_fn>
         {
             template<class T>
@@ -115,7 +146,7 @@ namespace senluo
     inline constexpr detail::unwrap_fn unwrap{};
 
     template<class T>
-    using unwrap_t = decltype(unwrap(std::declval<T>()));
+    using unwrap_t = decltype(detail::unwrap_t_tag<T>())::type;
 
     inline constexpr detail::unwrap_fwd_fn unwrap_fwd{};
 
@@ -133,7 +164,7 @@ namespace senluo
         struct refer_t : adaptor_closure<refer_t>
         {
             template<class T>
-            constexpr wrapper<senluo::unwrap_t<T>&&> operator()(T&& t) const
+            constexpr wrapper<senluo::unwrap_t<T&&>&&> operator()(T&& t) const
             {
                 return { unwrap_fwd(FWD(t)) };
             }

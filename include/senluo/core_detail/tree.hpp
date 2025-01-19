@@ -1,15 +1,24 @@
 #ifndef SENLUO_TREE_HPP
 #define SENLUO_TREE_HPP
 
-#include "adaptor.hpp"
-#include "array.hpp"
-#include "math.hpp"
-#include "tuple.hpp"
+#include "../adaptor.hpp"
+#include "../array.hpp"
+#include "../math.hpp"
+#include "../tuple.hpp"
+#include "wrap.hpp"
 
-#include "macro_define.hpp"
+#include "../macro_define.hpp"
 
 namespace senluo::detail
 {
+    template<class T>
+    concept indexical_array = requires(std::remove_cvref_t<T> t, size_t i)
+    {
+        requires std::integral<typename std::remove_cvref_t<T>::value_type>;
+        std::tuple_size_v<std::remove_cvref_t<T>>;
+        { t[i] } -> std::same_as<typename std::remove_cvref_t<T>::value_type&>;
+    };
+    
     constexpr size_t normalize_index(std::integral auto index, size_t size)noexcept
     {
         if(index >= 0)
@@ -56,13 +65,31 @@ namespace senluo::detail
         }(std::make_index_sequence<std::tuple_size_v<S>>{});
     }
     
-    template<class T>
-    concept indexical_array = requires(std::remove_cvref_t<T> t, size_t i)
+    template<bool Copy>
+    struct opt_move_copy_fn;
+
+    template<>
+    struct opt_move_copy_fn<true>
     {
-        requires std::integral<typename std::remove_cvref_t<T>::value_type>;
-        std::tuple_size_v<std::remove_cvref_t<T>>;
-        { t[i] } -> std::same_as<typename std::remove_cvref_t<T>::value_type&>;
+        template<class T>
+        constexpr auto operator()(T&& t) const
+        AS_EXPRESSION(
+            (T)FWD(t)
+        )
     };
+
+    template<>
+    struct opt_move_copy_fn<false>
+    {
+        template<class T>
+        constexpr T&& operator()(T&& t) const noexcept
+        {
+            return FWD(t);
+        }
+    };
+
+    template<bool Copy>
+    constexpr opt_move_copy_fn<Copy> opt_move_copy;
 }
 
 namespace senluo
@@ -81,7 +108,7 @@ namespace senluo
     
     inline constexpr size_t auto_supported_aggregate_max_size = 64uz;
 
-    namespace detail::get_ns
+    namespace detail
     {
         struct universal_type
         {
@@ -133,22 +160,88 @@ namespace senluo
             }
             else
             {
-#include "code_generate/aggregate_getter_invoker.code"
+#include "../code_generate/aggregate_getter_invoker.code"
             }
         };
 
+        template<size_t I, class T>
+        using aggregate_get_t = decltype(detail::aggregate_get<I>(std::declval<T>()));
+
+        template<class L, class CL, class R, class RL>
+        struct storage_type;
+
+        template<class T>
+        struct storage_type<T&, const T&, T&&, const T&&>
+        {
+            using type = T;
+        };
+
+        template<class T>
+        struct storage_type<T, T, T, T>
+        {
+            using type = T;
+        };
+
+        template<class T>
+        struct storage_type<T&, T&, T&, T&>
+        {
+            using type = T&;
+        };
+
+        template<class T>
+        struct storage_type<const T&, const T&, const T&, const T&>
+        {
+            using type = const T&;
+        };
+
+        template<class T>
+        struct storage_type<T&, T&, T&&, T&&>
+        {
+            using type = T&&;
+        };
+
+        template<class T>
+        struct storage_type<const T&, const T&, const T&&, const T&&>
+        {
+            using type = const T&&;
+        };
+
+        template<size_t I, class T>
+        struct aggregate_member
+        : storage_type<aggregate_get_t<I, T&>, aggregate_get_t<I, const T&>, aggregate_get_t<I, T&&>, aggregate_get_t<I, const T&&>>
+        {};
+
+        template<size_t I, class T>
+        using aggregate_member_t = aggregate_member<I, T>::type;
+    }
+
+    namespace detail::get_ns
+    {
         template<size_t I>
         void get();
+
+        //for msvc adl bug
+        template<size_t I>
+        void subtree();
 
         enum strategy_t
         {
             none,
+            
             array,
-            tagged_member,
-            tagged_adl,
-            member,
-            adl,
-            aggregate
+            array_copy,
+
+            member_subtree,
+            adl_subtree,
+            
+            member_get,
+            member_get_copy,
+            
+            adl_get,
+            adl_get_copy,
+            
+            aggregate,
+            aggregate_copy
         };
 
         template<size_t I>
@@ -158,41 +251,74 @@ namespace senluo
             template<class T>
             static constexpr choice_t<strategy_t> choose()
             {
-                using type = std::remove_cvref_t<T>;
+                using utype = unwrap_t<T>;
+                using type = std::remove_cvref_t<utype>;
+                //array
                 if constexpr(std::is_bounded_array_v<type>)
                 {
-                    if constexpr(I < std::extent_v<type>)
-                    {
-                        return { strategy_t::array, true };
-                    }
-                    else
+                    if constexpr(I >= std::extent_v<type>)
                     {
                         return { strategy_t::none, true };
                     }
+                    else if constexpr(std::is_object_v<unwrap_t<T>> && requires{ pass(std::declval<type>()[I]); } )
+                    {
+                        
+                        return { strategy_t::array_copy, noexcept(pass(std::declval<type>()[I])) };
+                    }
+                    else
+                    {
+                        return { strategy_t::array, true };
+                    }
                 }
-                else if constexpr(requires{ std::declval<T>().template get<I>(custom_t{}); })
+                //custom
+                else if constexpr(requires{ std::declval<T>().template subtree<I>(); })
                 {
-                    return { strategy_t::tagged_member, noexcept(std::declval<T>().template get<I>(custom_t{})) };
+                    return { strategy_t::member_subtree, noexcept(std::declval<T>().template subtree<I>()) };
                 }
-                else if constexpr(requires{ get<I>(std::declval<T>(), custom_t{}); })
+                else if constexpr(requires{ subtree<I>(std::declval<T>()); })
                 {
-                    return { strategy_t::tagged_adl, noexcept(get<I>(std::declval<T>(), custom_t{})) };
+                    return { strategy_t::adl_subtree, noexcept(subtree<I>(std::declval<T>())) };
                 }
+                //tuple-like
                 else if constexpr(requires{ requires (I >= std::tuple_size<type>::value); })
                 {
                     return { strategy_t::none, true };
                 }
-                else if constexpr(requires{ std::declval<T>().template get<I>(); })
+                else if constexpr(requires{ std::declval<utype>().template get<I>(); })
                 {
-                    return { strategy_t::member, noexcept(std::declval<T>().template get<I>()) };
+                    using etype = std::tuple_element_t<I, type>;
+                    if constexpr(std::is_object_v<utype> && std::is_object_v<etype> && std::is_move_constructible_v<etype>)
+                    {
+                        return { strategy_t::member_get_copy, noexcept(pass(std::declval<utype>().template get<I>())) };
+                    }
+                    else
+                    {
+                        return { strategy_t::member_get, noexcept(std::declval<utype>().template get<I>()) };
+                    }
                 }
-                else if constexpr(requires{ get<I>(std::declval<T>()); })
+                else if constexpr(requires{ get<I>(std::declval<utype>()); })
                 {
-                    return { strategy_t::adl, noexcept(get<I>(std::declval<T>())) };
+                    using etype = std::tuple_element_t<I, type>;
+                    if constexpr(std::is_object_v<utype> && std::is_object_v<etype> && std::is_move_constructible_v<etype>)
+                    {
+                        return { strategy_t::adl_get_copy, noexcept(pass(get<I>(std::declval<utype>()))) };
+                    }
+                    else
+                    {
+                        return { strategy_t::adl_get, noexcept(get<I>(std::declval<utype>())) };
+                    }
                 }
                 else if constexpr(std::is_aggregate_v<type> && aggregate_member_count<T> != 0uz)
                 {
-                    return { strategy_t::aggregate, true };
+                    using mtype = aggregate_member_t<I, type>;
+                    if constexpr(std::is_object_v<utype> && std::is_object_v<mtype> && std::is_move_constructible_v<mtype>)
+                    {
+                        return { strategy_t::aggregate_copy, std::is_nothrow_move_constructible_v<mtype> };
+                    }
+                    else
+                    {
+                        return { strategy_t::aggregate, true };
+                    }
                 }
                 else
                 {
@@ -212,27 +338,43 @@ namespace senluo
                 }
                 else if constexpr(strategy == strategy_t::array)
                 {
-                    return FWD(t)[I];
+                    return unwrap_fwd(FWD(t))[I];
                 }
-                else if constexpr(strategy == strategy_t::tagged_member)
+                else if constexpr(strategy == strategy_t::array_copy)
                 {
-                    return FWD(t).template get<I>(custom_t{});
+                    return pass(unwrap_fwd(FWD(t))[I]);
                 }
-                else if constexpr(strategy == strategy_t::tagged_adl)
+                else if constexpr(strategy == strategy_t::member_subtree)
                 {
-                    return get<I>(FWD(t), custom_t{});
+                    return FWD(t).template subtree<I>();
                 }
-                else if constexpr(strategy == strategy_t::member)
+                else if constexpr(strategy == strategy_t::adl_subtree)
                 {
-                    return FWD(t).template get<I>();
+                    return subtree<I>(FWD(t));
                 }
-                else if constexpr(strategy == strategy_t::adl)
+                else if constexpr(strategy == strategy_t::member_get)
                 {
-                    return get<I>(FWD(t));
+                    return unwrap_fwd(FWD(t)).template get<I>();
+                }
+                else if constexpr(strategy == strategy_t::member_get_copy)
+                {
+                    return pass(unwrap_fwd(FWD(t)).template get<I>());
+                }
+                else if constexpr(strategy == strategy_t::adl_get)
+                {
+                    return get<I>(unwrap_fwd(FWD(t)));
+                }
+                else if constexpr(strategy == strategy_t::adl_get_copy)
+                {
+                    return pass(get<I>(unwrap_fwd(FWD(t))));
                 }
                 else if constexpr(strategy == strategy_t::aggregate)
                 {
-                    return aggregate_get<I>(FWD(t));
+                    return detail::aggregate_get<I>(unwrap_fwd(FWD(t)));
+                }
+                else if constexpr(strategy == strategy_t::aggregate_copy)
+                {
+                    return pass(detail::aggregate_get<I>(unwrap_fwd(FWD(t))));
                 }
             }
         };
@@ -247,7 +389,7 @@ namespace senluo
     template<class T>
     inline constexpr size_t size = []<size_t N = 0uz>(this auto&& self)
     {
-        if constexpr (std::same_as<decltype(detail::raw_get<N>(std::declval<T>())), end_t>)
+        if constexpr (std::same_as<decltype(detail::raw_get<N>(std::declval<T&>())), end_t>)
         {
             return N;
         }
@@ -274,9 +416,9 @@ namespace senluo
     struct detail::subtree_fn : adaptor_closure<subtree_fn<Indexes>>
     {
         template<class T> requires (Indexes.size() == 0uz)
-        constexpr T&& operator()(T&& t) const noexcept
+        constexpr decltype(auto) operator()(T&& t) const noexcept
         {
-            return FWD(t);
+            return unwrap(FWD(t));
         }
 
         template<class T> requires (Indexes.size() == 1uz && size<T> > 0)
@@ -369,5 +511,5 @@ namespace senluo
     }();
 }
 
-#include "macro_undef.hpp"
+#include "../macro_undef.hpp"
 #endif

@@ -2,9 +2,9 @@
 #define RUZHOUXIE_STANDARD_HPP
 
 #include<functional>
-#include "../tree.hpp"
 #include "../constant.hpp"
 #include "../general.hpp"
+#include "tree.hpp"
 #include "principle.hpp"
 #include "wrap.hpp"
 #include "pretreat.hpp"

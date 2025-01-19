@@ -2,7 +2,7 @@
 #define SENLUO_PRINCIPLE_HPP
 
 #include "../general.hpp"
-#include "../tree.hpp"
+#include "tree.hpp"
 #include "wrap.hpp"
 #include "tag.hpp"
 
@@ -12,15 +12,6 @@ namespace senluo
 {
     namespace detail
     {
-        struct pass_t : adaptor_closure<pass_t>
-        {
-            template<class T>
-            constexpr decltype(auto) operator()(T&& t)const
-            {
-                return (T)FWD(t);
-            }
-        };
-
         template<auto Layout>
         struct relayout_t;
 
@@ -30,8 +21,6 @@ namespace senluo
         template<auto OperationTree>
         struct operate_t;
     }
-    
-    inline constexpr detail::pass_t pass{};
 
     template<auto Layout>
     inline constexpr detail::relayout_t<Layout> relayout{};
@@ -105,7 +94,7 @@ namespace senluo
 
         constexpr decltype(auto) operator()(this auto&&, auto&& tree)
         {
-            decltype(auto) principle = FWD(tree) | refer | senluo::principle<Pretreater::usage_tree()>;
+            decltype(auto) principle = FWD(tree) | senluo::principle<Pretreater::usage_tree()>;
 
             constexpr auto data_shape = shape<decltype(data(FWD(principle)))>;
             
@@ -114,10 +103,20 @@ namespace senluo
             constexpr auto stricture_tree = Pretreater::template pretreat_stricture<raw_stricture_tree, layout>(data_shape);
             constexpr auto operation_tree = principle.operation_tree();
 
-            return decltype(data(FWD(principle)) | relayout<layout> | astrict<stricture_tree> | operate<operation_tree>)
+            if constexpr(std::is_rvalue_reference_v<decltype(data(FWD(principle)))>)
             {
-                data(FWD(principle))
-            };
+                return decltype(data(FWD(principle)) | refer | relayout<layout> | astrict<stricture_tree> | operate<operation_tree>)
+                {
+                    data(FWD(principle))
+                };
+            }
+            else
+            {
+                return decltype(data(FWD(principle)) | relayout<layout> | astrict<stricture_tree> | operate<operation_tree>)
+                {
+                    data(FWD(principle))
+                };
+            }
         }
     };
 
@@ -355,11 +354,11 @@ namespace senluo
     template<typename Princile>
     struct detail::principle_interface : standard_interface<Princile>
     {
-        template<size_t I, typename Self>
-        constexpr decltype(auto) get(this Self&& self)
+        template<size_t I, unwarp_derived_from<Princile> Self>
+        friend constexpr decltype(auto) subtree(Self&& self)
         {
-            decltype(auto) tree = data(FWD(self) | refer)
-                | relayout<Princile::layout()> 
+            decltype(auto) tree = wrapper<decltype(data(FWD(self)))>{ data(FWD(self)) }
+                | relayout<Princile::layout()>
                 | astrict<Princile::stricture_tree()>
                 | operate<Princile::operation_tree()>;
             if constexpr(I >= size<decltype(tree)>)
@@ -368,7 +367,7 @@ namespace senluo
             }
             else
             {
-               return subtree<I>(FWD(tree)); 
+               return FWD(tree) | subtree<I>; 
             }
             
         }
@@ -427,10 +426,10 @@ namespace senluo
         {
             return [&]<size_t...I>(std::index_sequence<I...>)
             {
-                //todo... maybe daling and no need to use detail::base
-                return tuple<decltype(data(FWD(self) | detail::base | subtree<I> | principle<tag_tree_get<I>(UsageTree)>))...>
+                //todo... maybe wrong
+                return tuple<decltype(data(FWD(self) | detail::base | relayout<I> | principle<tag_tree_get<I>(UsageTree)>))...>
                 {
-                    data(FWD(self) | detail::base | subtree<I> | principle<tag_tree_get<I>(UsageTree)>)...
+                    data(FWD(self) | detail::base | relayout<I> | principle<tag_tree_get<I>(UsageTree)>)...
                 };
             }(std::make_index_sequence<size<T>>{});
         }

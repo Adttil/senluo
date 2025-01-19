@@ -1,8 +1,8 @@
 #ifndef RUZHOUXIE_RELAYOUT_HPP
 #define RUZHOUXIE_RELAYOUT_HPP
 
-#include "../tree.hpp"
 #include "../general.hpp"
+#include "tree.hpp"
 #include "principle.hpp"
 #include "wrap.hpp"
 #include "make.hpp"
@@ -252,8 +252,8 @@ namespace senluo::detail::relayout_ns
     template<typename T, auto FoldedLayout>
     struct tree_t : based_on<T>, standard_interface<tree_t<T, FoldedLayout>>
     {
-        template<size_t I, typename Self> 
-        constexpr decltype(auto) get(this Self&& self)
+        template<size_t I, unwarp_derived_from<tree_t> Self> 
+        friend constexpr decltype(auto) subtree(Self&& self)
         {
             constexpr auto sublayout = layout_get<I>(FoldedLayout);
             if constexpr(detail::equal(sublayout, invalid_index))
@@ -262,12 +262,12 @@ namespace senluo::detail::relayout_ns
             }
             else if constexpr(indexical<decltype(sublayout)>)
             {
-                return subtree<sublayout>(FWD(self, base));
+                return FWD(self) | base | senluo::subtree<sublayout>;
                 
             }
             else
             {
-                return tree_t<decltype(FWD(self, base)), sublayout>{ FWD(self, base) };
+                return tree_t<unwrap_t<decltype(FWD(self) | base)>, sublayout>{ unwrap_fwd(FWD(self) | base) };
             }
         }
 

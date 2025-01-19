@@ -1,8 +1,8 @@
 #ifndef RUZHOUXIE_MAKE_HPP
 #define RUZHOUXIE_MAKE_HPP
 
-#include "../tree.hpp"
 #include "../general.hpp"
+#include "tree.hpp"
 #include "principle.hpp"
 
 #include "../macro_define.hpp"
@@ -60,65 +60,6 @@ namespace senluo
         }
     };
 
-    namespace detail
-    {
-        template<class L, class CL, class R, class RL>
-        struct storage_type;
-
-        template<class T>
-        struct storage_type<T&, const T&, T&&, const T&&>
-        {
-            using type = T;
-        };
-
-        template<class T>
-        struct storage_type<T, T, T, T>
-        {
-            using type = T;
-        };
-
-        template<class T>
-        struct storage_type<T&, T&, T&, T&>
-        {
-            using type = T&;
-        };
-
-        template<class T>
-        struct storage_type<const T&, const T&, const T&, const T&>
-        {
-            using type = const T&;
-        };
-
-        template<class T>
-        struct storage_type<T&, T&, T&&, T&&>
-        {
-            using type = T&&;
-        };
-
-        template<class T>
-        struct storage_type<const T&, const T&, const T&&, const T&&>
-        {
-            using type = const T&&;
-        };
-
-        template<size_t I, class T>
-        struct tuple_element_by_child
-        : storage_type<subtree_t<T&, I>, subtree_t<const T&, I>, subtree_t<T&&, I>, subtree_t<const T&&, I>>
-        {};
-
-        template<size_t I, class T>
-        using tuple_element_t_by_child = tuple_element_by_child<I, T>::type;
-
-        template<class T>
-        consteval bool is_valid_for_tuple_element_by_child()
-        {
-            return []<size_t...I>(std::index_sequence<I...>)
-            {
-                return (... && requires{ typename tuple_element_by_child<I, T>::type; });
-            }(std::make_index_sequence<size<T>>{});
-        }
-    }
-
     template<typename T>
     struct aggregate_maker
     {
@@ -128,7 +69,7 @@ namespace senluo
             return [&]<size_t...I>(std::index_sequence<I...>)
             {
                 auto&& seq = FWD(arg) | refer | sequence;
-                return T{ { FWD(seq) | make<detail::tuple_element_t_by_child<I, T>, I> }... };
+                return T{ { FWD(seq) | make<detail::aggregate_member_t<I, T>, I> }... };
             }(std::make_index_sequence<size<T>>{});
         }
     };
@@ -140,7 +81,7 @@ namespace senluo
         {
             return []<size_t...I>(std::index_sequence<I...>) -> bool
             {
-                return (... && (detail::get_ns::get_t<I>::template choose<T>().strategy == detail::get_ns::strategy_t::aggregate));
+                return (... && (detail::get_ns::get_t<I>::template choose<T&>().strategy == detail::get_ns::strategy_t::aggregate));
             }(std::make_index_sequence<size<T>>{});
         }
     }

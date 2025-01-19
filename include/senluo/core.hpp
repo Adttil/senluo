@@ -1,4 +1,5 @@
 #include "core_detail/wrap.hpp"
+#include "core_detail/tree.hpp"
 #include "core_detail/principle.hpp"
 #include "core_detail/astrict.hpp"
 #include "core_detail/relayout.hpp"

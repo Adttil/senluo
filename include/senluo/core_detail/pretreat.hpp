@@ -1,8 +1,8 @@
 #ifndef RUZHOUXIE_PRETREATMENT_HPP
 #define RUZHOUXIE_PRETREATMENT_HPP
 
-#include "../tree.hpp"
 #include "../general.hpp"
+#include "tree.hpp"
 #include "principle.hpp"
 #include "astrict.hpp"
 #include "relayout.hpp"

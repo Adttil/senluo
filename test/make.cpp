@@ -22,7 +22,7 @@ private:
 public:
     X(size_t& copy_count) : copy_count(&copy_count) {}
     X(const X& x) : copy_count(x.copy_count){ ++*copy_count; };
-    X(X&& x) = default;
+    X(X&& x) : copy_count(x.copy_count) { std::puts("move"); };
 };
 
 TEST(make, auto_move)
