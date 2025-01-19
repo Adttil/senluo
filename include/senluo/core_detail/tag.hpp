@@ -2,7 +2,7 @@
 #define SENLUO_TAG_HPP
 
 #include "../general.hpp"
-#include "tree.hpp"
+#include "subtree.hpp"
 
 #include "../macro_define.hpp"
 

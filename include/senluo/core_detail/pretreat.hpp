@@ -2,7 +2,7 @@
 #define RUZHOUXIE_PRETREATMENT_HPP
 
 #include "../general.hpp"
-#include "tree.hpp"
+#include "subtree.hpp"
 #include "principle.hpp"
 #include "astrict.hpp"
 #include "relayout.hpp"

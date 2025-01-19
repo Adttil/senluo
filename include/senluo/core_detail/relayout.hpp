@@ -2,7 +2,7 @@
 #define RUZHOUXIE_RELAYOUT_HPP
 
 #include "../general.hpp"
-#include "tree.hpp"
+#include "subtree.hpp"
 #include "principle.hpp"
 #include "wrap.hpp"
 #include "make.hpp"

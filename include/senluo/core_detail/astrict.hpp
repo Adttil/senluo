@@ -3,7 +3,7 @@
 
 #include "../general.hpp"
 #include "principle.hpp"
-#include "tree.hpp"
+#include "subtree.hpp"
 #include "wrap.hpp"
 
 #include "../macro_define.hpp"

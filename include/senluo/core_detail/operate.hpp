@@ -4,7 +4,7 @@
 #include "../general.hpp"
 #include "principle.hpp"
 #include "wrap.hpp"
-#include "tree.hpp"
+#include "subtree.hpp"
 #include "relayout.hpp"
 
 #include "../macro_define.hpp"

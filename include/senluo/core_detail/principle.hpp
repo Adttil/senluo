@@ -2,7 +2,7 @@
 #define SENLUO_PRINCIPLE_HPP
 
 #include "../general.hpp"
-#include "tree.hpp"
+#include "subtree.hpp"
 #include "wrap.hpp"
 #include "tag.hpp"
 
