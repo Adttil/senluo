@@ -17,7 +17,7 @@ namespace senluo
 namespace senluo::detail::operate_ns 
 {
     template<typename TBasePrinciple, auto OperationTree>
-    struct principle_t : based_on<TBasePrinciple>, principle_interface<principle_t<TBasePrinciple, OperationTree>>
+    struct principle_t : detail::based_on<TBasePrinciple>, principle_interface<principle_t<TBasePrinciple, OperationTree>>
     {
         friend constexpr decltype(auto) data(unwarp_derived_from<principle_t> auto&& self)
         {
@@ -41,7 +41,7 @@ namespace senluo::detail::operate_ns
     };
 
     template<typename T, auto OperationTree>
-    struct tree_t : based_on<T>, standard_interface<tree_t<T, OperationTree>>
+    struct tree_t : detail::based_on<T>, standard_interface<tree_t<T, OperationTree>>
     {
         template<size_t I, unwarp_derived_from<tree_t> Self> 
         friend constexpr decltype(auto) subtree(Self&& self)

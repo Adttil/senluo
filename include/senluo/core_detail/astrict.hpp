@@ -59,7 +59,7 @@ namespace senluo
 namespace senluo::detail::astrict_ns
 {
     template<typename TBasePrinciple, auto FoldedStrictureTree>
-    struct principle_t : based_on<TBasePrinciple>, principle_interface<principle_t<TBasePrinciple, FoldedStrictureTree>>
+    struct principle_t : detail::based_on<TBasePrinciple>, principle_interface<principle_t<TBasePrinciple, FoldedStrictureTree>>
     {
         friend constexpr decltype(auto) data(unwarp_derived_from<principle_t> auto&& self)
         {
@@ -83,7 +83,7 @@ namespace senluo::detail::astrict_ns
     };
 
     template<typename T, auto FoldedStrictureTree>
-    struct tree_t : based_on<T>, standard_interface<tree_t<T, FoldedStrictureTree>>
+    struct tree_t : detail::based_on<T>, standard_interface<tree_t<T, FoldedStrictureTree>>
     {
         template<size_t I, unwarp_derived_from<tree_t> Self> 
         friend constexpr decltype(auto) subtree(Self&& self)

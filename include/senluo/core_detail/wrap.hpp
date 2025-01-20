@@ -6,61 +6,44 @@
 
 #include "../macro_define.hpp"
 
-namespace senluo 
+namespace senluo::detail
 {
     template<class T>
     struct transition_wrapper;
-
-    template<class T>
-    struct standard_interface
-    {
-        template<class Self>
-        constexpr transition_wrapper<Self&&> operator+(this Self&& self)
-        {
-            return { FWD(self) };
-        }
-    };
-
+    
     template<class T>
     struct based_on
     {
         SENLUO(no_unique_address) T base;
     };
 
-    template<class T>
-    struct wrapper : based_on<T>, standard_interface<wrapper<T>>
+    struct pass_t : adaptor_closure<pass_t>
     {
-        // template<size_t I, class Self>
-        // constexpr decltype(auto) get(this Self&& self)
-        // {
-        //     if constexpr(I < size<T>)
-        //     {
-        //         return subtree<I>(FWD(self, base));
-        //     }
-        //     else
-        //     {
-        //         return end();
-        //     } 
-        // }
+        template<class T>
+        constexpr auto operator()(T&& t)const
+        AS_EXPRESSION(
+            (T)FWD(t)
+        )
+    };
+    
+    inline constexpr detail::pass_t pass{};
+}
 
+namespace senluo 
+{
+    template<class T>
+    struct standard_interface
+    {
         template<class Self>
-        constexpr explicit operator std::decay_t<T>(this Self&& self)
+        constexpr detail::transition_wrapper<Self&&> operator+(this Self&& self) noexcept
         {
-            return FWD(self, base);
-        }
-
-        template<typename To, class Self> requires std::same_as<decltype(FWD(std::declval<Self>(), base)), To&>
-        constexpr explicit operator To&(this Self&& self)
-        {
-            return FWD(self, base);
-        }
-
-        template<typename To, class Self> requires std::same_as<decltype(FWD(std::declval<Self>(), base)), To&&>
-        constexpr explicit operator To&&(this Self&& self)
-        {
-            return FWD(self, base);
+            return { FWD(self) };
         }
     };
+
+    template<class T>
+    struct wrapper : detail::based_on<T>, standard_interface<wrapper<T>>
+    {};
 
     template<class T>
     wrapper(T) -> wrapper<T>;
@@ -70,20 +53,6 @@ namespace senluo
     {
         { []<class V>(wrapper<V>&)->wrapper<V>*{ return nullptr; }(t) } -> std::same_as<std::remove_cvref_t<T>*>;
     };
-
-    namespace detail
-    {
-        struct pass_t : adaptor_closure<pass_t>
-        {
-            template<class T>
-            constexpr auto operator()(T&& t)const
-            AS_EXPRESSION(
-                (T)FWD(t)
-            )
-        };
-    }
-
-    inline constexpr detail::pass_t pass{};
 
     namespace detail 
     {
@@ -103,50 +72,58 @@ namespace senluo
                 return type_tag<decltype(FWD(std::declval<T>(), base))>{};
             }
         }
-
+    }
+    
+    template<class T>
+    using unwrap_t = decltype(detail::unwrap_t_tag<T>())::type;
+    
+    namespace detail 
+    {
         struct unwrap_fn : adaptor_closure<unwrap_fn>
         {
-            template<class T>
-            constexpr decltype(auto) operator()(T&& tree)const
+            template<class T> requires (not wrapped<T>)
+            constexpr T& operator()(T& tree)const noexcept
             {
-                if constexpr(not wrapped<T>)
-                {
-                    //gcc bug.
-                    //return T{ FWD(tree) }
-                    return (T)FWD(tree);
-                }
-                else if constexpr(std::is_object_v<T> && requires{ requires std::is_object_v<decltype(tree.base)>; })
-                {
-                    return decltype(tree.base){ FWD(tree, base) };
-                }
-                else
-                {
-                    return FWD(tree, base);
-                }
+                return tree;
             }
+
+            template<class T> requires (not wrapped<T>) && std::constructible_from<std::remove_const_t<T>, T>
+            constexpr std::remove_const_t<T> operator()(T&& tree) const 
+            noexcept(std::is_nothrow_constructible_v<std::remove_const_t<T>, T>)
+            {
+                return FWD(tree);
+            }
+
+            template<wrapped T>
+            constexpr T& operator()(T& tree)const noexcept
+            {
+                return FWD(tree, base);
+            }
+
+            template<wrapped T>
+            constexpr auto operator()(T&& tree)const
+            AS_EXPRESSION(
+                (unwrap_t<T>)FWD(tree, base)
+            )
         };
 
         struct unwrap_fwd_fn : adaptor_closure<unwrap_fwd_fn>
         {
             template<class T>
-            constexpr decltype(auto) operator()(T&& tree)const
+            constexpr T&& operator()(T&& tree)const noexcept
             {
-                if constexpr(not wrapped<T>)
-                {
-                    return FWD(tree);
-                }
-                else
-                {
-                    return FWD(tree, base);
-                }
+                return FWD(tree);
+            }
+
+            template<wrapped T>
+            constexpr auto&& operator()(T&& tree)const noexcept
+            {
+                return FWD(tree, base);
             }
         };
     }
 
     inline constexpr detail::unwrap_fn unwrap{};
-
-    template<class T>
-    using unwrap_t = decltype(detail::unwrap_t_tag<T>())::type;
 
     inline constexpr detail::unwrap_fwd_fn unwrap_fwd{};
 
@@ -155,16 +132,16 @@ namespace senluo
         struct wrap_t : adaptor_closure<wrap_t>
         {
             template<class T>
-            constexpr wrapper<senluo::unwrap_t<T>> operator()(T&& t) const
-            {
-                return { unwrap_fwd(FWD(t)) };
-            }
+            constexpr auto operator()(T&& t) const
+            AS_EXPRESSION(
+                wrapper<senluo::unwrap_t<T>>{ unwrap_fwd(FWD(t)) }
+            )
         };
 
         struct refer_t : adaptor_closure<refer_t>
         {
             template<class T>
-            constexpr wrapper<senluo::unwrap_t<T&&>&&> operator()(T&& t) const
+            constexpr wrapper<senluo::unwrap_t<T&&>&&> operator()(T&& t) const noexcept
             {
                 return { unwrap_fwd(FWD(t)) };
             }
@@ -180,7 +157,7 @@ namespace senluo
         struct base_fn : adaptor_closure<base_fn>
         {
             template<class T>
-            constexpr decltype(auto) operator()(T&& t) const
+            constexpr decltype(auto) operator()(T&& t) const noexcept
             {
                 if constexpr(std::is_object_v<unwrap_t<T>> && std::is_object_v<decltype(unwrap_fwd(FWD(t)).base)>)
                 {

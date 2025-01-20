@@ -224,7 +224,7 @@ namespace senluo
 namespace senluo::detail::relayout_ns
 {
     template<typename TBasePrinciple, auto FoldedLayout>
-    struct principle_t : based_on<TBasePrinciple>, principle_interface<principle_t<TBasePrinciple, FoldedLayout>>
+    struct principle_t : detail::based_on<TBasePrinciple>, principle_interface<principle_t<TBasePrinciple, FoldedLayout>>
     {
         friend constexpr decltype(auto) data(unwarp_derived_from<principle_t> auto&& self)
         {
@@ -250,7 +250,7 @@ namespace senluo::detail::relayout_ns
     };
 
     template<typename T, auto FoldedLayout>
-    struct tree_t : based_on<T>, standard_interface<tree_t<T, FoldedLayout>>
+    struct tree_t : detail::based_on<T>, standard_interface<tree_t<T, FoldedLayout>>
     {
         template<size_t I, unwarp_derived_from<tree_t> Self> 
         friend constexpr decltype(auto) subtree(Self&& self)

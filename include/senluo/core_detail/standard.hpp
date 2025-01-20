@@ -21,7 +21,7 @@ namespace senluo
     };
     
     template<class T>
-    struct transition_wrapper
+    struct detail::transition_wrapper
     {
         T&& tree;
 

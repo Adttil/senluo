@@ -405,7 +405,7 @@ namespace senluo
     };
 
     template<class T>
-    struct plain_principle : based_on<T>, principle_interface<plain_principle<T>>
+    struct plain_principle : detail::based_on<T>, principle_interface<plain_principle<T>>
     {
         friend constexpr decltype(auto) data(unwarp_derived_from<plain_principle> auto&& self)
         {
@@ -420,7 +420,7 @@ namespace senluo
     };
 
     template<class T, auto UsageTree>
-    struct trivial_principle : based_on<T>, principle_interface<trivial_principle<T, UsageTree>>
+    struct trivial_principle : detail::based_on<T>, principle_interface<trivial_principle<T, UsageTree>>
     {        
         friend constexpr auto data(unwarp_derived_from<trivial_principle> auto&& self)
         {
