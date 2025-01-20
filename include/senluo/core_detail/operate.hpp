@@ -46,7 +46,7 @@ namespace senluo::detail::operate_ns
         template<size_t I, unwarp_derived_from<tree_t> Self> 
         friend constexpr decltype(auto) subtree(Self&& self)
         {
-            constexpr auto op_subtree = tag_tree_get<I>(OperationTree);
+            constexpr auto op_subtree = detail::tag_tree_get<I>(OperationTree);
             if constexpr(I >= size<decltype(OperationTree)>)
             {
                 return end();
@@ -71,7 +71,7 @@ namespace senluo::detail::operate_ns
         template<auto UsageTree, unwarp_derived_from<tree_t> Self>
         friend constexpr auto principle(Self&& self)
         {
-            constexpr auto fitted_usage_result = fit_operation_usage<OperationTree>(UsageTree);
+            constexpr auto fitted_usage_result = detail::fit_operation_usage<OperationTree>(UsageTree);
             constexpr auto fittedd_usage = fitted_usage_result.usage_tree;
             constexpr bool need_plain = fitted_usage_result.need_plain;
 

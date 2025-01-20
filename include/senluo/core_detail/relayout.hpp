@@ -20,7 +20,7 @@ namespace senluo
         }
         else
         {
-            return sublayout<detail::array_drop<1uz>(indexes)>(layout_get<indexes[0]>(layout));
+            return sublayout<detail::array_drop<1uz>(indexes)>(detail::layout_get<indexes[0]>(layout));
         }
     }
 
@@ -144,7 +144,7 @@ namespace senluo
     {
         if constexpr(indexical<decltype(Layout)>)
         {
-            return tag_subtree<Layout>(tag_tree);
+            return detail::tag_subtree<Layout>(tag_tree);
         }
         else return [&]<size_t...I>(std::index_sequence<I...>)
         {
@@ -169,7 +169,7 @@ namespace senluo
         }
         else return[&]<size_t...I>(std::index_sequence<I...>)
         {
-            (..., inverse_relayout_usage_tree_at<subtree<I>(UnfoldedLayout)>(tag_tree_get<I>(usage_tree), result));
+            (..., inverse_relayout_usage_tree_at<subtree<I>(UnfoldedLayout)>(detail::tag_tree_get<I>(usage_tree), result));
             //                                   ^^^^^^^ instead of get for msvc adl bug: https://gcc.godbolt.org/z/GYvdrbooW
         }(std::make_index_sequence<size<decltype(UnfoldedLayout)>>{});
     }
@@ -209,8 +209,8 @@ namespace senluo
             {
                 //msvc bug
                 constexpr auto i = detail::array_take<FoldedLayout.size() - 1uz>(FoldedLayout);
-                return not std::same_as<decltype(senluo::tag_subtree<i>(operation_tree)), operation_t>
-                || detail::equal(tag_subtree<FoldedLayout>(operation_tree), operation_t::none);
+                return not std::same_as<decltype(detail::tag_subtree<i>(operation_tree)), operation_t>
+                || detail::equal(detail::tag_subtree<FoldedLayout>(operation_tree), operation_t::none);
             }
         }
         else return [&]<size_t...I>(std::index_sequence<I...>)
@@ -240,12 +240,12 @@ namespace senluo::detail::relayout_ns
         
         static constexpr auto stricture_tree()
         { 
-            return fold_tag_tree<relayout_tag_tree<FoldedLayout>(TBasePrinciple::stricture_tree())>();
+            return detail::fold_tag_tree<relayout_tag_tree<FoldedLayout>(TBasePrinciple::stricture_tree())>();
         }
 
         static constexpr auto operation_tree()
         {
-            return fold_operation_tree<relayout_tag_tree<FoldedLayout>(TBasePrinciple::operation_tree())>();
+            return detail::fold_operation_tree<relayout_tag_tree<FoldedLayout>(TBasePrinciple::operation_tree())>();
         }
     };
 
@@ -255,7 +255,7 @@ namespace senluo::detail::relayout_ns
         template<size_t I, unwarp_derived_from<tree_t> Self> 
         friend constexpr decltype(auto) subtree(Self&& self)
         {
-            constexpr auto sublayout = layout_get<I>(FoldedLayout);
+            constexpr auto sublayout = detail::layout_get<I>(FoldedLayout);
             if constexpr(detail::equal(sublayout, invalid_index))
             {
                 return end();
@@ -294,13 +294,13 @@ namespace senluo::detail::relayout_ns
         }
 
         friend constexpr auto get_maker(type_tag<tree_t>)
-        requires (not std::same_as<decltype(senluo::inverse_layout<unfold_layout<FoldedLayout>(shape<T>)>(shape<T>)), tuple<>>)
+        requires (not std::same_as<decltype(detail::inverse_layout<unfold_layout<FoldedLayout>(shape<T>)>(shape<T>)), tuple<>>)
         {
             return []<class U>(U&& tree)
             {
                 return tree_t{ 
                     FWD(tree) 
-                    | relayout<senluo::inverse_layout<unfold_layout<FoldedLayout>(shape<T>)>(shape<T>)> 
+                    | relayout<detail::inverse_layout<unfold_layout<FoldedLayout>(shape<T>)>(shape<T>)> 
                     | senluo::make<T> 
                 };
             };
@@ -337,7 +337,7 @@ namespace senluo
         }
         else return[]<size_t...I>(std::index_sequence<I...>)
         {
-            return senluo::make_tuple(senluo::layout_add_prefix(default_unfolded_layout<subtree_t<T, I>>, array{I})...);
+            return make_tuple(detail::layout_add_prefix(default_unfolded_layout<subtree_t<T, I>>, array{I})...);
         }(std::make_index_sequence<size<T>>{});    
     }();
 

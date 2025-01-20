@@ -26,10 +26,10 @@ namespace senluo
     inline constexpr detail::relayout_t<Layout> relayout{};
 
     template<auto StrictureTree>
-    inline constexpr detail::astrict_t<fold_tag_tree<StrictureTree>()> astrict{};
+    inline constexpr detail::astrict_t<detail::fold_tag_tree<StrictureTree>()> astrict{};
 
     template<auto OperationTree>
-    inline constexpr detail::operate_t<fold_operation_tree<OperationTree>()> operate{};
+    inline constexpr detail::operate_t<detail::fold_operation_tree<OperationTree>()> operate{};
 }
 
 namespace senluo 
@@ -70,7 +70,7 @@ namespace senluo
             };
             return [&]<size_t...I>(std::index_sequence<I...>)
             {
-                return (no_custom && ... && is_plain<subtree_t<T, I>, tag_tree_get<I>(UsageTree)>());
+                return (no_custom && ... && is_plain<subtree_t<T, I>, detail::tag_tree_get<I>(UsageTree)>());
             }(std::make_index_sequence<size<T>>{});
         }
     }
@@ -133,7 +133,7 @@ namespace senluo
             template<auto RawStrictureTree, auto Layout, class S>
             static consteval auto pretreat_stricture(S data_shape)
             {
-                return get_sequence_stricture_tree<RawStrictureTree, Layout, UsageTree>(data_shape);
+                return detail::get_sequence_stricture_tree<RawStrictureTree, Layout, UsageTree>(data_shape);
             }
         };
 
@@ -148,7 +148,7 @@ namespace senluo
             template<auto RawStrictureTree, auto Layout, class S>
             static consteval auto pretreat_stricture(S data_shape)
             {
-                return get_inverse_sequence_stricture_tree<RawStrictureTree, Layout, UsageTree>(data_shape);
+                return detail::get_inverse_sequence_stricture_tree<RawStrictureTree, Layout, UsageTree>(data_shape);
             }
         };
 
@@ -163,8 +163,8 @@ namespace senluo
             template<auto RawStrictureTree, auto Layout, class S>
             static consteval auto pretreat_stricture(S data_shape)
             {
-                constexpr auto seq_stricture_tree = get_sequence_stricture_tree<RawStrictureTree, Layout, UsageTree>(S{});
-                constexpr auto inv_stricture_tree = get_inverse_sequence_stricture_tree<RawStrictureTree, Layout, UsageTree>(S{});
+                constexpr auto seq_stricture_tree = detail::get_sequence_stricture_tree<RawStrictureTree, Layout, UsageTree>(S{});
+                constexpr auto inv_stricture_tree = detail::get_inverse_sequence_stricture_tree<RawStrictureTree, Layout, UsageTree>(S{});
 
                 return merge_stricture_tree(seq_stricture_tree, inv_stricture_tree);
             }
@@ -293,7 +293,7 @@ namespace senluo
             template<class T>
             constexpr decltype(auto) operator()(T&& tree) const
             {
-                return impl(FWD(tree) | sequence_by_usage<senluo::unfold_tag_tree(UsageTree, shape<T>)>);
+                return impl(FWD(tree) | sequence_by_usage<detail::unfold_tag_tree(UsageTree, shape<T>)>);
             }
 
             template<class TSrc>
@@ -309,9 +309,9 @@ namespace senluo
                 }
                 else return [&]<size_t...I>(std::index_sequence<I...>)
                 {
-                    return tuple<decltype(plainize_fn<tag_tree_get<I>(UsageTree), Tpl>{}.impl(subtree<I>(FWD(src))))...>
+                    return tuple<decltype(plainize_fn<detail::tag_tree_get<I>(UsageTree), Tpl>{}.impl(subtree<I>(FWD(src))))...>
                     {
-                        plainize_fn<tag_tree_get<I>(UsageTree), Tpl>{}.impl(subtree<I>(FWD(src)))...
+                        plainize_fn<detail::tag_tree_get<I>(UsageTree), Tpl>{}.impl(subtree<I>(FWD(src)))...
                     };
                 }(std::make_index_sequence<size<TSrc>>{});
             }
@@ -375,7 +375,7 @@ namespace senluo
         template<auto UsageTree, unwarp_derived_from<Princile> Self>
         friend constexpr decltype(auto) principle(Self&& self)
         {
-            constexpr auto fitted_usage_result = fit_operation_usage<Princile::operation_tree()>(UsageTree);
+            constexpr auto fitted_usage_result = detail::fit_operation_usage<Princile::operation_tree()>(UsageTree);
             constexpr auto fittedd_usage = fitted_usage_result.usage_tree;
             constexpr bool need_plain = fitted_usage_result.need_plain;
 
@@ -427,9 +427,9 @@ namespace senluo
             return [&]<size_t...I>(std::index_sequence<I...>)
             {
                 //todo... maybe wrong
-                return tuple<decltype(data(FWD(self) | detail::base | relayout<I> | principle<tag_tree_get<I>(UsageTree)>))...>
+                return tuple<decltype(data(FWD(self) | detail::base | relayout<I> | principle<detail::tag_tree_get<I>(UsageTree)>))...>
                 {
-                    data(FWD(self) | detail::base | relayout<I> | principle<tag_tree_get<I>(UsageTree)>)...
+                    data(FWD(self) | detail::base | relayout<I> | principle<detail::tag_tree_get<I>(UsageTree)>)...
                 };
             }(std::make_index_sequence<size<T>>{});
         }
@@ -438,8 +438,8 @@ namespace senluo
         {
             constexpr auto raw = []<size_t...I>(std::index_sequence<I...>)
             {
-                return senluo::make_tuple(
-                    senluo::layout_add_prefix(principle_t<subtree_t<T, I>, tag_tree_get<I>(UsageTree)>::layout(), array{ I })...
+                return make_tuple(
+                    detail::layout_add_prefix(principle_t<subtree_t<T, I>, detail::tag_tree_get<I>(UsageTree)>::layout(), array{ I })...
                 );
             }(std::make_index_sequence<size<T>>{});
             return fold_layout<raw>(shape<decltype(data(std::declval<trivial_principle>()))>);
@@ -450,10 +450,10 @@ namespace senluo
             constexpr auto raw = []<size_t...I>(std::index_sequence<I...>)
             {
                 return senluo::make_tuple(
-                    principle_t<subtree_t<T, I>, tag_tree_get<I>(UsageTree)>::stricture_tree()...
+                    principle_t<subtree_t<T, I>, detail::tag_tree_get<I>(UsageTree)>::stricture_tree()...
                 );
             }(std::make_index_sequence<size<T>>{});
-            return fold_tag_tree<raw>();
+            return detail::fold_tag_tree<raw>();
         }
 
         static constexpr auto operation_tree()
@@ -461,10 +461,10 @@ namespace senluo
             constexpr auto raw = []<size_t...I>(std::index_sequence<I...>)
             {
                 return senluo::make_tuple(
-                    principle_t<subtree_t<T, I>, tag_tree_get<I>(UsageTree)>::operation_tree()...
+                    principle_t<subtree_t<T, I>, detail::tag_tree_get<I>(UsageTree)>::operation_tree()...
                 );
             }(std::make_index_sequence<size<T>>{});
-            return fold_operation_tree<raw>();
+            return detail::fold_operation_tree<raw>();
         }
     };
 

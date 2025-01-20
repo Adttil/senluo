@@ -88,7 +88,7 @@ namespace senluo::detail::astrict_ns
         template<size_t I, unwarp_derived_from<tree_t> Self> 
         friend constexpr decltype(auto) subtree(Self&& self)
         {
-            constexpr auto stricture_subtree = tag_tree_get<I>(FoldedStrictureTree);
+            constexpr auto stricture_subtree = detail::tag_tree_get<I>(FoldedStrictureTree);
             if constexpr(I >= size<T>)
             {
                 return end();
