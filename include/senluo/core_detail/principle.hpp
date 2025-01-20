@@ -442,7 +442,7 @@ namespace senluo
                     detail::layout_add_prefix(principle_t<subtree_t<T, I>, detail::tag_tree_get<I>(UsageTree)>::layout(), array{ I })...
                 );
             }(std::make_index_sequence<size<T>>{});
-            return fold_layout<raw>(shape<decltype(data(std::declval<trivial_principle>()))>);
+            return detail::fold_layout<raw>(shape<decltype(data(std::declval<trivial_principle>()))>);
         }
 
         static constexpr auto stricture_tree()

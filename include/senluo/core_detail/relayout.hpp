@@ -9,80 +9,14 @@
 
 #include "../macro_define.hpp"
 
-namespace senluo 
+namespace senluo::detail
 {
-    template<auto indexes, class L>
-    constexpr auto sublayout(const L& layout)
-    {
-        if constexpr(detail::equal(indexes, indexes_of_whole))
-        {
-            return layout;
-        }
-        else
-        {
-            return sublayout<detail::array_drop<1uz>(indexes)>(detail::layout_get<indexes[0]>(layout));
-        }
-    }
-
-    template<indexical auto Indices, class Shape>
-    constexpr auto normalize_indices(Shape shape)
-    {
-        if constexpr(std::integral<decltype(Indices)>)
-        {
-            return array{ detail::normalize_index(Indices, size<Shape>) };
-        }
-        else return []<size_t...I>(std::index_sequence<I...>)
-        {
-            return array<size_t, Indices.size()>
-            {
-                detail::normalize_index(Indices[I], size<subtree_t<Shape, detail::array_take<I>(Indices)>>)...
-            };
-        }(std::make_index_sequence<Indices.size()>{});
-    }
-
-    template<auto Layout, class Shape>
-    constexpr auto fold_layout(Shape shape = {})
-    {
-        if constexpr(indexical<decltype(Layout)>)
-        {
-            return normalize_indices<Layout>(shape);
-        }
-        else return []<size_t...I>(std::index_sequence<I...>)
-        {
-            constexpr auto child_relayout = make_tuple(fold_layout<subtree<I>(Layout)>(Shape{})...);
-            constexpr size_t n = size<decltype(get<0uz>(child_relayout))>;
-
-            // Use subtree instead of get for msvc adl bug: https://gcc.godbolt.org/z/GYvdrbooW.
-            if constexpr(n > 0uz
-                && (... && detail::indexical_array<decltype(subtree<I>(child_relayout))>)
-                && (... && (n == size<decltype(subtree<I>(child_relayout))>))
-            )
-            {
-                constexpr auto prefix = detail::array_take<n - 1uz>(get<0uz>(child_relayout));
-                if constexpr((... && (prefix == detail::array_take<n - 1uz>(get<I>(child_relayout))))
-                    && (... && (get<I>(child_relayout)[n - 1uz] == I))
-                )
-                {
-                    return prefix;
-                }
-                else
-                {
-                    return child_relayout;
-                }
-            }
-            else
-            {
-                return child_relayout;
-            }
-        }(std::make_index_sequence<size<decltype(Layout)>>{});
-    }
-
     template<auto Layout, class Shape>
     constexpr auto unfold_layout(Shape shape = {})
     {
         if constexpr(indexical<decltype(Layout)>)
         {
-            constexpr auto indexes = normalize_indices<Layout>(Shape{});
+            constexpr auto indexes = detail::normalize_indices<Layout>(Shape{});
             using subshape_t = subtree_t<Shape, indexes>;
             if constexpr(terminal<subshape_t>)
             {
@@ -90,13 +24,13 @@ namespace senluo
             }
             else return [&]<size_t...I>(std::index_sequence<I...>)
             {
-                constexpr auto indexes = normalize_indices<Layout>(Shape{});
-                return senluo::make_tuple(unfold_layout<detail::array_cat(indexes, array{ I })>(shape)...);
+                constexpr auto indexes = detail::normalize_indices<Layout>(Shape{});
+                return make_tuple(detail::unfold_layout<detail::array_cat(indexes, array{ I })>(shape)...);
             }(std::make_index_sequence<size<subshape_t>>{});
         }
         else return [&]<size_t...I>(std::index_sequence<I...>)
         {
-            return senluo::make_tuple(unfold_layout<get<I>(Layout)>(shape)...);
+            return make_tuple(detail::unfold_layout<get<I>(Layout)>(shape)...);
         }(std::make_index_sequence<size<decltype(Layout)>>{});
     }
 
@@ -114,12 +48,12 @@ namespace senluo
             if constexpr(not detail::indexical_array<Layout>)
             {
                 static_assert(size<Shape> == size<Layout>, "Invalid layout.");
-                return make_tuple(unfold_layout_by_relayouted_shape(get<I>(layout), get<I>(shape))...);
+                return make_tuple(detail::unfold_layout_by_relayouted_shape(get<I>(layout), get<I>(shape))...);
             }
             else
             {
                 return make_tuple(
-                    unfold_layout_by_relayouted_shape(detail::array_cat(layout, array{ I }) , get<I>(shape))...
+                    detail::unfold_layout_by_relayouted_shape(detail::array_cat(layout, array{ I }) , get<I>(shape))...
                 );
             }
         }(std::make_index_sequence<size<Shape>>{});
@@ -135,21 +69,8 @@ namespace senluo
         }
         else return[&]<size_t...I>(std::index_sequence<I...>)
         {
-            return make_tuple(apply_layout<get<I>(Layout)>(view)...);
+            return make_tuple(detail::apply_layout<get<I>(Layout)>(view)...);
         }(std::make_index_sequence<size<layout_type>>{});
-    }
-
-    template<auto Layout, class T>
-    constexpr auto relayout_tag_tree(const T tag_tree)
-    {
-        if constexpr(indexical<decltype(Layout)>)
-        {
-            return detail::tag_subtree<Layout>(tag_tree);
-        }
-        else return [&]<size_t...I>(std::index_sequence<I...>)
-        {
-            return senluo::make_tuple(senluo::relayout_tag_tree<get<I>(Layout)>(tag_tree)...);
-        }(std::make_index_sequence<size<decltype(Layout)>>{});
     }
 
     template<auto UnfoldedLayout, typename U, typename R>
@@ -164,13 +85,12 @@ namespace senluo
             }
             else return [&]<size_t...I>(std::index_sequence<I...>)
             {
-                (..., inverse_relayout_usage_tree_at<indexes_of_whole>(usage_tree, get<I>(subresult)));
+                (..., detail::inverse_relayout_usage_tree_at<indexes_of_whole>(usage_tree, get<I>(subresult)));
             }(std::make_index_sequence<size<decltype(subresult)>>{});
         }
         else return[&]<size_t...I>(std::index_sequence<I...>)
         {
-            (..., inverse_relayout_usage_tree_at<subtree<I>(UnfoldedLayout)>(detail::tag_tree_get<I>(usage_tree), result));
-            //                                   ^^^^^^^ instead of get for msvc adl bug: https://gcc.godbolt.org/z/GYvdrbooW
+            (..., detail::inverse_relayout_usage_tree_at<get<I>(UnfoldedLayout)>(detail::tag_tree_get<I>(usage_tree), result));
         }(std::make_index_sequence<size<decltype(UnfoldedLayout)>>{});
     }
 
@@ -178,7 +98,7 @@ namespace senluo
     constexpr auto inverse_relayout_usage_tree(const U& usage_tree, const S& shape)
     {
         auto result = detail::make_tree_of_same_value(usage_t::none, shape);
-        inverse_relayout_usage_tree_at<UnfoldedLayout>(usage_tree, result);
+        detail::inverse_relayout_usage_tree_at<UnfoldedLayout>(usage_tree, result);
         return result;
     }
     
@@ -187,7 +107,7 @@ namespace senluo
     // {
     //     if constexpr(indexical<decltype(Layout)>)
     //     {
-    //         return sublayout<Layout>(layout);
+    //         return detail::sublayout<Layout>(layout);
     //     }
     //     else return [&]<size_t...I>(std::index_sequence<I...>)
     //     {
@@ -215,8 +135,7 @@ namespace senluo
         }
         else return [&]<size_t...I>(std::index_sequence<I...>)
         {
-            return (... && senluo::is_enable_to_relayout_operation_tree<subtree<I>(FoldedLayout)>(operation_tree));
-            //                                                          ^^^^^^^ instead of get for msvc adl bug: https://gcc.godbolt.org/z/GYvdrbooW
+            return (... && detail::is_enable_to_relayout_operation_tree<get<I>(FoldedLayout)>(operation_tree));
         }(std::make_index_sequence<size<decltype(FoldedLayout)>>{});
     };
 }
@@ -234,18 +153,18 @@ namespace senluo::detail::relayout_ns
         static constexpr auto layout()
         {
             constexpr auto data_shape = shape<decltype(data(std::declval<TBasePrinciple>()))>;
-            constexpr auto base_unfolded_layout = unfold_layout<TBasePrinciple::layout()>(data_shape);
-            return fold_layout<apply_layout<FoldedLayout>(base_unfolded_layout)>(data_shape); 
+            constexpr auto base_unfolded_layout = detail::unfold_layout<TBasePrinciple::layout()>(data_shape);
+            return detail::fold_layout<detail::apply_layout<FoldedLayout>(base_unfolded_layout)>(data_shape); 
         }
         
         static constexpr auto stricture_tree()
         { 
-            return detail::fold_tag_tree<relayout_tag_tree<FoldedLayout>(TBasePrinciple::stricture_tree())>();
+            return detail::fold_tag_tree<detail::relayout_tag_tree<FoldedLayout>(TBasePrinciple::stricture_tree())>();
         }
 
         static constexpr auto operation_tree()
         {
-            return detail::fold_operation_tree<relayout_tag_tree<FoldedLayout>(TBasePrinciple::operation_tree())>();
+            return detail::fold_operation_tree<detail::relayout_tag_tree<FoldedLayout>(TBasePrinciple::operation_tree())>();
         }
     };
 
@@ -274,12 +193,12 @@ namespace senluo::detail::relayout_ns
         template<auto UsageTree, unwarp_derived_from<tree_t> Self>
         friend constexpr decltype(auto) principle(Self&& self)
         {
-            constexpr auto unfolded_layout = senluo::unfold_layout<FoldedLayout>(shape<T>);
-            constexpr auto base_usage = inverse_relayout_usage_tree<unfolded_layout>(UsageTree, shape<T>);
+            constexpr auto unfolded_layout = detail::unfold_layout<FoldedLayout>(shape<T>);
+            constexpr auto base_usage = detail::inverse_relayout_usage_tree<unfolded_layout>(UsageTree, shape<T>);
 
             using base_principle_t = decltype(FWD(self) | base | senluo::principle<base_usage>);
 
-            if constexpr(is_enable_to_relayout_operation_tree<FoldedLayout>(base_principle_t::operation_tree()))
+            if constexpr(detail::is_enable_to_relayout_operation_tree<FoldedLayout>(base_principle_t::operation_tree()))
             {
                 return principle_t<base_principle_t, FoldedLayout>{ FWD(self) | base | senluo::principle<base_usage> };
             }
@@ -294,13 +213,13 @@ namespace senluo::detail::relayout_ns
         }
 
         friend constexpr auto get_maker(type_tag<tree_t>)
-        requires (not std::same_as<decltype(detail::inverse_layout<unfold_layout<FoldedLayout>(shape<T>)>(shape<T>)), tuple<>>)
+        requires (not std::same_as<decltype(detail::inverse_layout<detail::unfold_layout<FoldedLayout>(shape<T>)>(shape<T>)), tuple<>>)
         {
             return []<class U>(U&& tree)
             {
                 return tree_t{ 
                     FWD(tree) 
-                    | relayout<detail::inverse_layout<unfold_layout<FoldedLayout>(shape<T>)>(shape<T>)> 
+                    | relayout<detail::inverse_layout<detail::unfold_layout<FoldedLayout>(shape<T>)>(shape<T>)> 
                     | senluo::make<T> 
                 };
             };
@@ -316,7 +235,7 @@ namespace senluo
         template<typename T>
         constexpr decltype(auto) operator()(T&& t)const
         {
-            constexpr auto folded_layout = senluo::fold_layout<Layout>(shape<T>);
+            constexpr auto folded_layout = detail::fold_layout<Layout>(shape<T>);
             if constexpr(indexical<decltype(folded_layout)>)
             {
                 return decltype(wrap(subtree<folded_layout>(FWD(t)))){ unwrap_fwd(subtree<folded_layout>(FWD(t))) };
