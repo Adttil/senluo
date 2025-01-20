@@ -351,16 +351,36 @@ namespace senluo
 
 namespace senluo
 {        
-    template<typename Princile>
-    struct detail::principle_interface : standard_interface<Princile>
+    template<typename Principle>
+    struct detail::principle_interface : standard_interface<Principle>
     {
-        template<size_t I, unwarp_derived_from<Princile> Self>
+        static constexpr auto data_shape()
+        {
+            return shape<decltype(data(std::declval<Principle&>()))>; 
+        }
+
+        static constexpr auto folded_layout()
+        { 
+            return detail::fold_layout<Principle::layout()>(data_shape());
+        }
+        
+        static constexpr auto folded_stricture_tree()
+        { 
+            return detail::fold_tag_tree<Principle::stricture_tree()>(); 
+        }
+        
+        static constexpr auto folded_operation_tree()
+        { 
+            return detail::fold_operation_tree<Principle::operation_tree()>(); 
+        }
+        
+        template<size_t I, unwarp_derived_from<Principle> Self>
         friend constexpr decltype(auto) subtree(Self&& self)
         {
             decltype(auto) tree = wrapper<decltype(data(FWD(self)))>{ data(FWD(self)) }
-                | relayout<Princile::layout()>
-                | astrict<Princile::stricture_tree()>
-                | operate<Princile::operation_tree()>;
+                | relayout<Principle::layout()>
+                | astrict<Principle::stricture_tree()>
+                | operate<Principle::operation_tree()>;
             if constexpr(I >= size<decltype(tree)>)
             {
                 return end();
@@ -372,10 +392,10 @@ namespace senluo
             
         }
 
-        template<auto UsageTree, unwarp_derived_from<Princile> Self>
+        template<auto UsageTree, unwarp_derived_from<Principle> Self>
         friend constexpr decltype(auto) principle(Self&& self)
         {
-            constexpr auto fitted_usage_result = detail::fit_operation_usage<Princile::operation_tree()>(UsageTree);
+            constexpr auto fitted_usage_result = detail::fit_operation_usage<folded_operation_tree()>(UsageTree);
             constexpr auto fittedd_usage = fitted_usage_result.usage_tree;
             constexpr bool need_plain = fitted_usage_result.need_plain;
 
@@ -436,35 +456,32 @@ namespace senluo
 
         static constexpr auto layout()
         {
-            constexpr auto raw = []<size_t...I>(std::index_sequence<I...>)
+            return []<size_t...I>(std::index_sequence<I...>)
             {
                 return make_tuple(
                     detail::layout_add_prefix(principle_t<subtree_t<T, I>, detail::tag_tree_get<I>(UsageTree)>::layout(), array{ I })...
                 );
             }(std::make_index_sequence<size<T>>{});
-            return detail::fold_layout<raw>(shape<decltype(data(std::declval<trivial_principle>()))>);
         }
 
         static constexpr auto stricture_tree()
         {
-            constexpr auto raw = []<size_t...I>(std::index_sequence<I...>)
+            return []<size_t...I>(std::index_sequence<I...>)
             {
-                return senluo::make_tuple(
+                return make_tuple(
                     principle_t<subtree_t<T, I>, detail::tag_tree_get<I>(UsageTree)>::stricture_tree()...
                 );
             }(std::make_index_sequence<size<T>>{});
-            return detail::fold_tag_tree<raw>();
         }
 
         static constexpr auto operation_tree()
         {
-            constexpr auto raw = []<size_t...I>(std::index_sequence<I...>)
+            return []<size_t...I>(std::index_sequence<I...>)
             {
-                return senluo::make_tuple(
+                return make_tuple(
                     principle_t<subtree_t<T, I>, detail::tag_tree_get<I>(UsageTree)>::operation_tree()...
                 );
             }(std::make_index_sequence<size<T>>{});
-            return detail::fold_operation_tree<raw>();
         }
     };
 

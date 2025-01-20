@@ -95,7 +95,7 @@ namespace senluo
             {
                 return []<size_t...J>(std::index_sequence<J...>)
                 {
-                    return senluo::make_tuple(get_element_layout<I, S, J>()...);
+                    return make_tuple(get_element_layout<I, S, J>()...);
                 }(std::make_index_sequence<N>{});
             }
 
@@ -104,12 +104,12 @@ namespace senluo
             {
                 return []<size_t...I>(std::index_sequence<I...>)
                 {
-                    return senluo::make_tuple(get_row_layout<I, S, N>()...);
+                    return make_tuple(get_row_layout<I, S, N>()...);
                 }(std::make_index_sequence<M>{});
             }
 
             template<class L, class R>
-            constexpr decltype(auto) adapt(L&& l, R&& r)
+            constexpr decltype(auto) adapt(L&& l, R&& r) const
             {
                 constexpr size_t m = size<L>;
                 constexpr size_t s = size<R>;

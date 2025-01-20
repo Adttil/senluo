@@ -117,7 +117,7 @@ namespace senluo::detail
 
     //todo... should change to discard repeat.
     template<auto FoldedLayout, class O>
-    constexpr bool is_enable_to_relayout_operation_tree(const O& operation_tree)
+    constexpr bool is_enable_to_relayout_operation_tree(const O& folded_operation_tree)
     {
         if constexpr(indexical<decltype(FoldedLayout)>)
         {
@@ -129,13 +129,13 @@ namespace senluo::detail
             {
                 //msvc bug
                 constexpr auto i = detail::array_take<FoldedLayout.size() - 1uz>(FoldedLayout);
-                return not std::same_as<decltype(detail::tag_subtree<i>(operation_tree)), operation_t>
-                || detail::equal(detail::tag_subtree<FoldedLayout>(operation_tree), operation_t::none);
+                return not std::same_as<decltype(detail::tag_subtree<i>(folded_operation_tree)), operation_t>
+                || detail::equal(detail::tag_subtree<FoldedLayout>(folded_operation_tree), operation_t::none);
             }
         }
         else return [&]<size_t...I>(std::index_sequence<I...>)
         {
-            return (... && detail::is_enable_to_relayout_operation_tree<get<I>(FoldedLayout)>(operation_tree));
+            return (... && detail::is_enable_to_relayout_operation_tree<get<I>(FoldedLayout)>(folded_operation_tree));
         }(std::make_index_sequence<size<decltype(FoldedLayout)>>{});
     };
 }
@@ -154,17 +154,17 @@ namespace senluo::detail::relayout_ns
         {
             constexpr auto data_shape = shape<decltype(data(std::declval<TBasePrinciple>()))>;
             constexpr auto base_unfolded_layout = detail::unfold_layout<TBasePrinciple::layout()>(data_shape);
-            return detail::fold_layout<detail::apply_layout<FoldedLayout>(base_unfolded_layout)>(data_shape); 
+            return detail::apply_layout<FoldedLayout>(base_unfolded_layout); 
         }
         
         static constexpr auto stricture_tree()
         { 
-            return detail::fold_tag_tree<detail::relayout_tag_tree<FoldedLayout>(TBasePrinciple::stricture_tree())>();
+            return detail::relayout_tag_tree<FoldedLayout>(TBasePrinciple::stricture_tree());
         }
 
         static constexpr auto operation_tree()
         {
-            return detail::fold_operation_tree<detail::relayout_tag_tree<FoldedLayout>(TBasePrinciple::operation_tree())>();
+            return detail::relayout_tag_tree<FoldedLayout>(TBasePrinciple::operation_tree());
         }
     };
 
@@ -198,7 +198,7 @@ namespace senluo::detail::relayout_ns
 
             using base_principle_t = decltype(FWD(self) | base | senluo::principle<base_usage>);
 
-            if constexpr(detail::is_enable_to_relayout_operation_tree<FoldedLayout>(base_principle_t::operation_tree()))
+            if constexpr(detail::is_enable_to_relayout_operation_tree<FoldedLayout>(base_principle_t::folded_operation_tree()))
             {
                 return principle_t<base_principle_t, FoldedLayout>{ FWD(self) | base | senluo::principle<base_usage> };
             }

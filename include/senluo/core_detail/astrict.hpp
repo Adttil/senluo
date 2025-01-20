@@ -116,7 +116,7 @@ namespace senluo::detail::astrict_ns
         friend constexpr auto principle(Self&& self)
         {
             using base_principle_t = decltype(FWD(self) | base | senluo::principle<UsageTree>);
-            if constexpr(detail::equal(base_principle_t::operation_tree(), operation_t::none))
+            if constexpr(detail::equal(base_principle_t::folded_operation_tree(), operation_t::none))
             {
                 return principle_t<base_principle_t, FoldedStrictureTree>{ FWD(self) | base | senluo::principle<UsageTree> };
             }

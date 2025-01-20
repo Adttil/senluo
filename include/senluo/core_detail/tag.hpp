@@ -186,7 +186,7 @@ namespace senluo::detail
         else return []<size_t...I>(std::index_sequence<I...>)
         {
             constexpr auto subresults = make_tuple(detail::fold_tag_tree<subtree<I>(TagTree)>()...);
-            if constexpr((... && detail::equal(get<I>(subresults), get<0uz>(subresults))))
+            if constexpr((terminal<decltype(get<0uz>(subresults))> && ... && detail::equal(get<I>(subresults), get<0uz>(subresults))))
             {
                 return get<0uz>(subresults);
             }
@@ -244,12 +244,12 @@ namespace senluo::detail
         }(std::make_index_sequence<size<U>>{});
     }
 
-    template<auto OperationTree, class U>
+    template<auto FoldedOperationTree, class U>
     constexpr auto fit_operation_usage_impl(const U& usage_tree, bool& need_plain)
     {
-        if constexpr(std::same_as<decltype(OperationTree), operation_t>)
+        if constexpr(std::same_as<decltype(FoldedOperationTree), operation_t>)
         {
-            if constexpr(OperationTree == operation_t::none)
+            if constexpr(FoldedOperationTree == operation_t::none)
             {
                 return usage_tree;
             }
@@ -262,22 +262,24 @@ namespace senluo::detail
         }
         else return [&]<size_t...I>(std::index_sequence<I...>)
         {
-            return make_tuple(detail::fit_operation_usage_impl<get<I>(OperationTree)>(detail::tag_tree_get<I>(usage_tree), need_plain)...);
-        }(std::make_index_sequence<size<decltype(OperationTree)>>{});
+            return make_tuple(
+                detail::fit_operation_usage_impl<get<I>(FoldedOperationTree)>(detail::tag_tree_get<I>(usage_tree), need_plain)...
+            );
+        }(std::make_index_sequence<size<decltype(FoldedOperationTree)>>{});
     }
 
-    template<auto OperationTree, class U>
+    template<auto FoldedOperationTree, class U>
     constexpr auto fit_operation_usage(const U& usage_tree)
     {
         bool need_plain = false;
 
         struct result_t
         {
-            decltype(detail::fit_operation_usage_impl<OperationTree>(usage_tree, need_plain)) usage_tree;
+            decltype(detail::fit_operation_usage_impl<FoldedOperationTree>(usage_tree, need_plain)) usage_tree;
             bool need_plain;
         };
 
-        return result_t{ detail::fit_operation_usage_impl<OperationTree>(usage_tree, need_plain), need_plain };
+        return result_t{ detail::fit_operation_usage_impl<FoldedOperationTree>(usage_tree, need_plain), need_plain };
     }
 }
 
@@ -359,11 +361,8 @@ namespace senluo::detail
             }
             else
             {
-                static_assert(not std::same_as<decltype(RawStrictureTree), tuple<>>);
-                static_assert(not std::same_as<decltype(detail::relayout_tag_tree<Layout>(cur_tree)), tuple<>>);
                 auto result = merge_stricture_tree(RawStrictureTree, detail::relayout_tag_tree<Layout>(cur_tree));
                 detail::set_data_stricture_tree_by_layout<Layout>(cur_tree);
-                //static_assert(not std::same_as<decltype(result), tuple<>>);
                 return result;
             }
         }
