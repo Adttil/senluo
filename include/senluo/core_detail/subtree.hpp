@@ -256,14 +256,15 @@ namespace senluo
                 //array
                 if constexpr(std::is_bounded_array_v<type>)
                 {
+                    using etype = std::remove_cvref_t<decltype(std::declval<type>()[0])>;
                     if constexpr(I >= std::extent_v<type>)
                     {
                         return { strategy_t::none, true };
                     }
-                    else if constexpr(std::is_object_v<unwrap_t<T>> && requires{ pass(std::declval<type>()[I]); } )
+                    else if constexpr(std::is_object_v<unwrap_t<T>> && std::is_move_constructible_v<etype> )
                     {
                         
-                        return { strategy_t::array_copy, noexcept(pass(std::declval<type>()[I])) };
+                        return { strategy_t::array_copy, noexcept(std::is_nothrow_move_constructible_v<etype>) };
                     }
                     else
                     {
@@ -338,11 +339,17 @@ namespace senluo
                 }
                 else if constexpr(strategy == strategy_t::array)
                 {
+//MSVC bug: https://developercommunity.visualstudio.com/t/Subscripting-an-rvalue-array-does-not-ge/10707244?q=array+rvalue+subscript
+#if _MSC_VER
+                    return std::forward_like<unwrap_t<T>>(unwrap_fwd(FWD(t))[I]);
+#else
                     return unwrap_fwd(FWD(t))[I];
+#endif
                 }
                 else if constexpr(strategy == strategy_t::array_copy)
                 {
-                    return pass(unwrap_fwd(FWD(t))[I]);
+                    //use std::move to solve msvc bug behind
+                    return (std::decay_t<decltype(unwrap_fwd(FWD(t))[I])>)std::move(unwrap_fwd(FWD(t))[I]);
                 }
                 else if constexpr(strategy == strategy_t::member_subtree)
                 {
