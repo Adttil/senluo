@@ -1,5 +1,5 @@
-#ifndef RUZHOUXIE_OPERATE_HPP
-#define RUZHOUXIE_OPERATE_HPP
+#ifndef SENLUO_OPERATE_HPP
+#define SENLUO_OPERATE_HPP
 
 #include "../general.hpp"
 #include "principle.hpp"

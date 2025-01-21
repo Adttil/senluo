@@ -1,5 +1,5 @@
-#ifndef RUZHOUXIE_RELAYOUT_HPP
-#define RUZHOUXIE_RELAYOUT_HPP
+#ifndef SENLUO_RELAYOUT_HPP
+#define SENLUO_RELAYOUT_HPP
 
 #include "../general.hpp"
 #include "subtree.hpp"

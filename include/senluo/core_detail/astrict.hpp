@@ -1,5 +1,5 @@
-#ifndef RUZHOUXIE_ASTRICT_HPP
-#define RUZHOUXIE_ASTRICT_HPP
+#ifndef SENLUO_ASTRICT_HPP
+#define SENLUO_ASTRICT_HPP
 
 #include "../general.hpp"
 #include "principle.hpp"

@@ -1,5 +1,5 @@
-#ifndef RUZHOUXIE_STANDARD_HPP
-#define RUZHOUXIE_STANDARD_HPP
+#ifndef SENLUO_STANDARD_HPP
+#define SENLUO_STANDARD_HPP
 
 #include<functional>
 #include "../constant.hpp"

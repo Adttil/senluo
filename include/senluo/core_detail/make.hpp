@@ -1,5 +1,5 @@
-#ifndef RUZHOUXIE_MAKE_HPP
-#define RUZHOUXIE_MAKE_HPP
+#ifndef SENLUO_MAKE_HPP
+#define SENLUO_MAKE_HPP
 
 #include "../general.hpp"
 #include "subtree.hpp"
