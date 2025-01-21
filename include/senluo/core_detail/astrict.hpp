@@ -66,17 +66,17 @@ namespace senluo::detail::astrict_ns
             return data(FWD(self) | base);
         }
 
-        static constexpr auto layout()
+        static consteval auto layout()
         {
             return TBasePrinciple::layout();
         }
         
-        static constexpr auto stricture_tree()
+        static consteval auto stricture_tree()
         { 
             return senluo::merge_stricture_tree(TBasePrinciple::stricture_tree(), FoldedStrictureTree);
         }
 
-        static constexpr auto operation_tree()
+        static consteval auto operation_tree()
         {
             return operation_t::none;
         }

@@ -24,17 +24,17 @@ namespace senluo::detail::operate_ns
             return data(FWD(self) | base);
         }
         
-        static constexpr auto layout()
+        static consteval auto layout()
         {
             return TBasePrinciple::layout();
         }
         
-        static constexpr auto stricture_tree()
+        static consteval auto stricture_tree()
         { 
             return TBasePrinciple::stricture_tree();
         }
         
-        static constexpr auto operation_tree()
+        static consteval auto operation_tree()
         { 
             return OperationTree;
         }

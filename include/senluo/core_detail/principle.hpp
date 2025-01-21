@@ -119,22 +119,22 @@ namespace senluo
     template<typename Principle>
     struct detail::principle_interface : standard_interface<Principle>
     {
-        static constexpr auto data_shape()
+        static consteval auto data_shape()
         {
             return shape<decltype(data(std::declval<Principle&>()))>; 
         }
 
-        static constexpr auto folded_layout()
+        static consteval auto folded_layout()
         { 
             return detail::fold_layout<Principle::layout()>(data_shape());
         }
         
-        static constexpr auto folded_stricture_tree()
+        static consteval auto folded_stricture_tree()
         { 
             return detail::fold_tag_tree<Principle::stricture_tree()>(); 
         }
         
-        static constexpr auto folded_operation_tree()
+        static consteval auto folded_operation_tree()
         { 
             return detail::fold_operation_tree<Principle::operation_tree()>(); 
         }
@@ -184,11 +184,11 @@ namespace senluo
             return std::in_place_t{};
         }
         
-        static constexpr auto layout(){ return indexes_of_whole; }
+        static consteval auto layout(){ return indexes_of_whole; }
         
-        static constexpr auto stricture_tree(){ return stricture_t::none; }
+        static consteval auto stricture_tree(){ return stricture_t::none; }
         
-        static constexpr auto operation_tree(){ return operation_t::none; }
+        static consteval auto operation_tree(){ return operation_t::none; }
     };
 
     template<class T>
@@ -199,11 +199,11 @@ namespace senluo
             unwrap(FWD(self) | detail::base)
         )
         
-        static constexpr auto layout(){ return indexes_of_whole; }
+        static consteval auto layout(){ return indexes_of_whole; }
         
-        static constexpr auto stricture_tree(){ return stricture_t::none; }
+        static consteval auto stricture_tree(){ return stricture_t::none; }
         
-        static constexpr auto operation_tree(){ return operation_t::none; }
+        static consteval auto operation_tree(){ return operation_t::none; }
     };
 
     template<class T, auto UsageTree>
@@ -221,7 +221,7 @@ namespace senluo
             }(std::make_index_sequence<size<T>>{});
         }
 
-        static constexpr auto layout()
+        static consteval auto layout()
         {
             return []<size_t...I>(std::index_sequence<I...>)
             {
@@ -231,7 +231,7 @@ namespace senluo
             }(std::make_index_sequence<size<T>>{});
         }
 
-        static constexpr auto stricture_tree()
+        static consteval auto stricture_tree()
         {
             return []<size_t...I>(std::index_sequence<I...>)
             {
@@ -241,7 +241,7 @@ namespace senluo
             }(std::make_index_sequence<size<T>>{});
         }
 
-        static constexpr auto operation_tree()
+        static consteval auto operation_tree()
         {
             return []<size_t...I>(std::index_sequence<I...>)
             {

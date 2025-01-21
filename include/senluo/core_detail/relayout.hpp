@@ -150,19 +150,19 @@ namespace senluo::detail::relayout_ns
             return data(FWD(self) | base);
         }
         
-        static constexpr auto layout()
+        static consteval auto layout()
         {
             constexpr auto data_shape = shape<decltype(data(std::declval<TBasePrinciple>()))>;
             constexpr auto base_unfolded_layout = detail::unfold_layout<TBasePrinciple::layout()>(data_shape);
             return detail::apply_layout<FoldedLayout>(base_unfolded_layout); 
         }
         
-        static constexpr auto stricture_tree()
+        static consteval auto stricture_tree()
         { 
             return detail::relayout_tag_tree<FoldedLayout>(TBasePrinciple::stricture_tree());
         }
 
-        static constexpr auto operation_tree()
+        static consteval auto operation_tree()
         {
             return detail::relayout_tag_tree<FoldedLayout>(TBasePrinciple::operation_tree());
         }
