@@ -10,6 +10,11 @@ namespace senluo
     struct constant_t : std::integral_constant<decltype(value), value> 
 	{
 		friend constexpr bool operator==(const constant_t&, const constant_t&) = default;
+
+		constexpr operator decltype(value)()const
+		{
+			return value;
+		}
 	};
 
     template<auto value1, auto value2>
