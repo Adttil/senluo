@@ -1,5 +1,5 @@
-#ifndef RUZHOUXIE_PRETREATMENT_HPP
-#define RUZHOUXIE_PRETREATMENT_HPP
+#ifndef SENLUO_PRETREAT_HPP
+#define SENLUO_PRETREAT_HPP
 
 #include "../general.hpp"
 #include "subtree.hpp"
