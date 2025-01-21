@@ -71,7 +71,7 @@ namespace senluo
                 }(std::make_index_sequence<size<T>>{});
             }
 
-            template<size_t N, class Shape, auto Layout = default_unfolded_layout<Shape>>
+            template<size_t N, class Shape, auto Layout = detail::default_unfolded_layout<Shape>()>
             static constexpr auto get_layout()
             {
                 if constexpr(terminal<Shape>)

@@ -145,10 +145,10 @@ namespace senluo::detail::relayout_ns
     template<typename TBasePrinciple, auto FoldedLayout>
     struct principle_t : detail::based_on<TBasePrinciple>, principle_interface<principle_t<TBasePrinciple, FoldedLayout>>
     {
-        friend constexpr decltype(auto) data(unwarp_derived_from<principle_t> auto&& self)
-        {
-            return data(FWD(self) | base);
-        }
+        friend constexpr auto data(unwarp_derived_from<principle_t> auto&& self)
+        AS_EXPRESSION( 
+            data(FWD(self) | base)
+        )
         
         static consteval auto layout()
         {
@@ -171,25 +171,21 @@ namespace senluo::detail::relayout_ns
     template<typename T, auto FoldedLayout>
     struct tree_t : detail::based_on<T>, standard_interface<tree_t<T, FoldedLayout>>
     {
-        template<size_t I, unwarp_derived_from<tree_t> Self> 
-        friend constexpr decltype(auto) subtree(Self&& self)
-        {
-            constexpr auto sublayout = detail::layout_get<I>(FoldedLayout);
-            if constexpr(detail::equal(sublayout, invalid_index))
-            {
-                return end();
-            }
-            else if constexpr(indexical<decltype(sublayout)>)
-            {
-                return FWD(self) | base | senluo::subtree<sublayout>;
-                
-            }
-            else
-            {
-                return tree_t<unwrap_t<decltype(FWD(self) | base)>, sublayout>{ unwrap_fwd(FWD(self) | base) };
-            }
-        }
+        template<size_t I, unwarp_derived_from<tree_t> Self>
+            requires indexical<decltype(detail::layout_get<I>(FoldedLayout))>
+        friend constexpr auto subtree(Self&& self)
+        AS_EXPRESSION(
+            FWD(self) | base | senluo::subtree<detail::layout_get<I>(FoldedLayout)>
+        )
 
+        template<size_t I, unwarp_derived_from<tree_t> Self>
+            requires (not indexical<decltype(detail::layout_get<I>(FoldedLayout))>)
+        friend constexpr auto subtree(Self&& self)
+        AS_EXPRESSION(
+            tree_t<unwrap_t<decltype(FWD(self) | base)>, detail::layout_get<I>(FoldedLayout)>{ unwrap_fwd(FWD(self) | base) }
+        )
+
+        // Complex sfinae and noexcept are not currently provided.
         template<auto UsageTree, unwarp_derived_from<tree_t> Self>
         friend constexpr decltype(auto) principle(Self&& self)
         {
@@ -212,7 +208,7 @@ namespace senluo::detail::relayout_ns
             }           
         }
 
-        friend constexpr auto get_maker(type_tag<tree_t>)
+        friend constexpr auto get_maker(type_tag<tree_t>) noexcept
         requires (not std::same_as<decltype(detail::inverse_layout<detail::unfold_layout<FoldedLayout>(shape<T>)>(shape<T>)), tuple<>>)
         {
             return []<class U>(U&& tree)
@@ -232,33 +228,36 @@ namespace senluo
     template<auto Layout>
     struct detail::relayout_t : adaptor_closure<relayout_t<Layout>>
     {
-        template<typename T>
-        constexpr decltype(auto) operator()(T&& t)const
-        {
-            constexpr auto folded_layout = detail::fold_layout<Layout>(shape<T>);
-            if constexpr(indexical<decltype(folded_layout)>)
-            {
-                return decltype(wrap(subtree<folded_layout>(FWD(t)))){ unwrap_fwd(subtree<folded_layout>(FWD(t))) };
-            }
-            else
-            {
-                return relayout_ns::tree_t<senluo::unwrap_t<T>, folded_layout>{ unwrap_fwd(FWD(t)) };
-            }
-        }
-    };
+        template<typename T> 
+#ifdef _MSC_VER
+        requires indexical<decltype(detail::fold_layout<Layout>(shape<T>))> && (not std::is_object_v<subtree_t<T, detail::fold_layout<Layout>(shape<T>)>>)
+#else
+        requires (not std::is_object_v<subtree_t<T, detail::fold_layout<Layout>(shape<T>)>>)
+#endif
+        constexpr auto operator()(T&& t)const
+        AS_EXPRESSION(
+            refer(subtree<detail::fold_layout<Layout>(shape<T>)>(FWD(t)))
+        )
 
-    template<typename T>
-    constexpr auto default_unfolded_layout = []()
-    {
-        if constexpr (terminal<T>)
-        {
-            return indexes_of_whole;
-        }
-        else return[]<size_t...I>(std::index_sequence<I...>)
-        {
-            return make_tuple(detail::layout_add_prefix(default_unfolded_layout<subtree_t<T, I>>, array{I})...);
-        }(std::make_index_sequence<size<T>>{});    
-    }();
+        template<typename T> 
+#ifdef _MSC_VER
+        requires indexical<decltype(detail::fold_layout<Layout>(shape<T>))> && std::is_object_v<subtree_t<T, detail::fold_layout<Layout>(shape<T>)>>
+#else
+        requires std::is_object_v<subtree_t<T, detail::fold_layout<Layout>(shape<T>)>>
+#endif
+        constexpr auto operator()(T&& t)const
+        AS_EXPRESSION(
+            decltype(wrap(subtree<detail::fold_layout<Layout>(shape<T>)>(FWD(t)))){
+                subtree<detail::fold_layout<Layout>(shape<T>)>(FWD(t))
+            }
+        )
+
+        template<typename T> requires (not indexical<decltype(detail::fold_layout<Layout>(shape<T>))>)
+        constexpr auto operator()(T&& t)const
+        AS_EXPRESSION(
+            relayout_ns::tree_t<senluo::unwrap_t<T>, detail::fold_layout<Layout>(shape<T>)>{ unwrap_fwd(FWD(t)) }
+        )
+    };
 
     template<class Relayouter>
     struct relayouter_interface;
@@ -269,7 +268,7 @@ namespace senluo
         template<typename T, derived_from<Relayouter> Self>
         constexpr auto operator()(this Self&& self, T&& tree)
         {
-            constexpr auto layout = Relayouter::relayout(default_unfolded_layout<T>);
+            constexpr auto layout = Relayouter::relayout(detail::default_unfolded_layout<T>());
             return FWD(tree) | relayout<layout>;
         }
     };
@@ -279,11 +278,11 @@ namespace senluo
         template<size_t N>
         struct repeat_t : relayouter_interface<repeat_t<N>>
         {
-            static constexpr auto relayout(const auto&)
+            static constexpr auto relayout(const auto& tree)
             {
-                return []<size_t...I>(std::index_sequence<I...>)
+                return [&]<size_t...I>(std::index_sequence<I...>)
                 {
-                    return tuple{ array<size_t, I - I>{}... };
+                    return tuple{ (I, tree)... };
                 }(std::make_index_sequence<N>{});
             }
         };
@@ -372,7 +371,7 @@ namespace senluo
             template<typename...T>
             constexpr auto operator()(T&&...t) const
             {
-                return tuple<T...>{ FWD(t)... };
+                return tuple<unwrap_t<T>...>{ unwrap_fwd(FWD(t))... };
             }
         };
     }

@@ -340,7 +340,7 @@ namespace senluo
                 else if constexpr(strategy == strategy_t::array)
                 {
 //MSVC bug: https://developercommunity.visualstudio.com/t/Subscripting-an-rvalue-array-does-not-ge/10707244?q=array+rvalue+subscript
-#if _MSC_VER
+#ifdef _MSC_VER
                     return std::forward_like<unwrap_t<T>>(unwrap_fwd(FWD(t))[I]);
 #else
                     return unwrap_fwd(FWD(t))[I];

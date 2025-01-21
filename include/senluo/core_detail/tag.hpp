@@ -92,10 +92,10 @@ namespace senluo::detail
         {
             return get<I>(layout);
         }
-        else
-        {
-            return invalid_index;
-        }
+        // else
+        // {
+        //     return invalid_index;
+        // }
     }
     
     template<typename TLayout, size_t N>
@@ -126,6 +126,19 @@ namespace senluo::detail
             };
         }(std::make_index_sequence<Indices.size()>{});
     }
+
+    template<typename T>
+    constexpr auto default_unfolded_layout()
+    {
+        if constexpr (terminal<T>)
+        {
+            return indexes_of_whole;
+        }
+        else return[]<size_t...I>(std::index_sequence<I...>)
+        {
+            return make_tuple(detail::layout_add_prefix(detail::default_unfolded_layout<subtree_t<T&, I>>(), array{I})...);
+        }(std::make_index_sequence<size<T>>{});    
+    };
 
     template<auto Layout, class Shape>
     constexpr auto fold_layout(Shape shape = {})

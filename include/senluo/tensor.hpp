@@ -120,7 +120,7 @@ namespace senluo
 
                 return decltype(combine(decltype(dot){}, FWD(l), FWD(r)) | relayout<layout> | operate<op_tree>)
                 {
-                    dot, FWD(l), FWD(r)
+                    dot, unwrap_fwd(FWD(l)), unwrap_fwd(FWD(r))
                 };
             }
         };
