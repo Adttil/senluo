@@ -207,7 +207,7 @@ namespace senluo
                 constexpr auto seq_stricture_tree = detail::get_sequence_stricture_tree<RawStrictureTree, Layout, UsageTree>(S{});
                 constexpr auto inv_stricture_tree = detail::get_inverse_sequence_stricture_tree<RawStrictureTree, Layout, UsageTree>(S{});
 
-                return merge_stricture_tree(seq_stricture_tree, inv_stricture_tree);
+                return detail::merge_stricture_tree(seq_stricture_tree, inv_stricture_tree);
             }
         };
     }

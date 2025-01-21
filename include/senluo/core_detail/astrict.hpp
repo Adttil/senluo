@@ -8,36 +8,8 @@
 
 #include "../macro_define.hpp"
 
-namespace senluo 
+namespace senluo::detail
 {
-    template<class S1, class S2>
-    constexpr auto merge_stricture_tree(const S1& tree1, const S2& tree2)
-    {
-        if constexpr(std::same_as<S1, stricture_t>)
-        {
-            if constexpr(std::same_as<S2, stricture_t>)
-            {
-                return tree1 & tree2;
-            }
-            else
-            {
-                return senluo::merge_stricture_tree(tree2, tree1);
-            }
-        }
-        else return [&]<size_t...I>(std::index_sequence<I...>)
-        { 
-            //static_assert(size<S1> > 0);
-            if constexpr(std::same_as<S2, stricture_t>)
-            {
-                return senluo::make_tuple(senluo::merge_stricture_tree(get<I>(tree1), tree2)...);
-            }
-            else
-            {
-                return senluo::make_tuple(senluo::merge_stricture_tree(get<I>(tree1), get<I>(tree2))...);
-            }
-        }(std::make_index_sequence<size<S1>>{});
-    }
-
     template<class T>
     consteval bool only_input()
     {
@@ -51,7 +23,7 @@ namespace senluo
         }
         else return []<size_t...I>(std::index_sequence<I...>)
         {
-            return (... && only_input<subtree_t<T, I>>());
+            return (... && detail::only_input<subtree_t<T, I>>());
         }(std::make_index_sequence<size<T>>{});
     }
 }
@@ -61,10 +33,10 @@ namespace senluo::detail::astrict_ns
     template<typename TBasePrinciple, auto FoldedStrictureTree>
     struct principle_t : detail::based_on<TBasePrinciple>, principle_interface<principle_t<TBasePrinciple, FoldedStrictureTree>>
     {
-        friend constexpr decltype(auto) data(unwarp_derived_from<principle_t> auto&& self)
-        {
-            return data(FWD(self) | base);
-        }
+        friend constexpr auto data(unwarp_derived_from<principle_t> auto&& self)
+        AS_EXPRESSION(
+            data(FWD(self) | base)
+        )
 
         static consteval auto layout()
         {
@@ -73,7 +45,7 @@ namespace senluo::detail::astrict_ns
         
         static consteval auto stricture_tree()
         { 
-            return senluo::merge_stricture_tree(TBasePrinciple::stricture_tree(), FoldedStrictureTree);
+            return detail::merge_stricture_tree(TBasePrinciple::stricture_tree(), FoldedStrictureTree);
         }
 
         static consteval auto operation_tree()
@@ -85,6 +57,7 @@ namespace senluo::detail::astrict_ns
     template<typename T, auto FoldedStrictureTree>
     struct tree_t : detail::based_on<T>, standard_interface<tree_t<T, FoldedStrictureTree>>
     {
+        // Complex sfinae and noexcept are not currently provided.
         template<size_t I, unwarp_derived_from<tree_t> Self> 
         friend constexpr decltype(auto) subtree(Self&& self)
         {
@@ -97,12 +70,12 @@ namespace senluo::detail::astrict_ns
             {
                 return tree_t<decltype(FWD(self) | base | senluo::subtree<I>), stricture_subtree>{ FWD(self) | base | senluo::subtree<I> };
             }
-            else if constexpr(stricture_subtree == stricture_t::none || only_input<decltype(FWD(self) | base | senluo::subtree<I>)>())
+            else if constexpr(stricture_subtree == stricture_t::none || detail::only_input<decltype(FWD(self) | base | senluo::subtree<I>)>())
             {
                 return FWD(self) | base | senluo::subtree<I>;
             }
             else if constexpr(std::is_reference_v<decltype(FWD(self) | base | senluo::subtree<I>)> 
-                              && only_input<decltype(detail::to_readonly(detail::to_readonly(FWD(self)) | base | senluo::subtree<I>))>())
+                              && detail::only_input<decltype(detail::to_readonly(detail::to_readonly(FWD(self)) | base | senluo::subtree<I>))>())
             {
                 return detail::to_readonly(detail::to_readonly(FWD(self)) | base | senluo::subtree<I>);
             }
@@ -112,6 +85,7 @@ namespace senluo::detail::astrict_ns
             }
         }
 
+        // Complex sfinae and noexcept are not currently provided.
         template<auto UsageTree, unwarp_derived_from<tree_t> Self>
         friend constexpr auto principle(Self&& self)
         {
@@ -137,6 +111,7 @@ namespace senluo
     template<auto FoldedStrictureTree>
     struct detail::astrict_t : adaptor_closure<astrict_t<FoldedStrictureTree>>
     {
+        // Complex sfinae and noexcept are not currently provided.
         template<typename T>
         constexpr decltype(auto) operator()(T&& t)const
         {
@@ -144,11 +119,11 @@ namespace senluo
             {
                 return astrict_ns::tree_t<senluo::unwrap_t<T>, FoldedStrictureTree>{ unwrap_fwd(FWD(t)) };
             }
-            else if constexpr(FoldedStrictureTree == stricture_t::none || only_input<T>())
+            else if constexpr(FoldedStrictureTree == stricture_t::none || detail::only_input<T>())
             {
                 return decltype(wrap(FWD(t))){ unwrap_fwd(FWD(t)) };
             }
-            else if constexpr(std::is_reference_v<T> && only_input<decltype(detail::to_readonly(FWD(t)))>())
+            else if constexpr(std::is_reference_v<T> && detail::only_input<decltype(detail::to_readonly(FWD(t)))>())
             {
                 return decltype(wrap(detail::to_readonly(FWD(t)))){ unwrap_fwd(detail::to_readonly(FWD(t))) };
             }

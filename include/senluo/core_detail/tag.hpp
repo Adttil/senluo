@@ -189,6 +189,34 @@ namespace senluo::detail
         }(std::make_index_sequence<size<decltype(Layout)>>{});
     }
 
+    template<class S1, class S2>
+    constexpr auto merge_stricture_tree(const S1& tree1, const S2& tree2)
+    {
+        if constexpr(std::same_as<S1, stricture_t>)
+        {
+            if constexpr(std::same_as<S2, stricture_t>)
+            {
+                return tree1 & tree2;
+            }
+            else
+            {
+                return detail::merge_stricture_tree(tree2, tree1);
+            }
+        }
+        else return [&]<size_t...I>(std::index_sequence<I...>)
+        { 
+            //static_assert(size<S1> > 0);
+            if constexpr(std::same_as<S2, stricture_t>)
+            {
+                return make_tuple(detail::merge_stricture_tree(get<I>(tree1), tree2)...);
+            }
+            else
+            {
+                return make_tuple(detail::merge_stricture_tree(get<I>(tree1), get<I>(tree2))...);
+            }
+        }(std::make_index_sequence<size<S1>>{});
+    }
+
     template<auto TagTree>
     constexpr auto fold_tag_tree()
     {
@@ -340,7 +368,7 @@ namespace senluo::detail
             }
             else
             {
-                auto result = merge_stricture_tree(RawStrictureTree, detail::relayout_tag_tree<Layout>(cur_tree));
+                auto result = detail::merge_stricture_tree(RawStrictureTree, detail::relayout_tag_tree<Layout>(cur_tree));
                 detail::set_data_stricture_tree_by_layout<Layout>(cur_tree);
                 return result;
             }
@@ -374,7 +402,7 @@ namespace senluo::detail
             }
             else
             {
-                auto result = merge_stricture_tree(RawStrictureTree, detail::relayout_tag_tree<Layout>(cur_tree));
+                auto result = detail::merge_stricture_tree(RawStrictureTree, detail::relayout_tag_tree<Layout>(cur_tree));
                 detail::set_data_stricture_tree_by_layout<Layout>(cur_tree);
                 return result;
             }
