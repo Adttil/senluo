@@ -9,20 +9,15 @@
 
 #include "../macro_define.hpp"
 
-namespace senluo 
-{
-    
-}
-
 namespace senluo::detail::operate_ns 
 {
     template<typename TBasePrinciple, auto OperationTree>
     struct principle_t : detail::based_on<TBasePrinciple>, principle_interface<principle_t<TBasePrinciple, OperationTree>>
     {
-        friend constexpr decltype(auto) data(unwarp_derived_from<principle_t> auto&& self)
-        {
-            return data(FWD(self) | base);
-        }
+        friend constexpr auto data(unwarp_derived_from<principle_t> auto&& self)
+        AS_EXPRESSION(
+            data(FWD(self) | base)
+        )
         
         static consteval auto layout()
         {
@@ -43,6 +38,7 @@ namespace senluo::detail::operate_ns
     template<typename T, auto OperationTree>
     struct tree_t : detail::based_on<T>, standard_interface<tree_t<T, OperationTree>>
     {
+        // Complex sfinae and noexcept are not currently provided.
         template<size_t I, unwarp_derived_from<tree_t> Self> 
         friend constexpr decltype(auto) subtree(Self&& self)
         {
@@ -68,6 +64,7 @@ namespace senluo::detail::operate_ns
             }
         }
 
+        // Complex sfinae and noexcept are not currently provided.
         template<auto UsageTree, unwarp_derived_from<tree_t> Self>
         friend constexpr auto principle(Self&& self)
         {
@@ -115,6 +112,7 @@ namespace senluo
     template<auto OperationTree>
     struct detail::operate_t : adaptor_closure<operate_t<OperationTree>>
     {
+        // Complex sfinae and noexcept are not currently provided.
         template<typename T>
         constexpr decltype(auto) operator()(T&& t)const
         {
@@ -142,6 +140,7 @@ namespace senluo
     {
         struct transform_t : adaptor<transform_t>
         {
+            // Complex sfinae and noexcept are not currently provided.
             template<class ArgTable, class Fn>
             constexpr decltype(auto) adapt(ArgTable&& arg_table, Fn&& fn)const
             {
@@ -158,6 +157,7 @@ namespace senluo
     {
         struct zip_transform_t
         {
+            // Complex sfinae and noexcept are not currently provided.
             template<class Fn, class Args, class...Rest>
             constexpr decltype(auto) operator()(Fn&& fn, Args&& args, Rest&&...rest)const
             {
