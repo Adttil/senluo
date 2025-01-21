@@ -2,10 +2,9 @@
 #define SENLUO_STANDARD_HPP
 
 #include<functional>
-#include "../constant.hpp"
+
 #include "../general.hpp"
 #include "subtree.hpp"
-#include "principle.hpp"
 #include "wrap.hpp"
 #include "pretreat.hpp"
 #include "make.hpp"
@@ -25,6 +24,7 @@ namespace senluo
     {
         T&& tree;
 
+        // Complex sfinae and noexcept are not currently provided.
         template<typename U, typename Self>
         constexpr operator U(this Self&& self)
         {
@@ -37,10 +37,10 @@ namespace senluo
         struct transition_fn : adaptor_closure<transition_fn>
         {
             template<class T>
-            constexpr decltype(auto) operator()(T&& tree)const
-            {
-                return transition_wrapper<T>{ FWD(tree) };
-            }
+            constexpr auto operator()(T&& tree)const
+            AS_EXPRESSION(
+                transition_wrapper<T>{ FWD(tree) }
+            )
         };
     }
 
@@ -87,6 +87,7 @@ namespace senluo
                 }(std::make_index_sequence<size<Shape>>{});
             }
 
+            // Complex sfinae and noexcept are not currently provided.
             template<class F, class...T>
             constexpr decltype(auto) operator()(F&& f, T&&...t)const
             {
@@ -106,6 +107,7 @@ namespace senluo
         template<class F>
         struct recursive_zip_binary_fn : adaptor<recursive_zip_binary_fn<F>>
         {
+            // Complex sfinae and noexcept are not currently provided.
             template<class L, class R>
             constexpr decltype(auto) adapt(L&& l, R&& r)const
             {
