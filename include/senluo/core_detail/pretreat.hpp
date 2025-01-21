@@ -131,7 +131,6 @@ namespace senluo
     template<class Pretreater>
     struct pretreater_interface : adaptor_closure<Pretreater>
     {
-        //complex sifane and noexcept are not currently provided
         constexpr decltype(auto) operator()(auto&& tree) const
         noexcept(noexcept(detail::pass(data(FWD(tree) | senluo::principle<Pretreater::usage_tree()>))))
         requires requires{detail::pass(data(FWD(tree) | senluo::principle<Pretreater::usage_tree()>));}
@@ -139,8 +138,6 @@ namespace senluo
             using principle_result_t = decltype(FWD(tree) | senluo::principle<Pretreater::usage_tree()>);
             using principle_t = std::remove_cvref_t<unwrap_t<principle_result_t>>;
             using data_t = decltype(data(std::declval<principle_result_t>()));
-            
-            //decltype(auto) principle = FWD(tree) | senluo::principle<Pretreater::usage_tree()>;
             
             constexpr auto layout = principle_t::layout();
             constexpr auto raw_stricture_tree = principle_t::stricture_tree();

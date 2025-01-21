@@ -15,6 +15,7 @@ namespace senluo
     {
         struct apply_t : adaptor<apply_t>
         {
+            // Complex sfinae and noexcept are not currently provided.
             template<class Args, class Fn>
             constexpr decltype(auto) adapt(Args&& args, Fn&& fn)const
             {
@@ -28,6 +29,7 @@ namespace senluo
         
         struct apply_invoke_t : adaptor_closure<apply_invoke_t>
         {
+            // Complex sfinae and noexcept are not currently provided.
             template<class T>
             constexpr decltype(auto) operator()(T&& tree)const
             {
@@ -52,6 +54,7 @@ namespace senluo
         template<auto UsageTree, template<class...> class Tpl>
         struct plainize_fn : adaptor_closure<plainize_fn<UsageTree, Tpl>>
         {
+            // Complex sfinae and noexcept are not currently provided.
             template<class T>
             constexpr decltype(auto) operator()(T&& tree) const
             {
@@ -61,7 +64,7 @@ namespace senluo
             template<class TSrc>
             constexpr decltype(auto) impl(TSrc&& src)const
             {
-                if constexpr(detail::equal(UsageTree, usage_t::none))
+                if constexpr(detail::fold_usage(UsageTree) == usage_t::none)
                 {
                     return tuple{};
                 }
@@ -98,12 +101,12 @@ namespace senluo
         struct plainize_principle_fn : adaptor_closure<plainize_principle_fn<UsageTree, Tpl>>
         {
             template<class T>
-            constexpr decltype(auto) operator()(T&& tree)const
-            {
-                return plain_principle<unwrap_t<decltype(FWD(tree) | plainize<UsageTree, Tpl>)>>{ 
-                    FWD(tree) | plainize<UsageTree, Tpl>
-                };
-            }
+            constexpr auto operator()(T&& tree)const
+            AS_EXPRESSION(
+                plain_principle<unwrap_t<decltype(FWD(tree) | plainize<UsageTree, Tpl>)>>{ 
+                    unwrap_fwd(FWD(tree) | plainize<UsageTree, Tpl>)
+                }
+            )
         };
     };
 
@@ -136,6 +139,7 @@ namespace senluo
             return detail::fold_operation_tree<Principle::operation_tree()>(); 
         }
         
+        // Complex sfinae and noexcept are not currently provided.
         template<size_t I, unwarp_derived_from<Principle> Self>
         friend constexpr decltype(auto) subtree(Self&& self)
         {
@@ -154,6 +158,7 @@ namespace senluo
             
         }
 
+        // Complex sfinae and noexcept are not currently provided.
         template<auto UsageTree, unwarp_derived_from<Principle> Self>
         friend constexpr decltype(auto) principle(Self&& self)
         {
@@ -167,14 +172,14 @@ namespace senluo
             }
             else
             {
-                return (unwrap_t<Self>)unwrap_fwd(FWD(self));
+                return FWD(self);
             }
         }
     };
     
     struct null_principle : principle_interface<null_principle>
     {
-        friend constexpr auto data(const null_principle&)
+        friend constexpr auto data(unwarp_derived_from<null_principle> auto&& self) noexcept
         {
             return std::in_place_t{};
         }
@@ -189,10 +194,10 @@ namespace senluo
     template<class T>
     struct plain_principle : detail::based_on<T>, principle_interface<plain_principle<T>>
     {
-        friend constexpr decltype(auto) data(unwarp_derived_from<plain_principle> auto&& self)
-        {
-            return unwrap(FWD(self) | detail::base);
-        }
+        friend constexpr auto data(unwarp_derived_from<plain_principle> auto&& self)
+        AS_EXPRESSION(
+            unwrap(FWD(self) | detail::base)
+        )
         
         static constexpr auto layout(){ return indexes_of_whole; }
         
@@ -204,14 +209,14 @@ namespace senluo
     template<class T, auto UsageTree>
     struct trivial_principle : detail::based_on<T>, principle_interface<trivial_principle<T, UsageTree>>
     {        
+        // Complex sfinae and noexcept are not currently provided.
         friend constexpr auto data(unwarp_derived_from<trivial_principle> auto&& self)
         {
             return [&]<size_t...I>(std::index_sequence<I...>)
             {
-                //todo... maybe wrong
-                return tuple<decltype(data(FWD(self) | detail::base | relayout<I> | principle<detail::tag_tree_get<I>(UsageTree)>))...>
+                return tuple<decltype(data(FWD(self) | detail::base | subtree<I> | principle<detail::tag_tree_get<I>(UsageTree)>))...>
                 {
-                    data(FWD(self) | detail::base | relayout<I> | principle<detail::tag_tree_get<I>(UsageTree)>)...
+                    data(FWD(self) | detail::base | subtree<I> | principle<detail::tag_tree_get<I>(UsageTree)>)...
                 };
             }(std::make_index_sequence<size<T>>{});
         }
@@ -250,6 +255,7 @@ namespace senluo
     template<auto UsageTree>
     struct detail::principle_t_ns::principle_fn : adaptor_closure<principle_fn<UsageTree>>
     {
+        // Complex sfinae and noexcept are not currently provided.
         template<typename T>
         constexpr auto operator()(T&& tree)const
         {
