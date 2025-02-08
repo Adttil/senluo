@@ -95,7 +95,7 @@ namespace senluo
             }
 
             template<wrapped T>
-            constexpr T& operator()(T& tree)const noexcept
+            constexpr auto& operator()(T& tree)const noexcept
             {
                 return FWD(tree, base);
             }

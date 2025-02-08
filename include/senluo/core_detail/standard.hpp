@@ -98,8 +98,34 @@ namespace senluo
                 return combine(FWD(f) | relayout<op_layout>, FWD(t)...) | relayout<layout> | operate<op_tree>; 
             }
         };
+
+        struct recursive_transform_fn : adaptor<recursive_transform_fn>
+        {
+            template<class Shape, auto Layout = detail::default_unfolded_layout<Shape>()>
+            static consteval auto get_layout()
+            {
+                if constexpr(terminal<Shape>)
+                {
+                    return tuple{ array{ 0uz }, detail::array_cat(array{ 1uz }, Layout) };
+                }
+                else return []<size_t...I>(std::index_sequence<I...>)
+                {
+                    return senluo::make_tuple(get_layout<subtree_t<Shape, I>, get<I>(Layout)>()...);
+                }(std::make_index_sequence<size<Shape>>{});
+            }
+
+            // Complex sfinae and noexcept are not currently provided.
+            template<class F, class T>
+            constexpr decltype(auto) adapt(F&& f, T&& t)const
+            {
+                constexpr auto layout = get_layout<shape_t<T>>();
+                constexpr auto op_tree = detail::make_tree_of_same_value(operation_t::apply_invoke, shape<T>);
+                return combine(FWD(f), FWD(t)) | relayout<layout> | operate<op_tree>; 
+            }
+        };
     }
 
+    inline constexpr detail::recursive_transform_fn recursive_transform{};
     inline constexpr detail::recursive_zip_transform_fn recursive_zip_transform{};
 
     namespace detail
@@ -123,6 +149,30 @@ namespace senluo
     inline constexpr auto minus = recursive_zip_binary_fn<std::minus<>>;
     inline constexpr auto multiplies = recursive_zip_binary_fn<std::multiplies<>>;
     inline constexpr auto divides = recursive_zip_binary_fn<std::divides<>>;
+
+    template<standard L, standard R>
+    inline constexpr decltype(auto) operator+(L&& l, R&& r)
+    {
+        return plus(FWD(l), FWD(r));
+    }
+
+    template<standard L, standard R>
+    inline constexpr decltype(auto) operator-(L&& l, R&& r)
+    {
+        return minus(FWD(l), FWD(r));
+    }
+
+    template<standard L, terminal R> requires (not standard<R>)
+    inline constexpr decltype(auto) operator*(L&& l, R&& r)
+    {
+        return recursive_transform([r = wrap(FWD(r))](auto&& x){ return FWD(x) * r.base; }, FWD(l));
+    }
+
+    template<terminal L, standard R> requires (not standard<L>)
+    inline constexpr decltype(auto) operator*(L&& l, R&& r)
+    {
+        return recursive_transform([l = wrap(FWD(l))](auto&& x){ return l.base * FWD(x); }, FWD(r));
+    }
 }
 
 #include "../macro_undef.hpp"

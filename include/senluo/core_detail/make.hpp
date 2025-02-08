@@ -115,7 +115,11 @@ namespace senluo
         template<typename Arg>
         constexpr T operator()(Arg&& arg)const
         {
-            if constexpr(terminal<subtree_t<Arg, indexes>> || terminal<T>)
+            if constexpr(wrapped<T>)
+            {
+                return T{ make<unwrap_t<T>>(FWD(arg)) };
+            }
+            else if constexpr(terminal<subtree_t<Arg, indexes>> || terminal<T>)
             {
                 return (T)subtree<indexes>(FWD(arg));
             }
