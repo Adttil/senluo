@@ -4,19 +4,13 @@
 #include "../general.hpp"
 #include "subtree.hpp"
 #include "pretreat.hpp"
+#include "relayout.hpp"
 
 #include "../macro_define.hpp"
 
 namespace senluo 
 {
-    namespace detail::make_t_ns
-    {
-        template<typename T, auto indexes>
-        struct make_t;
-    }
-
-    template<typename T, indexical auto...indexes>
-    inline constexpr auto make = detail::make_t_ns::make_t<T, detail::to_indexes(indexes...)>{};
+    
     
     template<typename T>
     struct sequence_maker
@@ -26,8 +20,8 @@ namespace senluo
         {
             return [&]<size_t...I>(std::index_sequence<I...>)
             {
-                auto&& seq = FWD(arg) | refer | sequence;
-                return T{ FWD(seq) | make<std::tuple_element_t<I, T>, I>... };
+                //auto&& seq = FWD(arg) | refer | sequence;
+                return T{ FWD(arg) | make<std::tuple_element_t<I, T>, I>... };
             }(std::make_index_sequence<std::tuple_size_v<T>>{});
         }
     };
@@ -40,8 +34,9 @@ namespace senluo
         {
             return [&]<size_t...I>(std::index_sequence<I...>)
             {
-                auto&& seq = FWD(arg) | refer | inverse_sequence;
-                return T{ FWD(seq) | make<std::tuple_element_t<I, T>, I>... };
+                //auto&& seq = FWD(arg) | refer | inverse_sequence;
+                //constexpr size_t last_index = std::tuple_size_v<T> - 1uz;
+                return T{ FWD(arg) | make<std::tuple_element_t<I, T>, I>... };
             }(std::make_index_sequence<std::tuple_size_v<T>>{});
         }
     };
@@ -54,8 +49,8 @@ namespace senluo
         {
             return [&]<size_t...I>(std::index_sequence<I...>)
             {
-                auto&& seq = FWD(arg) | refer | seperate;
-                return T{ FWD(seq) | make<std::tuple_element_t<I, T>, I>... };
+                //auto&& seq = FWD(arg) | refer | seperate;
+                return T{ FWD(arg) | make<std::tuple_element_t<I, T>, I>... };
             }(std::make_index_sequence<std::tuple_size_v<T>>{});
         }
     };
@@ -68,8 +63,8 @@ namespace senluo
         {
             return [&]<size_t...I>(std::index_sequence<I...>)
             {
-                auto&& seq = FWD(arg) | refer | sequence;
-                return T{ { FWD(seq) | make<detail::aggregate_member_t<I, T>, I> }... };
+               // auto&& seq = FWD(arg) | refer | sequence;
+                return T{ { FWD(arg) | make<detail::aggregate_member_t<I, T>, I> }... };
             }(std::make_index_sequence<size<T>>{});
         }
     };

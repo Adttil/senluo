@@ -34,9 +34,9 @@ namespace senluo
             {
                 return [&]<size_t...I>(std::index_sequence<I...>) -> decltype(auto)
                 {
-                    auto&& left_seq = FWD(left) | refer | seperate;
-                    auto&& right_seq = FWD(right) | refer | seperate;
-                    return (... + (subtree<I>(FWD(left_seq)) * subtree<I>(FWD(right_seq))));
+                    //auto&& left_seq = FWD(left) | refer | seperate;
+                    //auto&& right_seq = FWD(right) | refer | seperate;
+                    return (... + (subtree<I>(FWD(left)) * subtree<I>(FWD(right))));
                 }(std::make_index_sequence<detail::min(size<L>, size<R>)>{});
             }
         };

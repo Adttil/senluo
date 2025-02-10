@@ -1,7 +1,7 @@
 #include "core_detail/wrap.hpp"
 #include "core_detail/subtree.hpp"
 #include "core_detail/principle.hpp"
-#include "core_detail/astrict.hpp"
+//#include "core_detail/astrict.hpp"
 #include "core_detail/relayout.hpp"
 #include "core_detail/operate.hpp"
 #include "core_detail/pretreat.hpp"

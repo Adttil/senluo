@@ -170,7 +170,24 @@ namespace senluo
             }
         };
 
+        struct const_base_fn : adaptor_closure<const_base_fn>
+        {
+            template<class T>
+            constexpr decltype(auto) operator()(T&& t) const noexcept
+            {
+                if constexpr(std::is_object_v<unwrap_t<T>> && std::is_object_v<decltype(unwrap_fwd(FWD(t)).base)>)
+                {
+                    return detail::to_readonly(FWD(unwrap_fwd(FWD(t)), base));
+                }
+                else
+                {
+                    return detail::to_readonly(FWD(unwrap_fwd(FWD(t)), base)) | refer;
+                }
+            }
+        };
+
         inline constexpr base_fn base{};
+        inline constexpr const_base_fn const_base{};
     }
 
     template<class T, class U>

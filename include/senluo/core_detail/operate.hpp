@@ -43,12 +43,12 @@ namespace senluo
         template<typename T>
         constexpr decltype(auto) operator()(T&& t)const
         {
-            constexpr auto usage_tree = make_tree_of_same_value(usage_t::once, shape<decltype(OperationTree)>);
-            decltype(auto) data = FWD(t) | sequence_by_usage<usage_tree>;
+            //constexpr auto usage_tree = make_tree_of_same_value(usage_t::once, shape<decltype(OperationTree)>);
+            //decltype(auto) data = FWD(t) | sequence_by_usage<usage_tree>;
 
-            return decltype(detail::operate_impl<OperationTree>(FWD(data)) | wrap)
+            return decltype(detail::operate_impl<OperationTree>(FWD(t)) | wrap)
             {
-                detail::operate_impl<OperationTree>(FWD(data))
+                detail::operate_impl<OperationTree>(FWD(t))
             };
             // if constexpr(not std::same_as<decltype(OperationTree), operation_t>)
             // {

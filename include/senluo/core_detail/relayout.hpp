@@ -5,7 +5,7 @@
 #include "subtree.hpp"
 #include "principle.hpp"
 #include "wrap.hpp"
-#include "make.hpp"
+//#include "make.hpp"
 
 #include "../macro_define.hpp"
 
@@ -140,33 +140,45 @@ namespace senluo::detail
     };
 }
 
+namespace senluo
+{
+    namespace detail::make_t_ns
+    {
+        template<typename T, auto indexes>
+        struct make_t;
+    }
+
+    template<typename T, indexical auto...indexes>
+    inline constexpr auto make = detail::make_t_ns::make_t<T, detail::to_indexes(indexes...)>{};
+}
+
 namespace senluo::detail::relayout_ns
 {
-    template<typename TBasePrinciple, auto FoldedLayout>
-    struct principle_t : detail::based_on<TBasePrinciple>, principle_interface<principle_t<TBasePrinciple, FoldedLayout>>
-    {
-        friend constexpr auto data(unwarp_derived_from<principle_t> auto&& self)
-        AS_EXPRESSION( 
-            data(FWD(self) | base)
-        )
+    // template<typename TBasePrinciple, auto FoldedLayout>
+    // struct principle_t : detail::based_on<TBasePrinciple>, principle_interface<principle_t<TBasePrinciple, FoldedLayout>>
+    // {
+    //     friend constexpr auto data(unwarp_derived_from<principle_t> auto&& self)
+    //     AS_EXPRESSION( 
+    //         data(FWD(self) | base)
+    //     )
         
-        static consteval auto layout()
-        {
-            constexpr auto data_shape = shape<decltype(data(std::declval<TBasePrinciple>()))>;
-            constexpr auto base_unfolded_layout = detail::unfold_layout<TBasePrinciple::layout()>(data_shape);
-            return detail::apply_layout<FoldedLayout>(base_unfolded_layout); 
-        }
+    //     static consteval auto layout()
+    //     {
+    //         constexpr auto data_shape = shape<decltype(data(std::declval<TBasePrinciple>()))>;
+    //         constexpr auto base_unfolded_layout = detail::unfold_layout<TBasePrinciple::layout()>(data_shape);
+    //         return detail::apply_layout<FoldedLayout>(base_unfolded_layout); 
+    //     }
         
-        static consteval auto stricture_tree()
-        { 
-            return detail::relayout_tag_tree<FoldedLayout>(TBasePrinciple::stricture_tree());
-        }
+    //     static consteval auto stricture_tree()
+    //     { 
+    //         return detail::relayout_tag_tree<FoldedLayout>(TBasePrinciple::stricture_tree());
+    //     }
 
-        // static consteval auto operation_tree()
-        // {
-        //     return detail::relayout_tag_tree<FoldedLayout>(TBasePrinciple::operation_tree());
-        // }
-    };
+    //     // static consteval auto operation_tree()
+    //     // {
+    //     //     return detail::relayout_tag_tree<FoldedLayout>(TBasePrinciple::operation_tree());
+    //     // }
+    // };
 
     template<typename T, auto FoldedLayout>
     struct tree_t : detail::based_on<T>, standard_interface<tree_t<T, FoldedLayout>>
@@ -175,39 +187,39 @@ namespace senluo::detail::relayout_ns
             requires indexical<decltype(detail::layout_get<I>(FoldedLayout))>
         friend constexpr auto subtree(Self&& self)
         AS_EXPRESSION(
-            FWD(self) | base | senluo::subtree<detail::layout_get<I>(FoldedLayout)>
+            FWD(self) | const_base | senluo::subtree<detail::layout_get<I>(FoldedLayout)>
         )
 
         template<size_t I, unwarp_derived_from<tree_t> Self>
             requires (not indexical<decltype(detail::layout_get<I>(FoldedLayout))>)
         friend constexpr auto subtree(Self&& self)
         AS_EXPRESSION(
-            tree_t<unwrap_t<decltype(FWD(self) | base)>, detail::layout_get<I>(FoldedLayout)>{ unwrap_fwd(FWD(self) | base) }
+            tree_t<unwrap_t<decltype(FWD(self) | const_base)>, detail::layout_get<I>(FoldedLayout)>{ unwrap_fwd(FWD(self) | const_base) }
         )
 
         // Complex sfinae and noexcept are not currently provided.
-        template<auto UsageTree, unwarp_derived_from<tree_t> Self>
-        friend constexpr decltype(auto) principle(Self&& self)
-        {
-            constexpr auto unfolded_layout = detail::unfold_layout<FoldedLayout>(shape<T>);
-            constexpr auto base_usage = detail::inverse_relayout_usage_tree<unfolded_layout>(UsageTree, shape<T>);
+        // template<auto UsageTree, unwarp_derived_from<tree_t> Self>
+        // friend constexpr decltype(auto) principle(Self&& self)
+        // {
+        //     constexpr auto unfolded_layout = detail::unfold_layout<FoldedLayout>(shape<T>);
+        //     constexpr auto base_usage = detail::inverse_relayout_usage_tree<unfolded_layout>(UsageTree, shape<T>);
 
-            using base_principle_t = decltype(FWD(self) | base | senluo::principle<base_usage>);
-            return principle_t<base_principle_t, FoldedLayout>{ FWD(self) | base | senluo::principle<base_usage> };
+        //     using base_principle_t = decltype(FWD(self) | base | senluo::principle<base_usage>);
+        //     return principle_t<base_principle_t, FoldedLayout>{ FWD(self) | base | senluo::principle<base_usage> };
 
-            // if constexpr(detail::is_enable_to_relayout_operation_tree<FoldedLayout>(base_principle_t::folded_operation_tree()))
-            // {
-            //     return principle_t<base_principle_t, FoldedLayout>{ FWD(self) | base | senluo::principle<base_usage> };
-            // }
-            // else
-            // {
-            //     using base_plain_principle_t = decltype(FWD(self) | base | plainize_principle<UsageTree>);
+        //     // if constexpr(detail::is_enable_to_relayout_operation_tree<FoldedLayout>(base_principle_t::folded_operation_tree()))
+        //     // {
+        //     //     return principle_t<base_principle_t, FoldedLayout>{ FWD(self) | base | senluo::principle<base_usage> };
+        //     // }
+        //     // else
+        //     // {
+        //     //     using base_plain_principle_t = decltype(FWD(self) | base | plainize_principle<UsageTree>);
 
-            //     return principle_t<base_plain_principle_t, FoldedLayout>{ 
-            //         FWD(self) | base | plainize_principle<UsageTree>
-            //     };
-            // }           
-        }
+        //     //     return principle_t<base_plain_principle_t, FoldedLayout>{ 
+        //     //         FWD(self) | base | plainize_principle<UsageTree>
+        //     //     };
+        //     // }           
+        // }
 
         friend constexpr auto get_maker(type_tag<tree_t>) noexcept
         requires (not std::same_as<decltype(detail::inverse_layout<detail::unfold_layout<FoldedLayout>(shape<T>)>(shape<T>)), tuple<>>)
