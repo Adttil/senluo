@@ -9,102 +9,29 @@
 
 #include "../macro_define.hpp"
 
-namespace senluo::detail::operate_ns 
+namespace senluo::detail
 {
-    template<typename TBasePrinciple, auto OperationTree>
-    struct principle_t : detail::based_on<TBasePrinciple>, principle_interface<principle_t<TBasePrinciple, OperationTree>>
+    template<auto OperationTree, class T>
+    constexpr decltype(auto) operate_impl(T&& data)
     {
-        friend constexpr auto data(unwarp_derived_from<principle_t> auto&& self)
-        AS_EXPRESSION(
-            data(FWD(self) | base)
-        )
-        
-        static consteval auto layout()
+        if constexpr(std::same_as<decltype(OperationTree), operation_t>)
         {
-            return TBasePrinciple::layout();
+            if constexpr(OperationTree == operation_t::none)
+            {
+                return (T)FWD(data);
+            }
+            else// if constexpr(OperationTree == operation_t::apply_invoke)
+            {
+                return apply_invoke(FWD(data));
+            }
         }
-        
-        static consteval auto stricture_tree()
-        { 
-            return TBasePrinciple::stricture_tree();
-        }
-        
-        static consteval auto operation_tree()
-        { 
-            return OperationTree;
-        }
-    };
-
-    template<typename T, auto OperationTree>
-    struct tree_t : detail::based_on<T>, standard_interface<tree_t<T, OperationTree>>
-    {
-        // Complex sfinae and noexcept are not currently provided.
-        template<size_t I, unwarp_derived_from<tree_t> Self> 
-        friend constexpr decltype(auto) subtree(Self&& self)
+        else return [&]<size_t...I>(std::index_sequence<I...>)
         {
-            constexpr auto op_subtree = detail::tag_tree_get<I>(OperationTree);
-            if constexpr(I >= size<decltype(OperationTree)>)
-            {
-                return end();
-            }
-            else if constexpr(not std::same_as<decltype(op_subtree), const operation_t>)
-            {
-                return tree_t<decltype(FWD(self) | base | senluo::subtree<I>), op_subtree>
-                {
-                    FWD(self) | base | senluo::subtree<I>
-                };
-            }
-            else if constexpr(op_subtree == operation_t::none)
-            {
-                return FWD(self) | base | senluo::subtree<I>;
-            }
-            else
-            {
-                return apply_invoke(FWD(self) | base | senluo::subtree<I>);
-            }
-        }
-
-        // Complex sfinae and noexcept are not currently provided.
-        template<auto UsageTree, unwarp_derived_from<tree_t> Self>
-        friend constexpr auto principle(Self&& self)
-        {
-            constexpr auto fitted_usage_result = detail::fit_operation_usage<OperationTree>(UsageTree);
-            constexpr auto fittedd_usage = fitted_usage_result.usage_tree;
-            constexpr bool need_plain = fitted_usage_result.need_plain;
-
-            using base_principle_t = decltype(FWD(self) | base | senluo::principle<fittedd_usage>);
-            
-            if constexpr(detail::equal(base_principle_t::folded_operation_tree(), operation_t::none))
-            {
-                if constexpr(not need_plain)
-                {
-                    return principle_t<base_principle_t, OperationTree>{ 
-                        FWD(self) | base | senluo::principle<fittedd_usage> 
-                    };
-                }
-                else
-                {
-                    using base_plain_principle_t = decltype(FWD(self) | base | plainize_principle<fittedd_usage>);
-                    return principle_t<base_plain_principle_t, OperationTree>{ 
-                        FWD(self) | base | plainize_principle<fittedd_usage>
-                    };
-                }
-            }
-            else
-            {
-                auto base_plain = FWD(self) | base | plainize_principle<fittedd_usage>;
-                if constexpr(not need_plain)
-                {
-                    return principle_t<decltype(base_plain), OperationTree>{ std::move(base_plain) };
-                }
-                else
-                {
-                    return principle_t<decltype(base_plain), OperationTree>{ std::move(base_plain) }
-                           | plainize_principle<fittedd_usage>;
-                }
-            }
-        }
-    };
+            return tuple<decltype(detail::operate_impl<get<I>(OperationTree)>(subtree<I>(FWD(data))))...>{
+                detail::operate_impl<get<I>(OperationTree)>(subtree<I>(FWD(data)))...
+            };
+        }(std::make_index_sequence<size<decltype(OperationTree)>>{});
+    }
 }
 
 namespace senluo 
@@ -116,20 +43,27 @@ namespace senluo
         template<typename T>
         constexpr decltype(auto) operator()(T&& t)const
         {
-            if constexpr(not std::same_as<decltype(OperationTree), operation_t>)
+            constexpr auto usage_tree = make_tree_of_same_value(usage_t::once, shape<decltype(OperationTree)>);
+            decltype(auto) data = FWD(t) | sequence_by_usage<usage_tree>;
+
+            return decltype(detail::operate_impl<OperationTree>(FWD(data)) | wrap)
             {
-                return operate_ns::tree_t<senluo::unwrap_t<T>, OperationTree>{ unwrap_fwd(FWD(t)) };
-            }
-            else if constexpr(OperationTree == operation_t::none)
-            {
-                return decltype(wrap(FWD(t))){ unwrap_fwd(FWD(t)) };
-            }
-            else
-            {
-                return decltype(wrap(apply_invoke(FWD(t)))){ 
-                    unwrap_fwd(apply_invoke(FWD(t))) 
-                };
-            }
+                detail::operate_impl<OperationTree>(FWD(data))
+            };
+            // if constexpr(not std::same_as<decltype(OperationTree), operation_t>)
+            // {
+            //     return operate_ns::tree_t<senluo::unwrap_t<T>, OperationTree>{ unwrap_fwd(FWD(t)) };
+            // }
+            // else if constexpr(OperationTree == operation_t::none)
+            // {
+            //     return decltype(wrap(FWD(t))){ unwrap_fwd(FWD(t)) };
+            // }
+            // else
+            // {
+            //     return decltype(wrap(apply_invoke(FWD(t)))){ 
+            //         unwrap_fwd(apply_invoke(FWD(t))) 
+            //     };
+            // }
         }
     };
 }

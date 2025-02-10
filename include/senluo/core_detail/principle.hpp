@@ -134,10 +134,10 @@ namespace senluo
             return detail::fold_tag_tree<Principle::stricture_tree()>(); 
         }
         
-        static consteval auto folded_operation_tree()
-        { 
-            return detail::fold_operation_tree<Principle::operation_tree()>(); 
-        }
+        // static consteval auto folded_operation_tree()
+        // { 
+        //     return detail::fold_operation_tree<Principle::operation_tree()>(); 
+        // }
         
         // Complex sfinae and noexcept are not currently provided.
         template<size_t I, unwarp_derived_from<Principle> Self>
@@ -146,7 +146,8 @@ namespace senluo
             decltype(auto) tree = wrapper<decltype(data(FWD(self)))>{ data(FWD(self)) }
                 | relayout<Principle::layout()>
                 | astrict<Principle::stricture_tree()>
-                | operate<Principle::operation_tree()>;
+                //| operate<Principle::operation_tree()>
+            ;
             if constexpr(I >= size<decltype(tree)>)
             {
                 return end();
@@ -158,22 +159,22 @@ namespace senluo
             
         }
 
-        // Complex sfinae and noexcept are not currently provided.
         template<auto UsageTree, unwarp_derived_from<Principle> Self>
-        friend constexpr decltype(auto) principle(Self&& self)
+        friend constexpr decltype(auto) principle(Self&& self) noexcept
         {
-            constexpr auto fitted_usage_result = detail::fit_operation_usage<folded_operation_tree()>(UsageTree);
-            constexpr auto fittedd_usage = fitted_usage_result.usage_tree;
-            constexpr bool need_plain = fitted_usage_result.need_plain;
+            return FWD(self);
+            // constexpr auto fitted_usage_result = detail::fit_operation_usage<folded_operation_tree()>(UsageTree);
+            // constexpr auto fittedd_usage = fitted_usage_result.usage_tree;
+            // constexpr bool need_plain = fitted_usage_result.need_plain;
 
-            if constexpr(need_plain)
-            {
-                return FWD(self) | plainize_principle<UsageTree>;
-            }
-            else
-            {
-                return FWD(self);
-            }
+            // if constexpr(need_plain)
+            // {
+            //     return FWD(self) | plainize_principle<UsageTree>;
+            // }
+            // else
+            // {
+            //     return FWD(self);
+            // }
         }
     };
     
@@ -188,7 +189,7 @@ namespace senluo
         
         static consteval auto stricture_tree(){ return stricture_t::none; }
         
-        static consteval auto operation_tree(){ return operation_t::none; }
+        //static consteval auto operation_tree(){ return operation_t::none; }
     };
 
     template<class T>
@@ -203,7 +204,7 @@ namespace senluo
         
         static consteval auto stricture_tree(){ return stricture_t::none; }
         
-        static consteval auto operation_tree(){ return operation_t::none; }
+        //static consteval auto operation_tree(){ return operation_t::none; }
     };
 
     template<class T, auto UsageTree>
@@ -241,15 +242,15 @@ namespace senluo
             }(std::make_index_sequence<size<T>>{});
         }
 
-        static consteval auto operation_tree()
-        {
-            return []<size_t...I>(std::index_sequence<I...>)
-            {
-                return make_tuple(
-                    principle_t<subtree_t<T, I>, detail::tag_tree_get<I>(UsageTree)>::operation_tree()...
-                );
-            }(std::make_index_sequence<size<T>>{});
-        }
+        // static consteval auto operation_tree()
+        // {
+        //     return []<size_t...I>(std::index_sequence<I...>)
+        //     {
+        //         return make_tuple(
+        //             principle_t<subtree_t<T, I>, detail::tag_tree_get<I>(UsageTree)>::operation_tree()...
+        //         );
+        //     }(std::make_index_sequence<size<T>>{});
+        // }
     };
 
     template<auto UsageTree>

@@ -118,10 +118,10 @@ namespace senluo
                 constexpr auto layout = get_layout<m, s, n>();
                 constexpr auto op_tree = detail::make_tree_of_same_value(operation_t::apply_invoke, shape<mat<m, n>>);
 
-                return decltype(combine(decltype(dot){}, FWD(l), FWD(r)) | relayout<layout> | operate<op_tree>)
+                return decltype(combine(decltype(dot){}, FWD(l), FWD(r)) | relayout<layout>)
                 {
                     dot, unwrap_fwd(FWD(l)), unwrap_fwd(FWD(r))
-                };
+                } | operate<op_tree>;
             }
         };
     }

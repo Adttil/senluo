@@ -162,10 +162,10 @@ namespace senluo::detail::relayout_ns
             return detail::relayout_tag_tree<FoldedLayout>(TBasePrinciple::stricture_tree());
         }
 
-        static consteval auto operation_tree()
-        {
-            return detail::relayout_tag_tree<FoldedLayout>(TBasePrinciple::operation_tree());
-        }
+        // static consteval auto operation_tree()
+        // {
+        //     return detail::relayout_tag_tree<FoldedLayout>(TBasePrinciple::operation_tree());
+        // }
     };
 
     template<typename T, auto FoldedLayout>
@@ -193,19 +193,20 @@ namespace senluo::detail::relayout_ns
             constexpr auto base_usage = detail::inverse_relayout_usage_tree<unfolded_layout>(UsageTree, shape<T>);
 
             using base_principle_t = decltype(FWD(self) | base | senluo::principle<base_usage>);
+            return principle_t<base_principle_t, FoldedLayout>{ FWD(self) | base | senluo::principle<base_usage> };
 
-            if constexpr(detail::is_enable_to_relayout_operation_tree<FoldedLayout>(base_principle_t::folded_operation_tree()))
-            {
-                return principle_t<base_principle_t, FoldedLayout>{ FWD(self) | base | senluo::principle<base_usage> };
-            }
-            else
-            {
-                using base_plain_principle_t = decltype(FWD(self) | base | plainize_principle<UsageTree>);
+            // if constexpr(detail::is_enable_to_relayout_operation_tree<FoldedLayout>(base_principle_t::folded_operation_tree()))
+            // {
+            //     return principle_t<base_principle_t, FoldedLayout>{ FWD(self) | base | senluo::principle<base_usage> };
+            // }
+            // else
+            // {
+            //     using base_plain_principle_t = decltype(FWD(self) | base | plainize_principle<UsageTree>);
 
-                return principle_t<base_plain_principle_t, FoldedLayout>{ 
-                    FWD(self) | base | plainize_principle<UsageTree>
-                };
-            }           
+            //     return principle_t<base_plain_principle_t, FoldedLayout>{ 
+            //         FWD(self) | base | plainize_principle<UsageTree>
+            //     };
+            // }           
         }
 
         friend constexpr auto get_maker(type_tag<tree_t>) noexcept

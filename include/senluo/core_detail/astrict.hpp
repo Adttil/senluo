@@ -48,10 +48,10 @@ namespace senluo::detail::astrict_ns
             return detail::merge_stricture_tree(TBasePrinciple::stricture_tree(), FoldedStrictureTree);
         }
 
-        static consteval auto operation_tree()
-        {
-            return operation_t::none;
-        }
+        // static consteval auto operation_tree()
+        // {
+        //     return operation_t::none;
+        // }
     };
 
     template<typename T, auto FoldedStrictureTree>
@@ -90,18 +90,20 @@ namespace senluo::detail::astrict_ns
         friend constexpr auto principle(Self&& self)
         {
             using base_principle_t = decltype(FWD(self) | base | senluo::principle<UsageTree>);
-            if constexpr(detail::equal(base_principle_t::folded_operation_tree(), operation_t::none))
-            {
-                return principle_t<base_principle_t, FoldedStrictureTree>{ FWD(self) | base | senluo::principle<UsageTree> };
-            }
-            else
-            {
-                using base_plain_principle_t = decltype(FWD(self) | base | plainize_principle<UsageTree>);
+            return principle_t<base_principle_t, FoldedStrictureTree>{ FWD(self) | base | senluo::principle<UsageTree> };
+            
+            // if constexpr(detail::equal(base_principle_t::folded_operation_tree(), operation_t::none))
+            // {
+            //     return principle_t<base_principle_t, FoldedStrictureTree>{ FWD(self) | base | senluo::principle<UsageTree> };
+            // }
+            // else
+            // {
+            //     using base_plain_principle_t = decltype(FWD(self) | base | plainize_principle<UsageTree>);
                 
-                return principle_t<base_plain_principle_t, FoldedStrictureTree>{ 
-                    FWD(self) | base | plainize_principle<UsageTree>
-                };
-            }
+            //     return principle_t<base_plain_principle_t, FoldedStrictureTree>{ 
+            //         FWD(self) | base | plainize_principle<UsageTree>
+            //     };
+            // }
         }
     };
 }

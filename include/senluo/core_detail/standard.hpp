@@ -153,7 +153,7 @@ namespace senluo
     template<standard L, standard R>
     inline constexpr decltype(auto) operator+(L&& l, R&& r)
     {
-        return plus(FWD(l), FWD(r));
+        return plus(FWD(l), FWD(r))/* | make<std::remove_cvref_t<L>>*/;
     }
 
     template<standard L, standard R>

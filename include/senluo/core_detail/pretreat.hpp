@@ -89,7 +89,7 @@ namespace senluo
         data(std::declval<T>());
         { detail::pass_constexpr<decltype(t)::layout()>() } -> indexes_tree_liked;
         { detail::pass_constexpr<decltype(t)::stricture_tree()>() } -> stricture_tree_liked;
-        { detail::pass_constexpr<decltype(t)::operation_tree()>() } -> operation_tree_liked;
+        //{ detail::pass_constexpr<decltype(t)::operation_tree()>() } -> operation_tree_liked;
     };
     
     namespace detail::principle_t_ns 
@@ -142,18 +142,18 @@ namespace senluo
             constexpr auto layout = principle_t::layout();
             constexpr auto raw_stricture_tree = principle_t::stricture_tree();
             constexpr auto stricture_tree = Pretreater::template pretreat_stricture<raw_stricture_tree, layout>(shape<data_t>);
-            constexpr auto operation_tree = principle_t::operation_tree();
+            //constexpr auto operation_tree = principle_t::operation_tree();
 
             if constexpr(std::is_rvalue_reference_v<data_t>)
             {
-                return decltype(std::declval<data_t>() | refer | relayout<layout> | astrict<stricture_tree> | operate<operation_tree>)
+                return decltype(std::declval<data_t>() | refer | relayout<layout> | astrict<stricture_tree>)
                 {
                     data(FWD(tree) | senluo::principle<Pretreater::usage_tree()>)
                 };
             }
             else
             {
-                return decltype(std::declval<data_t>() | relayout<layout> | astrict<stricture_tree> | operate<operation_tree>)
+                return decltype(std::declval<data_t>() | relayout<layout> | astrict<stricture_tree>)
                 {
                     data(FWD(tree) | senluo::principle<Pretreater::usage_tree()>)
                 };
