@@ -5,7 +5,7 @@
 #include "../array.hpp"
 #include "../math.hpp"
 #include "../tuple.hpp"
-#include "wrap.hpp"
+//#include "wrap.hpp"
 
 #include "../macro_define.hpp"
 
@@ -90,6 +90,17 @@ namespace senluo::detail
 
     template<bool Copy>
     constexpr opt_move_copy_fn<Copy> opt_move_copy;
+
+    struct pass_t : adaptor_closure<pass_t>
+    {
+        template<class T>
+        constexpr auto operator()(T&& t)const
+        AS_EXPRESSION(
+            (T)FWD(t)
+        )
+    };
+    
+    inline constexpr detail::pass_t pass{};
 }
 
 namespace senluo
@@ -229,19 +240,19 @@ namespace senluo
             none,
             
             array,
-            array_copy,
+            //array_copy,
 
             member_subtree,
             adl_subtree,
             
             member_get,
-            member_get_copy,
+            //member_get_copy,
             
             adl_get,
-            adl_get_copy,
+            //adl_get_copy,
             
             aggregate,
-            aggregate_copy
+            //aggregate_copy
         };
 
         template<size_t I>
@@ -251,20 +262,14 @@ namespace senluo
             template<class T>
             static constexpr choice_t<strategy_t> choose()
             {
-                using utype = unwrap_t<T>;
-                using type = std::remove_cvref_t<utype>;
+                //using utype = unwrap_t<T>;
+                using type = std::remove_cvref_t<T>;
                 //array
                 if constexpr(std::is_bounded_array_v<type>)
                 {
-                    using etype = std::remove_cvref_t<decltype(std::declval<type>()[0])>;
                     if constexpr(I >= std::extent_v<type>)
                     {
                         return { strategy_t::none, true };
-                    }
-                    else if constexpr(std::is_object_v<unwrap_t<T>> && std::is_move_constructible_v<etype> )
-                    {
-                        
-                        return { strategy_t::array_copy, noexcept(std::is_nothrow_move_constructible_v<etype>) };
                     }
                     else
                     {
@@ -285,41 +290,17 @@ namespace senluo
                 {
                     return { strategy_t::none, true };
                 }
-                else if constexpr(requires{ std::declval<utype>().template get<I>(); })
+                else if constexpr(requires{ std::declval<T>().template get<I>(); })
                 {
-                    using etype = std::tuple_element_t<I, type>;
-                    if constexpr(std::is_object_v<utype> && std::is_object_v<etype> && std::is_move_constructible_v<etype>)
-                    {
-                        return { strategy_t::member_get_copy, noexcept(pass(std::declval<utype>().template get<I>())) };
-                    }
-                    else
-                    {
-                        return { strategy_t::member_get, noexcept(std::declval<utype>().template get<I>()) };
-                    }
+                    return { strategy_t::member_get, noexcept(std::declval<T>().template get<I>()) };
                 }
-                else if constexpr(requires{ get<I>(std::declval<utype>()); })
+                else if constexpr(requires{ get<I>(std::declval<T>()); })
                 {
-                    using etype = std::tuple_element_t<I, type>;
-                    if constexpr(std::is_object_v<utype> && std::is_object_v<etype> && std::is_move_constructible_v<etype>)
-                    {
-                        return { strategy_t::adl_get_copy, noexcept(pass(get<I>(std::declval<utype>()))) };
-                    }
-                    else
-                    {
-                        return { strategy_t::adl_get, noexcept(get<I>(std::declval<utype>())) };
-                    }
+                    return { strategy_t::adl_get, noexcept(get<I>(std::declval<T>())) };
                 }
                 else if constexpr(std::is_aggregate_v<type> && aggregate_member_count<T> != 0uz)
                 {
-                    using mtype = aggregate_member_t<I, type>;
-                    if constexpr(std::is_object_v<utype> && std::is_object_v<mtype> && std::is_move_constructible_v<mtype>)
-                    {
-                        return { strategy_t::aggregate_copy, std::is_nothrow_move_constructible_v<mtype> };
-                    }
-                    else
-                    {
-                        return { strategy_t::aggregate, true };
-                    }
+                    return { strategy_t::aggregate, true };
                 }
                 else
                 {
@@ -341,15 +322,10 @@ namespace senluo
                 {
 //MSVC bug: https://developercommunity.visualstudio.com/t/Subscripting-an-rvalue-array-does-not-ge/10707244?q=array+rvalue+subscript
 #ifdef _MSC_VER
-                    return std::forward_like<unwrap_t<T>>(unwrap_fwd(FWD(t))[I]);
+                    return std::forward_like<T>(t[I]);
 #else
-                    return unwrap_fwd(FWD(t))[I];
+                    return FWD(t)[I];
 #endif
-                }
-                else if constexpr(strategy == strategy_t::array_copy)
-                {
-                    //use std::move to solve msvc bug behind
-                    return (std::decay_t<decltype(unwrap_fwd(FWD(t))[I])>)std::move(unwrap_fwd(FWD(t))[I]);
                 }
                 else if constexpr(strategy == strategy_t::member_subtree)
                 {
@@ -361,27 +337,15 @@ namespace senluo
                 }
                 else if constexpr(strategy == strategy_t::member_get)
                 {
-                    return unwrap_fwd(FWD(t)).template get<I>();
-                }
-                else if constexpr(strategy == strategy_t::member_get_copy)
-                {
-                    return pass(unwrap_fwd(FWD(t)).template get<I>());
+                    return FWD(t).template get<I>();
                 }
                 else if constexpr(strategy == strategy_t::adl_get)
                 {
-                    return get<I>(unwrap_fwd(FWD(t)));
-                }
-                else if constexpr(strategy == strategy_t::adl_get_copy)
-                {
-                    return pass(get<I>(unwrap_fwd(FWD(t))));
+                    return get<I>(FWD(t));
                 }
                 else if constexpr(strategy == strategy_t::aggregate)
                 {
-                    return detail::aggregate_get<I>(unwrap_fwd(FWD(t)));
-                }
-                else if constexpr(strategy == strategy_t::aggregate_copy)
-                {
-                    return pass(detail::aggregate_get<I>(unwrap_fwd(FWD(t))));
+                    return detail::aggregate_get<I>(FWD(t));
                 }
             }
         };
@@ -418,28 +382,6 @@ namespace senluo
 
     template<indexical auto...I>
     inline constexpr auto subtree = detail::subtree_fn<detail::to_indexes(I...)>{};
-    
-    template<auto Indexes>
-    struct detail::subtree_fn : adaptor_closure<subtree_fn<Indexes>>
-    {
-        template<class T> requires (Indexes.size() == 0uz)
-        constexpr decltype(auto) operator()(T&& t) const noexcept
-        {
-            return unwrap(FWD(t));
-        }
-
-        template<class T> requires (Indexes.size() == 1uz && size<T> > 0)
-        constexpr auto operator()(T&& t) const
-        AS_EXPRESSION(
-            raw_get<detail::normalize_index(Indexes[0], size<T>)>(FWD(t))
-        )
-
-        template<class T> requires (Indexes.size() > 1uz && size<T> > 0)
-        constexpr auto operator()(T&& t) const
-        AS_EXPRESSION(
-            raw_get<detail::normalize_index(Indexes[0], size<T>)>(FWD(t)) | subtree<detail::array_drop<1uz>(Indexes)>
-        )
-    };
 
     template<class T, indexical auto...I>
     using subtree_t = decltype(subtree<I...>(std::declval<T>()));

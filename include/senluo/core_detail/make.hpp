@@ -3,6 +3,7 @@
 
 #include "../general.hpp"
 #include "subtree.hpp"
+#include "wrap.hpp"
 #include "pretreat.hpp"
 #include "relayout.hpp"
 
@@ -116,7 +117,7 @@ namespace senluo
             }
             else if constexpr(terminal<subtree_t<Arg, indexes>> || terminal<T>)
             {
-                return (T)subtree<indexes>(FWD(arg));
+                return (T)unwrap_fwd(subtree<indexes>(FWD(arg)));
             }
             else if constexpr(std::same_as<std::remove_cvref_t<subtree_t<Arg, indexes>>, T> && requires{ T{ subtree<indexes>(FWD(arg)) }; })
             {

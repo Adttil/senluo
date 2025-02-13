@@ -49,69 +49,69 @@ namespace senluo
 
 namespace senluo
 {
-    namespace detail
-    {
-        template<auto UsageTree, template<class...> class Tpl>
-        struct plainize_fn : adaptor_closure<plainize_fn<UsageTree, Tpl>>
-        {
-            // Complex sfinae and noexcept are not currently provided.
-            template<class T>
-            constexpr decltype(auto) operator()(T&& tree) const
-            {
-                return impl(FWD(tree) | sequence_by_usage<detail::unfold_tag_tree(UsageTree, shape<T>)>);
-            }
+    // namespace detail
+    // {
+    //     template<auto UsageTree, template<class...> class Tpl>
+    //     struct plainize_fn : adaptor_closure<plainize_fn<UsageTree, Tpl>>
+    //     {
+    //         // Complex sfinae and noexcept are not currently provided.
+    //         template<class T>
+    //         constexpr decltype(auto) operator()(T&& tree) const
+    //         {
+    //             return impl(FWD(tree) | sequence_by_usage<detail::unfold_tag_tree(UsageTree, shape<T>)>);
+    //         }
 
-            template<class TSrc>
-            constexpr decltype(auto) impl(TSrc&& src)const
-            {
-                if constexpr(detail::fold_usage(UsageTree) == usage_t::none)
-                {
-                    return tuple{};
-                }
-                else if constexpr(terminal<TSrc>)
-                {
-                    return (TSrc)FWD(src);
-                }
-                else return [&]<size_t...I>(std::index_sequence<I...>)
-                {
-                    return tuple<decltype(plainize_fn<detail::tag_tree_get<I>(UsageTree), Tpl>{}.impl(subtree<I>(FWD(src))))...>
-                    {
-                        plainize_fn<detail::tag_tree_get<I>(UsageTree), Tpl>{}.impl(subtree<I>(FWD(src)))...
-                    };
-                }(std::make_index_sequence<size<TSrc>>{});
-            }
-        };
-    }
+    //         template<class TSrc>
+    //         constexpr decltype(auto) impl(TSrc&& src)const
+    //         {
+    //             if constexpr(detail::fold_usage(UsageTree) == usage_t::none)
+    //             {
+    //                 return tuple{};
+    //             }
+    //             else if constexpr(terminal<TSrc>)
+    //             {
+    //                 return (TSrc)FWD(src);
+    //             }
+    //             else return [&]<size_t...I>(std::index_sequence<I...>)
+    //             {
+    //                 return tuple<decltype(plainize_fn<detail::tag_tree_get<I>(UsageTree), Tpl>{}.impl(subtree<I>(FWD(src))))...>
+    //                 {
+    //                     plainize_fn<detail::tag_tree_get<I>(UsageTree), Tpl>{}.impl(subtree<I>(FWD(src)))...
+    //                 };
+    //             }(std::make_index_sequence<size<TSrc>>{});
+    //         }
+    //     };
+    // }
     
-    template<usage_tree_liked auto UsageTree = usage_t::once, template<class...> class Tpl = tuple>
-    inline constexpr detail::plainize_fn<UsageTree, Tpl> plainize{};
+    // template<usage_tree_liked auto UsageTree = usage_t::once, template<class...> class Tpl = tuple>
+    // inline constexpr detail::plainize_fn<UsageTree, Tpl> plainize{};
     
-    template<template<class...> class Tpl = tuple>
-    constexpr const auto& to()
-    {
-        return plainize<usage_t::once, Tpl>;
-    }
+    // template<template<class...> class Tpl = tuple>
+    // constexpr const auto& to()
+    // {
+    //     return plainize<usage_t::once, Tpl>;
+    // }
 
-    template<class T>
-    struct plain_principle;
+    // template<class T>
+    // struct plain_principle;
 
-    namespace detail
-    {
-        template<auto UsageTree, template<class...> class Tpl>
-        struct plainize_principle_fn : adaptor_closure<plainize_principle_fn<UsageTree, Tpl>>
-        {
-            template<class T>
-            constexpr auto operator()(T&& tree)const
-            AS_EXPRESSION(
-                plain_principle<unwrap_t<decltype(FWD(tree) | plainize<UsageTree, Tpl>)>>{ 
-                    unwrap_fwd(FWD(tree) | plainize<UsageTree, Tpl>)
-                }
-            )
-        };
-    };
+    // namespace detail
+    // {
+    //     template<auto UsageTree, template<class...> class Tpl>
+    //     struct plainize_principle_fn : adaptor_closure<plainize_principle_fn<UsageTree, Tpl>>
+    //     {
+    //         template<class T>
+    //         constexpr auto operator()(T&& tree)const
+    //         AS_EXPRESSION(
+    //             plain_principle<unwrap_t<decltype(FWD(tree) | plainize<UsageTree, Tpl>)>>{ 
+    //                 unwrap_fwd(FWD(tree) | plainize<UsageTree, Tpl>)
+    //             }
+    //         )
+    //     };
+    // };
 
-    template<usage_tree_liked auto UsageTree = usage_t::once, template<class...> class Tpl = tuple>
-    inline constexpr detail::plainize_principle_fn<UsageTree, Tpl> plainize_principle{};
+    // template<usage_tree_liked auto UsageTree = usage_t::once, template<class...> class Tpl = tuple>
+    // inline constexpr detail::plainize_principle_fn<UsageTree, Tpl> plainize_principle{};
 }
 
 namespace senluo

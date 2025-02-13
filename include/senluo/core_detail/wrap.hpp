@@ -3,6 +3,7 @@
 
 #include "../general.hpp"
 #include "../adaptor.hpp"
+#include "subtree.hpp"
 
 #include "../macro_define.hpp"
 
@@ -16,17 +17,6 @@ namespace senluo::detail
     {
         SENLUO(no_unique_address) T base;
     };
-
-    struct pass_t : adaptor_closure<pass_t>
-    {
-        template<class T>
-        constexpr auto operator()(T&& t)const
-        AS_EXPRESSION(
-            (T)FWD(t)
-        )
-    };
-    
-    inline constexpr detail::pass_t pass{};
 }
 
 namespace senluo 
@@ -43,7 +33,13 @@ namespace senluo
 
     template<class T>
     struct wrapper : detail::based_on<T>, standard_interface<wrapper<T>>
-    {};
+    {
+        template<size_t I, class Self>
+        constexpr auto subtree(this Self&& self)
+        AS_EXPRESSION(
+            detail::raw_get<I>(FWD(self, base))
+        )
+    };
 
     template<class T>
     wrapper(T) -> wrapper<T>;
@@ -192,6 +188,28 @@ namespace senluo
 
     template<class T, class U>
     concept unwarp_derived_from = derived_from<unwrap_t<T>, U>;
+
+    template<auto Indexes>
+    struct detail::subtree_fn : adaptor_closure<subtree_fn<Indexes>>
+    {
+        template<class T> requires (Indexes.size() == 0uz)
+        constexpr auto operator()(T&& t) const
+        AS_EXPRESSION(
+            pass(unwrap_fwd(FWD(t)))
+        )
+
+        template<class T> requires (Indexes.size() == 1uz && size<T> > 0)
+        constexpr auto operator()(T&& t) const
+        AS_EXPRESSION(
+            pass(unwrap_fwd(raw_get<detail::normalize_index(Indexes[0], size<T>)>(FWD(t))))
+        )
+
+        template<class T> requires (Indexes.size() > 1uz && size<T> > 0)
+        constexpr auto operator()(T&& t) const
+        AS_EXPRESSION(
+            pass(raw_get<detail::normalize_index(Indexes[0], size<T>)>(FWD(t)) | subtree<detail::array_drop<1uz>(Indexes)>)
+        )
+    };
 }
 
 #include "../macro_undef.hpp"
