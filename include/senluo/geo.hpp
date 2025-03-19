@@ -83,13 +83,13 @@ struct std::tuple_element<I, ::senluo::geo::vec<N, T>>
     template<size_t N, class T = float>
     constexpr vec<N, T> operator+(const vec<N, T>& l, const vec<N, T>& r)
     {
-        return +plus(l, r);
+        return +(wrap(l) + wrap(r));
     }
 
     template<size_t N, class T = float>
     constexpr vec<N, T> operator-(const vec<N, T>& l, const vec<N, T>& r)
     {
-        return +minus(l, r);
+        return +(wrap(l) - wrap(r));
     }
 }
 
