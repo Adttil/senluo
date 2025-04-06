@@ -112,11 +112,10 @@ struct std::tuple_element<I, senluo::array<T, N>>{
 
 namespace senluo::detail
 {
-    template<size_t N, class A>
-    constexpr auto array_take(const A& arr)
+    template<size_t N, class T, size_t M>
+    constexpr array<T, N> array_take(const array<T, M>& arr)
     {
-        using type = A::value_type;
-        array<type, N> result;
+        array<T, N> result;
         for (size_t i = 0; i < N; ++i)
         {
             result[i] = arr[i];
@@ -124,41 +123,36 @@ namespace senluo::detail
         return result;
     }
 
-    template<size_t N, class A>
-    constexpr auto array_drop(const A& arr)
+    template<size_t N, class T, size_t M>
+    constexpr array<T, M - N> array_drop(const array<T, M>& arr)
     {
-        using type = A::value_type;
-        array<type, std::tuple_size_v<A> - N> result;
-        for(size_t i = 0; i < std::tuple_size_v<A> - N; ++i)
+        array<T, M - N> result;
+        for(size_t i = 0; i < M - N; ++i)
         {
             result[i] = arr[i + N];
         }
         return result;
     }
 
-    template<class A1, class A2>
-    constexpr auto two_array_cat(const A1& arr1, const A2& arr2)
+    template<class T, size_t N, size_t M>
+    constexpr array<T, N + M> two_array_cat(const array<T, N>& arr1, const array<T, M>& arr2)
     {
-        using type1 = A1::value_type;
-        using type2 = A2::value_type;
-        constexpr size_t n1 = std::tuple_size_v<A1>;
-        constexpr size_t n2 = std::tuple_size_v<A2>;
-        array<std::common_type_t<type1, type2>, n1 + n2> result;
+        array<T, N + M> result;
 
-        for (size_t i = 0; i < n1; ++i)
+        for (size_t i = 0; i < N; ++i)
         {
             result[i] = arr1[i];
         }
-        for (size_t i = 0; i < n2; ++i)
+        for (size_t i = 0; i < M; ++i)
         {
-            result[n1 + i] = arr2[i];
+            result[N + i] = arr2[i];
         }
 
         return result;
     }
     
-    template<class A, class...Rest>
-    constexpr auto array_cat(const A& arr, const Rest&...rest)
+    template<class T, size_t N,size_t...Rest>
+    constexpr array<T, (N + ... + Rest)> array_cat(const array<T, N>& arr, const array<T, Rest>&...rest)
     {
         if constexpr (sizeof...(rest) == 0)
         {
