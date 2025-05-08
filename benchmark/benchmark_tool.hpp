@@ -3,7 +3,7 @@
 #include <fstream>
 #include <ranges>
 #include <span>
-#include "senluo/array.hpp"
+#include "senluo/tools/array.hpp"
 
 namespace senluo 
 {

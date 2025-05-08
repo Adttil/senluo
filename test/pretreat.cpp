@@ -3,36 +3,13 @@
 
 using namespace senluo;
 
-TEST(pretreatment, tuple)
+TEST(pretreat, plain)
 {
-    auto a = std::tuple{ 1,2,3 };
+    using type = tuple<int, tuple<float, double>>;
+    auto tpl = type{};
 
-    auto b = a | seperate;
-    MAGIC_TCHECK(decltype(b | subtree<0>), int&);
-    MAGIC_TCHECK(decltype(b | subtree<1>), int&);
-    MAGIC_TCHECK(decltype(b | subtree<2>), int&);
-}
-
-TEST(pretreatment, sequence)
-{
-    int a = 0;
-    auto b = a | repeat<3> | sequence;
-
-    MAGIC_TCHECK(decltype(b | subtree<0>), const int&);
-    MAGIC_TCHECK(decltype(b | subtree<1>), const int&);
-    MAGIC_TCHECK(decltype(b | subtree<2>), int&);
-
-    MAGIC_TCHECK(decltype(3 | refer | repeat<3> | sequence | subtree<0>), const int&&);
-    MAGIC_TCHECK(decltype(3 | refer | repeat<3> | sequence | subtree<1>), const int&&);
-    MAGIC_TCHECK(decltype(3 | refer | repeat<3> | sequence | subtree<2>), int&&);
-}
-
-TEST(pretreatment, seperate)
-{
-    int a = 0;
-    auto b = a | repeat<3> | seperate;
-
-    MAGIC_TCHECK(decltype(b | subtree<0>), const int&);
-    MAGIC_TCHECK(decltype(b | subtree<1>), const int&);
-    MAGIC_TCHECK(decltype(b | subtree<2>), const int&);
+    MAGIC_TCHECK(decltype(tpl | sequence), type&);
+    MAGIC_TCHECK(decltype(tpl | refer | sequence), type&);
+    MAGIC_TCHECK(decltype(std::move(tpl) | sequence), type);
+    MAGIC_TCHECK(decltype(std::move(tpl) | refer | sequence), wrapper<type&&>);
 }

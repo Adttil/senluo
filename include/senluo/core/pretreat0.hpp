@@ -1,25 +1,25 @@
 #ifndef SENLUO_PRETREAT_HPP
 #define SENLUO_PRETREAT_HPP
 
-#include "../general.hpp"
+#include "../tools/general.hpp"
 #include "subtree.hpp"
 #include "wrap.hpp"
 #include "tag.hpp"
 
-#include "../macro_define.hpp"
+#include "../tools/macro_define.hpp"
 
 namespace senluo
 {
     namespace detail
     {
         template<auto Layout>
-        struct relayout_t;
+        struct relayout_fn;
 
         template<auto StrictureTree>
-        struct astrict_t;
+        struct astrict_fn;
 
         template<auto OperationTree>
-        struct operate_t;
+        struct operate_fn;
 
         template<auto Constexpr>
         consteval auto pass_constexpr()
@@ -63,14 +63,17 @@ namespace senluo
     template<class T>
     concept operation_tree_liked =  detail::is_tag_tree<T, operation_t>();
 
-    template<indexes_tree_liked auto Layout>
-    inline constexpr detail::relayout_t<Layout> relayout{};
+    inline namespace functors
+    {
+        template<indexes_tree_liked auto Layout>
+        inline constexpr detail::relayout_fn<Layout> relayout{};
 
-    template<stricture_tree_liked auto StrictureTree>
-    inline constexpr detail::astrict_t<detail::fold_tag_tree<StrictureTree>()> astrict{};
+        template<stricture_tree_liked auto StrictureTree>
+        inline constexpr detail::astrict_fn<detail::fold_tag_tree<StrictureTree>()> astrict{};
 
-    template<operation_tree_liked auto OperationTree>
-    inline constexpr detail::operate_t<detail::fold_operation_tree<OperationTree>()> operate{};
+        template<operation_tree_liked auto OperationTree>
+        inline constexpr detail::operate_fn<detail::fold_operation_tree<OperationTree>()> operate{};
+    }
 }
 
 namespace senluo 
@@ -119,9 +122,12 @@ namespace senluo
     template<class T>
     concept usage_tree_liked =  detail::is_tag_tree<T, usage_t>();
 
-    template<usage_tree_liked auto UsageTree>
-    inline constexpr detail::principle_t_ns::principle_fn<UsageTree> principle;
-    
+    inline namespace functors
+    {
+        template<usage_tree_liked auto UsageTree>
+        inline constexpr detail::principle_t_ns::principle_fn<UsageTree> principle{};
+    }
+
     template<typename T, usage_tree_liked auto UsageTree>
     using principle_t = decltype(std::declval<T>() | principle<UsageTree>);
 
@@ -132,8 +138,8 @@ namespace senluo
     struct pretreater_interface : adaptor_closure<Pretreater>
     {
         constexpr decltype(auto) operator()(auto&& tree) const
-        noexcept(noexcept(detail::pass(data(FWD(tree) | senluo::principle<Pretreater::usage_tree()>))))
-        requires requires{detail::pass(data(FWD(tree) | senluo::principle<Pretreater::usage_tree()>));}
+        noexcept(noexcept(pass(data(FWD(tree) | senluo::principle<Pretreater::usage_tree()>))))
+        requires requires{pass(data(FWD(tree) | senluo::principle<Pretreater::usage_tree()>));}
         {
             using principle_result_t = decltype(FWD(tree) | senluo::principle<Pretreater::usage_tree()>);
             using principle_t = std::remove_cvref_t<unwrap_t<principle_result_t>>;
@@ -212,30 +218,33 @@ namespace senluo
         };
     }
 
-    template<usage_tree_liked auto UsageTree>
-    inline constexpr detail::sequence_by_usage_t<UsageTree> sequence_by_usage{};
+    inline namespace functors
+    {
+        template<usage_tree_liked auto UsageTree>
+        inline constexpr detail::sequence_by_usage_t<UsageTree> sequence_by_usage{};
 
-    template<usage_tree_liked auto UsageTree>
-    inline constexpr detail::inverse_sequence_by_usage_t<UsageTree> inverse_sequence_by_usage{};
+        template<usage_tree_liked auto UsageTree>
+        inline constexpr detail::inverse_sequence_by_usage_t<UsageTree> inverse_sequence_by_usage{};
 
-    template<usage_tree_liked auto UsageTree>
-    inline constexpr detail::seperate_by_usage_t<UsageTree> seperate_by_usage{};
+        template<usage_tree_liked auto UsageTree>
+        inline constexpr detail::seperate_by_usage_t<UsageTree> seperate_by_usage{};
 
-    template<class Tree>
-    inline constexpr detail::sequence_by_usage_t<detail::make_tree_of_same_value(usage_t::once, shape<Tree>)> sequence_by_shape{};
+        template<class Tree>
+        inline constexpr detail::sequence_by_usage_t<detail::make_tree_of_same_value(usage_t::once, shape<Tree>)> sequence_by_shape{};
 
-    template<class Tree>
-    inline constexpr detail::inverse_sequence_by_usage_t<detail::make_tree_of_same_value(usage_t::once, shape<Tree>)> inverse_sequence_by_shape{};
+        template<class Tree>
+        inline constexpr detail::inverse_sequence_by_usage_t<detail::make_tree_of_same_value(usage_t::once, shape<Tree>)> inverse_sequence_by_shape{};
 
-    template<class Tree>
-    inline constexpr detail::seperate_by_usage_t<detail::make_tree_of_same_value(usage_t::once, shape<Tree>)> seperate_by_shape{};
+        template<class Tree>
+        inline constexpr detail::seperate_by_usage_t<detail::make_tree_of_same_value(usage_t::once, shape<Tree>)> seperate_by_shape{};
+    }
 
     namespace detail
     {
         struct sequence_t : adaptor_closure<sequence_t>
         {
             template<branched T>
-            constexpr auto operator()(T&& tree)const
+            constexpr decltype(auto) operator()(T&& tree)const
             AS_EXPRESSION(
                 FWD(tree) | sequence_by_usage<detail::make_tree_of_same_value(usage_t::once, shape<array<int, size<T>>>)>
             )
@@ -250,7 +259,7 @@ namespace senluo
         struct inverse_sequence_t : adaptor_closure<inverse_sequence_t>
         {
             template<branched T>
-            constexpr auto operator()(T&& tree)const
+            constexpr decltype(auto) operator()(T&& tree)const
             AS_EXPRESSION(
                 FWD(tree) | inverse_sequence_by_usage<detail::make_tree_of_same_value(usage_t::once, shape<array<int, size<T>>>)>
             )
@@ -265,7 +274,7 @@ namespace senluo
         struct seperate_t : adaptor_closure<seperate_t>
         {
             template<branched T>
-            constexpr auto operator()(T&& tree)const
+            constexpr decltype(auto) operator()(T&& tree)const
             AS_EXPRESSION(
                 FWD(tree) | seperate_by_usage<detail::make_tree_of_same_value(usage_t::once, shape<array<int, size<T>>>)>
             )
@@ -278,12 +287,15 @@ namespace senluo
         };
     }
 
-    inline constexpr detail::sequence_t sequence{};
-    
-    inline constexpr detail::inverse_sequence_t inverse_sequence{};
-
-    inline constexpr detail::seperate_t seperate{};
+    inline namespace functors
+    {
+        inline constexpr detail::sequence_t sequence{};
+        
+        inline constexpr detail::inverse_sequence_t inverse_sequence{};
+        
+        inline constexpr detail::seperate_t seperate{};
+    }
 }
 
-#include "../macro_undef.hpp"
+#include "../tools/macro_undef.hpp"
 #endif

@@ -1,40 +1,50 @@
-#include <senluo/core.hpp>
+#include "senluo/core/relayout.hpp"
 #include "test_tool.hpp"
 
 using namespace senluo;
 
-TEST(relayout, array)
+TEST(relayout, basic)
 {
-    constexpr auto layout = tuple{ array{ 1uz }, array{ 0uz } };
+    auto arr = array{ 1, 2, 3 };
+    auto tree = arr | relayout<tuple{ 2, 1, 0 }>;
 
-    auto a = array{ 1, 2 };
-
-    auto relayout_a = a | relayout<layout>;
-
-    //MAGIC_CHECK((size<decltype(relayout_a)>), 2);
-    MAGIC_CHECK(relayout_a | subtree<0>, 2);
-    MAGIC_CHECK(relayout_a | subtree<1>, 1);
-
-    MAGIC_TCHECK(decltype(std::move(a) | refer | relayout<layout>), detail::relayout_ns::tree_t<array<int, 2>&&, layout>);
-    MAGIC_TCHECK(decltype(std::move(a) | relayout<layout>), detail::relayout_ns::tree_t<array<int, 2>, layout>);
+    MAGIC_CHECK(size<decltype(tree)>, 3);
+    MAGIC_CHECK(tree | subtree<0>, 3);
+    MAGIC_CHECK(tree | subtree<1>, 2);
+    MAGIC_CHECK(tree | subtree<2>, 1);
+    MAGIC_CHECK(tree | subtree<3>, 3);
 }
 
 TEST(relayout, repeat)
 {
-    auto a = array{ 1, 2 };
-    auto b = a | repeat<2>;
-    MAGIC_CHECK(1, b | subtree<0, 0>);
-    MAGIC_CHECK(2, b | subtree<0, 1>);
-    MAGIC_CHECK(1, b | subtree<1, 0>);
-    MAGIC_CHECK(2, b | subtree<1, 1>);
+    auto tree = 1 | repeat<3>;
+
+    MAGIC_CHECK(tree | subtree<0>, 1);
+    MAGIC_CHECK(tree | subtree<1>, 1);
+    MAGIC_CHECK(tree | subtree<2>, 1);
+
+    auto tree2 = 1 | repeat<3> | repeat<3>;
+
+    MAGIC_CHECK(1, tree2 | subtree<0, 0>);
+    MAGIC_CHECK(1, tree2 | subtree<0, 1>);
+    MAGIC_CHECK(1, tree2 | subtree<0, 2>);
 }
 
-TEST(relayout, transpose)
+TEST(relayout, repeat_by_shape)
 {
-    auto a = array{ array{ 1, 2 }, array{ 3, 4 } };
-    auto b = a | transpose<>;
-    MAGIC_CHECK(1, b | subtree<0, 0>);
-    MAGIC_CHECK(3, b | subtree<0, 1>);
-    MAGIC_CHECK(2, b | subtree<1, 0>);
-    MAGIC_CHECK(4, b | subtree<1, 1>);
+    auto tree = 1 | repeat_as<int[2][2]>;
+
+    MAGIC_CHECK(1, tree | subtree<0, 0>);
+    MAGIC_CHECK(1, tree | subtree<0, 1>);
+    MAGIC_CHECK(1, tree | subtree<1, 0>);
+    MAGIC_CHECK(1, tree | subtree<1, 1>);
+}   
+
+TEST(relayout, component)
+{
+    auto tree = array{ array{1, 2}, array{3, 4} } | component<1, 1>;
+
+    MAGIC_CHECK(size<decltype(tree)>, 2);
+    MAGIC_CHECK(tree | subtree<0>, 2);
+    MAGIC_CHECK(tree | subtree<1>, 4);
 }

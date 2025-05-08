@@ -11,7 +11,7 @@ namespace senluo
     template<class...T>
     struct tuple;
 
-#include "code_generate/tuple_specialization.code"
+#include "../code_generate/tuple_specialization.code"
 
 	template<class T, class...Rest>
     struct tuple<T, Rest...>
@@ -49,10 +49,16 @@ namespace senluo
 {
 	namespace detail 
 	{
+		template<size_t I, class...T>
+    	constexpr std::tuple_element_t<I, tuple<T&&...>> arg_at(T&&...args)noexcept
+		{
+	    	return get<I>(tuple<T&&...>(FWD(args)...));
+		}
+
 		struct make_tuple_fn
 		{
 			template<class...Args>
-    		constexpr auto operator()(Args&&...args) const
+    		constexpr tuple<std::decay_t<Args>...> operator()(Args&&...args) const
 			AS_EXPRESSION(tuple<std::decay_t<Args>...>{ FWD(args)... });
 		};
 

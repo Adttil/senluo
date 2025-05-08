@@ -28,14 +28,14 @@ namespace senluo
 
         private:
             template<typename T, size_t...I, typename Self>
-            constexpr auto impl(this Self&& self, T&& t, std::index_sequence<I...>)
+            constexpr decltype(auto) impl(this Self&& self, T&& t, std::index_sequence<I...>)
             AS_EXPRESSION(
                 Adaptor{}(FWD(t), get<I>(FWD(self))...)
             )
 
         public:
             template<typename T, typename Self>
-            constexpr auto operator()(this Self&& self, T&& t)
+            constexpr decltype(auto) operator()(this Self&& self, T&& t)
             AS_EXPRESSION(
                 FWD(self).impl(FWD(t), std::index_sequence_for<Args...>{})
             )
@@ -46,14 +46,14 @@ namespace senluo
     struct adaptor
     {
         template<typename...Args>
-        constexpr auto operator()(Args&&...args) const
+        constexpr decltype(auto) operator()(Args&&...args) const
         AS_EXPRESSION(
             F{}.adapt(FWD(args)...)
         )
 
         template<typename...Args> 
             requires (not requires{ F{}.adapt(std::declval<Args>()...); })
-        constexpr auto operator()(Args&&...args) const
+        constexpr detail::closure<F, Args...> operator()(Args&&...args) const
         AS_EXPRESSION(
             detail::closure<F, Args...>{ FWD(args)... }
         )
@@ -69,7 +69,7 @@ namespace senluo::detail
         SENLUO(no_unique_address) ClosureRight right;
 
         template<class T, class Self>
-        constexpr auto operator()(this Self&& self, T&& val)
+        constexpr decltype(auto) operator()(this Self&& self, T&& val)
         AS_EXPRESSION(
             FWD(self, right)(FWD(self, left)(FWD(val)))
         )
@@ -81,14 +81,14 @@ namespace senluo::detail
 namespace senluo
 {
     template<adaptor_closuroid L, adaptor_closuroid R>
-    constexpr auto operator|(L&& l, R&& r)
+    constexpr detail::pipeline<L, R> operator|(L&& l, R&& r)
     AS_EXPRESSION(
         detail::pipeline<L, R>{ {}, FWD(l), FWD(r) }
     )
 
     template<class L, adaptor_closuroid R>
     requires (not adaptor_closuroid<L>)
-    constexpr auto operator|(L&& l, R&& r)
+    constexpr decltype(auto) operator|(L&& l, R&& r)
     AS_EXPRESSION(
         FWD(r)(FWD(l))
     )

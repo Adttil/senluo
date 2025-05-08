@@ -1,7 +1,7 @@
-#include <senluo/general.hpp>
+#include <senluo/tools/general.hpp>
 #include "test_tool.hpp"
 
-#include <senluo/macro_define.hpp>
+#include <senluo/tools/macro_define.hpp>
 
 TEST(general, fwd)
 {

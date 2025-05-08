@@ -39,7 +39,7 @@
 #define FWDLIKE_3(_0, _1, _2) static_cast<::senluo::fwd_type<decltype((_2)), decltype(_0), decltype(_1), decltype(_2)>(_2)
 #define FWDLIKE_4(_0, _1, _2, _3) static_cast<::senluo::fwd_type<decltype((_3)), decltype(_0), decltype(_1), decltype(_2), decltype(_3)>>(_3)
 
-#define AS_EXPRESSION(...) noexcept(noexcept(__VA_ARGS__)) -> decltype(auto)\
+#define AS_EXPRESSION(...) noexcept(noexcept(__VA_ARGS__))\
     requires requires{ __VA_ARGS__; }\
 {\
     return __VA_ARGS__;\

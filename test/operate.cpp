@@ -5,9 +5,9 @@ using namespace senluo;
 
 TEST(operate, transform)
 {
-    constexpr auto a = tuple{ 2, 0.5f } | transform([](auto x){ return x * x; });
+    auto tree = tuple{ 1, 3.14f } | transform([](auto&& x) { return x * 2; });
 
-    MAGIC_CHECK(size<decltype(a)>, 2);
-    MAGIC_CHECK(a | subtree<0>, 4);
-    MAGIC_CHECK(a | subtree<1>, 0.25f);
+    MAGIC_CHECK(size<decltype(tree)>, 2);
+    MAGIC_CHECK(tree | subtree<0>, 2);
+    MAGIC_CHECK(tree | subtree<1>, 6.28f);
 }

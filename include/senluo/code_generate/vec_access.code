@@ -1,0 +1,980 @@
+constexpr decltype(auto) x(this auto&& self) noexcept
+{
+    return tree_get<0>(FWD(self).raw_base());
+}
+
+constexpr decltype(auto) y(this auto&& self) noexcept
+{
+    return tree_get<1>(FWD(self).raw_base());
+}
+
+constexpr decltype(auto) z(this auto&& self) noexcept
+{
+    return tree_get<2>(FWD(self).raw_base());
+}
+
+constexpr decltype(auto) w(this auto&& self) noexcept
+{
+    return tree_get<3>(FWD(self).raw_base());
+}
+
+constexpr decltype(auto) xy(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 1}> | as_vec;
+}
+
+constexpr decltype(auto) xz(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 2}> | as_vec;
+}
+
+constexpr decltype(auto) xw(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 3}> | as_vec;
+}
+
+constexpr decltype(auto) yx(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 0}> | as_vec;
+}
+
+constexpr decltype(auto) yz(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 2}> | as_vec;
+}
+
+constexpr decltype(auto) yw(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 3}> | as_vec;
+}
+
+constexpr decltype(auto) zx(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 0}> | as_vec;
+}
+
+constexpr decltype(auto) zy(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 1}> | as_vec;
+}
+
+constexpr decltype(auto) zw(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 3}> | as_vec;
+}
+
+constexpr decltype(auto) wx(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 0}> | as_vec;
+}
+
+constexpr decltype(auto) wy(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 1}> | as_vec;
+}
+
+constexpr decltype(auto) wz(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 2}> | as_vec;
+}
+
+constexpr decltype(auto) xyz(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 1, 2}> | as_vec;
+}
+
+constexpr decltype(auto) xyw(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 1, 3}> | as_vec;
+}
+
+constexpr decltype(auto) xzy(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 2, 1}> | as_vec;
+}
+
+constexpr decltype(auto) xzw(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 2, 3}> | as_vec;
+}
+
+constexpr decltype(auto) xwy(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 3, 1}> | as_vec;
+}
+
+constexpr decltype(auto) xwz(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 3, 2}> | as_vec;
+}
+
+constexpr decltype(auto) yxz(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 0, 2}> | as_vec;
+}
+
+constexpr decltype(auto) yxw(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 0, 3}> | as_vec;
+}
+
+constexpr decltype(auto) yzx(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 2, 0}> | as_vec;
+}
+
+constexpr decltype(auto) yzw(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 2, 3}> | as_vec;
+}
+
+constexpr decltype(auto) ywx(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 3, 0}> | as_vec;
+}
+
+constexpr decltype(auto) ywz(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 3, 2}> | as_vec;
+}
+
+constexpr decltype(auto) zxy(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 0, 1}> | as_vec;
+}
+
+constexpr decltype(auto) zxw(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 0, 3}> | as_vec;
+}
+
+constexpr decltype(auto) zyx(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 1, 0}> | as_vec;
+}
+
+constexpr decltype(auto) zyw(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 1, 3}> | as_vec;
+}
+
+constexpr decltype(auto) zwx(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 3, 0}> | as_vec;
+}
+
+constexpr decltype(auto) zwy(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 3, 1}> | as_vec;
+}
+
+constexpr decltype(auto) wxy(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 0, 1}> | as_vec;
+}
+
+constexpr decltype(auto) wxz(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 0, 2}> | as_vec;
+}
+
+constexpr decltype(auto) wyx(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 1, 0}> | as_vec;
+}
+
+constexpr decltype(auto) wyz(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 1, 2}> | as_vec;
+}
+
+constexpr decltype(auto) wzx(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 2, 0}> | as_vec;
+}
+
+constexpr decltype(auto) wzy(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 2, 1}> | as_vec;
+}
+
+constexpr decltype(auto) xyzw(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 1, 2, 3}> | as_vec;
+}
+
+constexpr decltype(auto) xywz(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 1, 3, 2}> | as_vec;
+}
+
+constexpr decltype(auto) xzyw(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 2, 1, 3}> | as_vec;
+}
+
+constexpr decltype(auto) xzwy(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 2, 3, 1}> | as_vec;
+}
+
+constexpr decltype(auto) xwyz(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 3, 1, 2}> | as_vec;
+}
+
+constexpr decltype(auto) xwzy(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 3, 2, 1}> | as_vec;
+}
+
+constexpr decltype(auto) yxzw(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 0, 2, 3}> | as_vec;
+}
+
+constexpr decltype(auto) yxwz(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 0, 3, 2}> | as_vec;
+}
+
+constexpr decltype(auto) yzxw(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 2, 0, 3}> | as_vec;
+}
+
+constexpr decltype(auto) yzwx(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 2, 3, 0}> | as_vec;
+}
+
+constexpr decltype(auto) ywxz(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 3, 0, 2}> | as_vec;
+}
+
+constexpr decltype(auto) ywzx(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 3, 2, 0}> | as_vec;
+}
+
+constexpr decltype(auto) zxyw(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 0, 1, 3}> | as_vec;
+}
+
+constexpr decltype(auto) zxwy(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 0, 3, 1}> | as_vec;
+}
+
+constexpr decltype(auto) zyxw(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 1, 0, 3}> | as_vec;
+}
+
+constexpr decltype(auto) zywx(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 1, 3, 0}> | as_vec;
+}
+
+constexpr decltype(auto) zwxy(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 3, 0, 1}> | as_vec;
+}
+
+constexpr decltype(auto) zwyx(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 3, 1, 0}> | as_vec;
+}
+
+constexpr decltype(auto) wxyz(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 0, 1, 2}> | as_vec;
+}
+
+constexpr decltype(auto) wxzy(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 0, 2, 1}> | as_vec;
+}
+
+constexpr decltype(auto) wyxz(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 1, 0, 2}> | as_vec;
+}
+
+constexpr decltype(auto) wyzx(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 1, 2, 0}> | as_vec;
+}
+
+constexpr decltype(auto) wzxy(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 2, 0, 1}> | as_vec;
+}
+
+constexpr decltype(auto) wzyx(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 2, 1, 0}> | as_vec;
+}
+
+constexpr decltype(auto) r(this auto&& self) noexcept
+{
+    return tree_get<0>(FWD(self).raw_base());
+}
+
+constexpr decltype(auto) g(this auto&& self) noexcept
+{
+    return tree_get<1>(FWD(self).raw_base());
+}
+
+constexpr decltype(auto) b(this auto&& self) noexcept
+{
+    return tree_get<2>(FWD(self).raw_base());
+}
+
+constexpr decltype(auto) a(this auto&& self) noexcept
+{
+    return tree_get<3>(FWD(self).raw_base());
+}
+
+constexpr decltype(auto) rg(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 1}> | as_vec;
+}
+
+constexpr decltype(auto) rb(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 2}> | as_vec;
+}
+
+constexpr decltype(auto) ra(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 3}> | as_vec;
+}
+
+constexpr decltype(auto) gr(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 0}> | as_vec;
+}
+
+constexpr decltype(auto) gb(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 2}> | as_vec;
+}
+
+constexpr decltype(auto) ga(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 3}> | as_vec;
+}
+
+constexpr decltype(auto) br(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 0}> | as_vec;
+}
+
+constexpr decltype(auto) bg(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 1}> | as_vec;
+}
+
+constexpr decltype(auto) ba(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 3}> | as_vec;
+}
+
+constexpr decltype(auto) ar(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 0}> | as_vec;
+}
+
+constexpr decltype(auto) ag(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 1}> | as_vec;
+}
+
+constexpr decltype(auto) ab(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 2}> | as_vec;
+}
+
+constexpr decltype(auto) rgb(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 1, 2}> | as_vec;
+}
+
+constexpr decltype(auto) rga(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 1, 3}> | as_vec;
+}
+
+constexpr decltype(auto) rbg(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 2, 1}> | as_vec;
+}
+
+constexpr decltype(auto) rba(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 2, 3}> | as_vec;
+}
+
+constexpr decltype(auto) rag(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 3, 1}> | as_vec;
+}
+
+constexpr decltype(auto) rab(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 3, 2}> | as_vec;
+}
+
+constexpr decltype(auto) grb(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 0, 2}> | as_vec;
+}
+
+constexpr decltype(auto) gra(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 0, 3}> | as_vec;
+}
+
+constexpr decltype(auto) gbr(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 2, 0}> | as_vec;
+}
+
+constexpr decltype(auto) gba(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 2, 3}> | as_vec;
+}
+
+constexpr decltype(auto) gar(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 3, 0}> | as_vec;
+}
+
+constexpr decltype(auto) gab(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 3, 2}> | as_vec;
+}
+
+constexpr decltype(auto) brg(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 0, 1}> | as_vec;
+}
+
+constexpr decltype(auto) bra(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 0, 3}> | as_vec;
+}
+
+constexpr decltype(auto) bgr(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 1, 0}> | as_vec;
+}
+
+constexpr decltype(auto) bga(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 1, 3}> | as_vec;
+}
+
+constexpr decltype(auto) bar(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 3, 0}> | as_vec;
+}
+
+constexpr decltype(auto) bag(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 3, 1}> | as_vec;
+}
+
+constexpr decltype(auto) arg(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 0, 1}> | as_vec;
+}
+
+constexpr decltype(auto) arb(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 0, 2}> | as_vec;
+}
+
+constexpr decltype(auto) agr(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 1, 0}> | as_vec;
+}
+
+constexpr decltype(auto) agb(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 1, 2}> | as_vec;
+}
+
+constexpr decltype(auto) abr(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 2, 0}> | as_vec;
+}
+
+constexpr decltype(auto) abg(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 2, 1}> | as_vec;
+}
+
+constexpr decltype(auto) rgba(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 1, 2, 3}> | as_vec;
+}
+
+constexpr decltype(auto) rgab(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 1, 3, 2}> | as_vec;
+}
+
+constexpr decltype(auto) rbga(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 2, 1, 3}> | as_vec;
+}
+
+constexpr decltype(auto) rbag(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 2, 3, 1}> | as_vec;
+}
+
+constexpr decltype(auto) ragb(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 3, 1, 2}> | as_vec;
+}
+
+constexpr decltype(auto) rabg(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 3, 2, 1}> | as_vec;
+}
+
+constexpr decltype(auto) grba(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 0, 2, 3}> | as_vec;
+}
+
+constexpr decltype(auto) grab(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 0, 3, 2}> | as_vec;
+}
+
+constexpr decltype(auto) gbra(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 2, 0, 3}> | as_vec;
+}
+
+constexpr decltype(auto) gbar(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 2, 3, 0}> | as_vec;
+}
+
+constexpr decltype(auto) garb(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 3, 0, 2}> | as_vec;
+}
+
+constexpr decltype(auto) gabr(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 3, 2, 0}> | as_vec;
+}
+
+constexpr decltype(auto) brga(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 0, 1, 3}> | as_vec;
+}
+
+constexpr decltype(auto) brag(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 0, 3, 1}> | as_vec;
+}
+
+constexpr decltype(auto) bgra(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 1, 0, 3}> | as_vec;
+}
+
+constexpr decltype(auto) bgar(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 1, 3, 0}> | as_vec;
+}
+
+constexpr decltype(auto) barg(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 3, 0, 1}> | as_vec;
+}
+
+constexpr decltype(auto) bagr(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 3, 1, 0}> | as_vec;
+}
+
+constexpr decltype(auto) argb(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 0, 1, 2}> | as_vec;
+}
+
+constexpr decltype(auto) arbg(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 0, 2, 1}> | as_vec;
+}
+
+constexpr decltype(auto) agrb(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 1, 0, 2}> | as_vec;
+}
+
+constexpr decltype(auto) agbr(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 1, 2, 0}> | as_vec;
+}
+
+constexpr decltype(auto) abrg(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 2, 0, 1}> | as_vec;
+}
+
+constexpr decltype(auto) abgr(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 2, 1, 0}> | as_vec;
+}
+
+constexpr decltype(auto) s(this auto&& self) noexcept
+{
+    return tree_get<0>(FWD(self).raw_base());
+}
+
+constexpr decltype(auto) t(this auto&& self) noexcept
+{
+    return tree_get<1>(FWD(self).raw_base());
+}
+
+constexpr decltype(auto) p(this auto&& self) noexcept
+{
+    return tree_get<2>(FWD(self).raw_base());
+}
+
+constexpr decltype(auto) q(this auto&& self) noexcept
+{
+    return tree_get<3>(FWD(self).raw_base());
+}
+
+constexpr decltype(auto) st(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 1}> | as_vec;
+}
+
+constexpr decltype(auto) sp(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 2}> | as_vec;
+}
+
+constexpr decltype(auto) sq(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 3}> | as_vec;
+}
+
+constexpr decltype(auto) ts(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 0}> | as_vec;
+}
+
+constexpr decltype(auto) tp(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 2}> | as_vec;
+}
+
+constexpr decltype(auto) tq(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 3}> | as_vec;
+}
+
+constexpr decltype(auto) ps(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 0}> | as_vec;
+}
+
+constexpr decltype(auto) pt(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 1}> | as_vec;
+}
+
+constexpr decltype(auto) pq(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 3}> | as_vec;
+}
+
+constexpr decltype(auto) qs(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 0}> | as_vec;
+}
+
+constexpr decltype(auto) qt(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 1}> | as_vec;
+}
+
+constexpr decltype(auto) qp(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 2}> | as_vec;
+}
+
+constexpr decltype(auto) stp(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 1, 2}> | as_vec;
+}
+
+constexpr decltype(auto) stq(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 1, 3}> | as_vec;
+}
+
+constexpr decltype(auto) spt(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 2, 1}> | as_vec;
+}
+
+constexpr decltype(auto) spq(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 2, 3}> | as_vec;
+}
+
+constexpr decltype(auto) sqt(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 3, 1}> | as_vec;
+}
+
+constexpr decltype(auto) sqp(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 3, 2}> | as_vec;
+}
+
+constexpr decltype(auto) tsp(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 0, 2}> | as_vec;
+}
+
+constexpr decltype(auto) tsq(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 0, 3}> | as_vec;
+}
+
+constexpr decltype(auto) tps(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 2, 0}> | as_vec;
+}
+
+constexpr decltype(auto) tpq(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 2, 3}> | as_vec;
+}
+
+constexpr decltype(auto) tqs(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 3, 0}> | as_vec;
+}
+
+constexpr decltype(auto) tqp(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 3, 2}> | as_vec;
+}
+
+constexpr decltype(auto) pst(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 0, 1}> | as_vec;
+}
+
+constexpr decltype(auto) psq(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 0, 3}> | as_vec;
+}
+
+constexpr decltype(auto) pts(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 1, 0}> | as_vec;
+}
+
+constexpr decltype(auto) ptq(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 1, 3}> | as_vec;
+}
+
+constexpr decltype(auto) pqs(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 3, 0}> | as_vec;
+}
+
+constexpr decltype(auto) pqt(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 3, 1}> | as_vec;
+}
+
+constexpr decltype(auto) qst(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 0, 1}> | as_vec;
+}
+
+constexpr decltype(auto) qsp(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 0, 2}> | as_vec;
+}
+
+constexpr decltype(auto) qts(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 1, 0}> | as_vec;
+}
+
+constexpr decltype(auto) qtp(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 1, 2}> | as_vec;
+}
+
+constexpr decltype(auto) qps(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 2, 0}> | as_vec;
+}
+
+constexpr decltype(auto) qpt(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 2, 1}> | as_vec;
+}
+
+constexpr decltype(auto) stpq(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 1, 2, 3}> | as_vec;
+}
+
+constexpr decltype(auto) stqp(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 1, 3, 2}> | as_vec;
+}
+
+constexpr decltype(auto) sptq(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 2, 1, 3}> | as_vec;
+}
+
+constexpr decltype(auto) spqt(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 2, 3, 1}> | as_vec;
+}
+
+constexpr decltype(auto) sqtp(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 3, 1, 2}> | as_vec;
+}
+
+constexpr decltype(auto) sqpt(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 3, 2, 1}> | as_vec;
+}
+
+constexpr decltype(auto) tspq(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 0, 2, 3}> | as_vec;
+}
+
+constexpr decltype(auto) tsqp(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 0, 3, 2}> | as_vec;
+}
+
+constexpr decltype(auto) tpsq(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 2, 0, 3}> | as_vec;
+}
+
+constexpr decltype(auto) tpqs(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 2, 3, 0}> | as_vec;
+}
+
+constexpr decltype(auto) tqsp(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 3, 0, 2}> | as_vec;
+}
+
+constexpr decltype(auto) tqps(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 3, 2, 0}> | as_vec;
+}
+
+constexpr decltype(auto) pstq(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 0, 1, 3}> | as_vec;
+}
+
+constexpr decltype(auto) psqt(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 0, 3, 1}> | as_vec;
+}
+
+constexpr decltype(auto) ptsq(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 1, 0, 3}> | as_vec;
+}
+
+constexpr decltype(auto) ptqs(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 1, 3, 0}> | as_vec;
+}
+
+constexpr decltype(auto) pqst(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 3, 0, 1}> | as_vec;
+}
+
+constexpr decltype(auto) pqts(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{2, 3, 1, 0}> | as_vec;
+}
+
+constexpr decltype(auto) qstp(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 0, 1, 2}> | as_vec;
+}
+
+constexpr decltype(auto) qspt(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 0, 2, 1}> | as_vec;
+}
+
+constexpr decltype(auto) qtsp(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 1, 0, 2}> | as_vec;
+}
+
+constexpr decltype(auto) qtps(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 1, 2, 0}> | as_vec;
+}
+
+constexpr decltype(auto) qpst(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 2, 0, 1}> | as_vec;
+}
+
+constexpr decltype(auto) qpts(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{3, 2, 1, 0}> | as_vec;
+}
+
+constexpr decltype(auto) u(this auto&& self) noexcept
+{
+    return tree_get<0>(FWD(self).raw_base());
+}
+
+constexpr decltype(auto) v(this auto&& self) noexcept
+{
+    return tree_get<1>(FWD(self).raw_base());
+}
+
+constexpr decltype(auto) uv(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{0, 1}> | as_vec;
+}
+
+constexpr decltype(auto) vu(this auto&& self) noexcept
+{
+    return FWD(self).raw_base() | refer | relayout<tuple{1, 0}> | as_vec;
+}
+

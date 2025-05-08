@@ -15,7 +15,16 @@ namespace senluo
 		{
 			return value;
 		}
+
+		template<class T> requires std::convertible_to<decltype(value), T>
+		constexpr explicit operator T()const
+		{
+			return static_cast<T>(value);
+		}
 	};
+
+	template<auto Value>
+	inline constexpr constant_t<Value> constant{};
 
     template<auto value1, auto value2>
     constexpr auto operator+(constant_t<value1>, constant_t<value2>) 
@@ -46,6 +55,12 @@ namespace senluo
 	{
 	    return constant_t<value1 % value2>{};
 	}
+}
+
+namespace senluo::constants
+{
+	inline constexpr constant_t<0> _0;
+	inline constexpr constant_t<1> _1;
 }
 
 // +0

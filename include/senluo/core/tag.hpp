@@ -1,10 +1,10 @@
 #ifndef SENLUO_TAG_HPP
 #define SENLUO_TAG_HPP
 
-#include "../general.hpp"
+#include "../tools/general.hpp"
 #include "subtree.hpp"
 
-#include "../macro_define.hpp"
+#include "../tools/macro_define.hpp"
 
 namespace senluo
 {
@@ -44,6 +44,20 @@ namespace senluo
         none,
         apply_invoke
     };
+
+    enum class independence_t
+    {
+        none,
+        safe//,
+        //isolated
+    };
+
+    enum class layout_mapping_type_t
+    {
+        multi_shot,
+        injective,
+        bijective
+    };
 }
 
 namespace senluo::detail
@@ -64,10 +78,13 @@ namespace senluo::detail
         }
         else
         {
-            return subtree<I>(tag_tree);
+            return get<I>(tag_tree);
         }
     }
-    
+
+    // template<size_t I, auto TagTree>
+    // inline constexpr auto tag_tree_get_Cache = tag_tree_get<I>(TagTree);
+
     template<auto indexes, class T>
     constexpr auto tag_subtree(const T& tag_tree)
     {
@@ -158,7 +175,8 @@ namespace senluo::detail
             )
             {
                 constexpr auto prefix = detail::array_take<n - 1uz>(get<0uz>(child_relayout));
-                if constexpr((... && (prefix == detail::array_take<n - 1uz>(get<I>(child_relayout))))
+                if constexpr(size<subtree_t<Shape, prefix>> == size<decltype(Layout)>
+                    && (... && (prefix == detail::array_take<n - 1uz>(get<I>(child_relayout))))
                     && (... && (get<I>(child_relayout)[n - 1uz] == I))
                 )
                 {
@@ -173,6 +191,29 @@ namespace senluo::detail
             {
                 return child_relayout;
             }
+        }(std::make_index_sequence<size<decltype(Layout)>>{});
+    }
+
+    template<auto Layout, class BaseShape>
+    constexpr auto unfold_layout(BaseShape base_shape = {})
+    {
+        if constexpr(indexical<decltype(Layout)>)
+        {
+            constexpr auto indexes = detail::normalize_indices<Layout>(BaseShape{});
+            using subshape_t = subtree_t<BaseShape, indexes>;
+            if constexpr(terminal<subshape_t>)
+            {
+                return indexes;
+            }
+            else return [&]<size_t...I>(std::index_sequence<I...>)
+            {
+                constexpr auto indexes = detail::normalize_indices<Layout>(BaseShape{});
+                return make_tuple(detail::unfold_layout<detail::array_cat(indexes, array{ I })>(base_shape)...);
+            }(std::make_index_sequence<size<subshape_t>>{});
+        }
+        else return [&]<size_t...I>(std::index_sequence<I...>)
+        {
+            return make_tuple(detail::unfold_layout<get<I>(Layout)>(base_shape)...);
         }(std::make_index_sequence<size<decltype(Layout)>>{});
     }
 
@@ -217,6 +258,65 @@ namespace senluo::detail
         }(std::make_index_sequence<size<S1>>{});
     }
 
+    template<auto Tree1, class S2>
+    constexpr auto merge_stricture_tree(const S2& tree2)
+    {
+        if constexpr(std::same_as<decltype(Tree1), stricture_t>)
+        {
+            if constexpr(Tree1 == stricture_t::readonly)
+            {
+                return stricture_t::readonly;
+            }
+            else
+            {
+                return tree2;
+            }
+        }
+        else return [&]<size_t...I>(std::index_sequence<I...>)
+        { 
+            //static_assert(size<S1> > 0);
+            if constexpr(std::same_as<S2, stricture_t>)
+            {
+                return make_tuple(detail::merge_stricture_tree<get<I>(Tree1)>(tree2)...);
+            }
+            else
+            {
+                return make_tuple(detail::merge_stricture_tree<get<I>(Tree1)>(get<I>(tree2))...);
+            }
+        }(std::make_index_sequence<size<decltype(Tree1)>>{});
+    }
+
+    template<auto Tree1, auto Tree2>
+    constexpr auto merge_stricture_tree()
+    {
+        if constexpr(std::same_as<decltype(Tree1), stricture_t>)
+        {
+            if constexpr(Tree1 == stricture_t::readonly)
+            {
+                return stricture_t::readonly;
+            }
+            else
+            {
+                return Tree2;
+            }
+        }
+        else if constexpr(std::same_as<decltype(Tree2), stricture_t>)
+        {
+            if constexpr(Tree2 == stricture_t::readonly)
+            {
+                return stricture_t::readonly;
+            }
+            else
+            {
+                return Tree1;
+            }
+        }
+        else return [&]<size_t...I>(std::index_sequence<I...>)
+        { 
+            return make_tuple(detail::merge_stricture_tree<get<I>(Tree1), get<I>(Tree2)>()...);
+        }(std::make_index_sequence<size<decltype(Tree1)>>{});
+    }
+
     template<auto TagTree>
     constexpr auto fold_tag_tree()
     {
@@ -238,6 +338,19 @@ namespace senluo::detail
         }(std::make_index_sequence<size<decltype(TagTree)>>{});
     }
     
+    template<class Shape, class T>
+    constexpr auto make_tree_of_same_value(const T& value, Shape shape)
+    {
+        if constexpr (terminal<Shape>)
+        {
+            return value;
+        }
+        else return [&]<size_t...I>(std::index_sequence<I...>)
+        {
+            return make_tuple(detail::make_tree_of_same_value(value, get<I>(shape))...);
+        }(std::make_index_sequence<size<Shape>>{});
+    }
+
     template<typename TagTree, typename S>
     constexpr auto unfold_tag_tree(TagTree tree, S = {})
     {
@@ -352,10 +465,14 @@ namespace senluo::detail
         }(std::make_index_sequence<size<decltype(Layout)>>{});
     }
 
-    template<auto RawStrictureTree, auto Layout, auto UsageTree, class CurDataStrictureTree>
+    template<auto RawStrictureTree, auto IndependenceTree, auto Layout, auto UsageTree, class CurDataStrictureTree>
     constexpr auto get_inverse_sequence_stricture_tree_impl(CurDataStrictureTree& cur_tree)
     {
-        if constexpr(std::same_as<decltype(UsageTree), usage_t>)
+        if constexpr(detail::equal(IndependenceTree, independence_t::safe))
+        {
+            return stricture_t::none;
+        }
+        else if constexpr(std::same_as<decltype(UsageTree), usage_t>)
         {
             if constexpr(UsageTree == usage_t::none)
             {
@@ -368,7 +485,7 @@ namespace senluo::detail
             }
             else
             {
-                auto result = detail::merge_stricture_tree(RawStrictureTree, detail::relayout_tag_tree<Layout>(cur_tree));
+                auto result = detail::merge_stricture_tree<RawStrictureTree>(detail::relayout_tag_tree<Layout>(cur_tree));
                 detail::set_data_stricture_tree_by_layout<Layout>(cur_tree);
                 return result;
             }
@@ -386,10 +503,14 @@ namespace senluo::detail
         }(std::make_index_sequence<size<decltype(UsageTree)>>{});
     }
 
-    template<auto RawStrictureTree, auto Layout, auto UsageTree, class CurDataStrictureTree>
+    template<auto RawStrictureTree, auto IndependenceTree, auto Layout, auto UsageTree, class CurDataStrictureTree>
     constexpr auto get_sequence_stricture_tree_impl(CurDataStrictureTree& cur_tree)
     {
-        if constexpr(std::same_as<decltype(UsageTree), usage_t>)
+        if constexpr(detail::equal(IndependenceTree, independence_t::safe))
+        {
+            return stricture_t::none;
+        }
+        else if constexpr(std::same_as<decltype(UsageTree), usage_t>)
         {
             if constexpr(UsageTree == usage_t::none)
             {
@@ -402,7 +523,7 @@ namespace senluo::detail
             }
             else
             {
-                auto result = detail::merge_stricture_tree(RawStrictureTree, detail::relayout_tag_tree<Layout>(cur_tree));
+                auto result = detail::merge_stricture_tree<RawStrictureTree>(detail::relayout_tag_tree<Layout>(cur_tree));
                 detail::set_data_stricture_tree_by_layout<Layout>(cur_tree);
                 return result;
             }
@@ -483,12 +604,27 @@ namespace senluo::detail
         auto index_len_tree = detail::make_tree_of_same_value_and_set_leaf_count(invalid_index, leaf_count, S{});
         size_t setted_count = 0uz;
         bool is_injective = detail::inverse_layout_index_len_at<Layout>(index_len_tree, setted_count);
+
+        layout_mapping_type_t mapping_type;
+        if(not is_injective)
+        {
+            mapping_type = layout_mapping_type_t::multi_shot;
+        }
+        else if(leaf_count != setted_count)
+        {
+            mapping_type = layout_mapping_type_t::injective;
+        }
+        else
+        {
+            mapping_type = layout_mapping_type_t::bijective;
+        }
+
         struct result_t
         {
-            bool is_surjection;
+            layout_mapping_type_t mapping_type;
             decltype(index_len_tree) index_len_tree;
         };
-        return result_t{ is_injective && (leaf_count == setted_count), index_len_tree  };
+        return result_t{ mapping_type, index_len_tree  };
     }
 
     template<auto IndexLenTree>
@@ -518,22 +654,89 @@ namespace senluo::detail
     }
 
     template<auto UnFoldedLayout, typename S>
-    constexpr auto inverse_layout(S = {})
+    constexpr auto get_layout_cache(S = {})
     {
         constexpr auto inverse_layout_index_len_result = detail::inverse_layout_index_len<UnFoldedLayout, S>();
         
-        if constexpr(inverse_layout_index_len_result.is_surjection)
+        if constexpr(inverse_layout_index_len_result.mapping_type == layout_mapping_type_t::bijective)
         {
-            auto result = detail::init_layout<inverse_layout_index_len_result.index_len_tree>();
-            detail::inverse_layout_at<UnFoldedLayout>(result);
-            return result;
+            auto inverse_layout = detail::init_layout<inverse_layout_index_len_result.index_len_tree>();
+            detail::inverse_layout_at<UnFoldedLayout>(inverse_layout);
+            struct layout_chache_t
+            {
+                layout_mapping_type_t mapping_type;
+                decltype(inverse_layout) inverse_layout;
+            };
+            return layout_chache_t{ inverse_layout_index_len_result.mapping_type, inverse_layout };
         }
         else
         {
-            return tuple{};
+            struct layout_chache_t
+            {
+                layout_mapping_type_t mapping_type;
+            };
+            return layout_chache_t{ inverse_layout_index_len_result.mapping_type };
         }
     }
 }
 
-#include "../macro_undef.hpp"
+namespace senluo::detail
+{
+    template<class Shape>
+    constexpr auto make_tree_of_bool_false_and_set_count(size_t& count, Shape)
+    {
+        if(terminal<Shape>)
+        {
+            ++count;
+            return false; 
+        }
+        else return[&]<size_t...I>(std::index_sequence<I...>)
+        {
+            return make_tuple(detail::make_tree_of_bool_false_and_set_count(count, get<I>(Shape{}))...);
+        }(std::make_index_sequence<size<Shape>>{});
+    }
+
+    template<auto UnfoldedLayout, class UsedFlagTree>
+    constexpr bool is_injective_impl(UsedFlagTree& used_flag_tree, size_t& used_count)
+    {
+        if constexpr(indexical_array<decltype(UnfoldedLayout)>)
+        {
+            bool& used_flag = subtree<UnfoldedLayout>(used_flag_tree);
+            if(used_flag == true)
+            {
+                return false;
+            }
+            else
+            {
+                used_flag_tree = true;
+                ++used_count;
+                return true;
+            }
+        }
+        else return[&]<size_t...I>(std::index_sequence<I...>)
+        {
+            return (... && detail::is_injective_impl<get<I>(UnfoldedLayout)>(used_flag_tree));
+        }(std::make_index_sequence<size<decltype(UnfoldedLayout)>>{});
+    }
+
+    template<auto UnfoldedLayout, class BaseShape>
+    constexpr layout_mapping_type_t layout_mapping_type_of(BaseShape = {})
+    {
+        size_t leaf_count = 0;
+        auto used_flag_tree = make_tree_of_bool_false_and_set_count(leaf_count, BaseShape{});
+        size_t used_count = 0;
+        bool is_injective = is_injective_impl<UnfoldedLayout>(used_flag_tree, used_count);
+        if(not is_injective)
+        {
+            return layout_mapping_type_t::multi_shot;
+        }
+        if(used_count != leaf_count)
+        {
+            return layout_mapping_type_t::injective;
+        }
+        return layout_mapping_type_t::bijective;
+    }
+}
+
+#include "../tools/macro_undef.hpp"
 #endif

@@ -1,4 +1,4 @@
-#include <senluo/array.hpp>
+#include <senluo/tools/array.hpp>
 #include "test_tool.hpp"
 
 using namespace senluo;
