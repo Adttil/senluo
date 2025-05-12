@@ -199,7 +199,7 @@ namespace senluo
             template<class T>
             static consteval choice_t<strategy_t> choose()
             {
-                using utype = unwrap_t<T>;
+                using utype = ideal_unwrap_t<T>;
                 using type = std::remove_cvref_t<utype>;
                 //array
                 if constexpr(std::is_bounded_array_v<type>)

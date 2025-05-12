@@ -168,6 +168,38 @@ namespace senluo
     template<class T>
     using unwrap_t = decltype(unwrap(std::declval<T>()));
 
+    template<class T>
+    using unwrap_fwd_t = decltype(unwrap_fwd(std::declval<T>()));
+
+    template<class T>
+    concept wrapped = requires(std::remove_cvref_t<T>& t)
+    {
+        { []<class V>(wrapper<V>&)->wrapper<V>*{ return nullptr; }(t) } -> std::same_as<std::remove_cvref_t<T>*>;
+    };
+
+    namespace detail 
+    {
+        template<class T>
+        constexpr auto ideal_unwrap_t_tag()
+        {
+            if constexpr(not wrapped<T>)
+            {
+                return type_tag<std::remove_const_t<T>>{};
+            }
+            else if constexpr(std::is_object_v<T> && requires{ requires std::is_object_v<decltype(std::declval<T>().base_)>; })
+            {
+                return type_tag<std::remove_const_t<decltype(std::declval<T>().base_)>>{};
+            }
+            else
+            {
+                return type_tag<decltype(FWD(std::declval<T>(), base_))>{};
+            }
+        }
+    }
+    
+    template<class T>
+    using ideal_unwrap_t = decltype(detail::ideal_unwrap_t_tag<T>())::type;
+
     // namespace detail 
     // {
     //     struct unwrap_base_fn : adaptor_closure<unwrap_base_fn>
@@ -193,7 +225,7 @@ namespace senluo
     // }
 
     template<class T, class U>
-    concept unwarp_derived_from = derived_from<unwrap_t<T>, U>;
+    concept unwarp_derived_from = derived_from<ideal_unwrap_t<T>, U>;
 }
 
 #include "../tools/macro_undef.hpp"

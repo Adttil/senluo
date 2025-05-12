@@ -58,6 +58,31 @@ namespace senluo
         injective,
         bijective
     };
+
+    template<class T>
+    struct is_only_input
+    {
+        static consteval bool get_value()
+        {
+            if constexpr(not (std::is_const_v<std::remove_reference_t<T>> || std::is_object_v<T>))
+            {
+                return false;
+            }
+            else if constexpr(terminal<T>)
+            {
+                return true;
+            }
+            else return []<size_t...I>(std::index_sequence<I...>)
+            {
+                return (... && is_only_input<subtree_t<T, I>>::value);
+            }(std::make_index_sequence<size<T>>{});
+        }
+
+        static constexpr bool value = get_value();
+    };
+
+    template<class T>
+    inline constexpr bool is_only_input_v = is_only_input<T>::value;
 }
 
 namespace senluo::detail
@@ -493,10 +518,12 @@ namespace senluo::detail
         else return [&]<size_t...I>(std::index_sequence<I...>)
         {
             return tuple<decltype(detail::get_inverse_sequence_stricture_tree_impl<detail::tag_tree_get<I>(RawStrictureTree)
+                                                        , detail::tag_tree_get<I>(IndependenceTree)
                                                         , detail::layout_get<I>(Layout)
                                                         , get<I>(UsageTree)>(cur_tree))...>
             {
                 detail::get_inverse_sequence_stricture_tree_impl<detail::tag_tree_get<I>(RawStrictureTree)
+                                                        , detail::tag_tree_get<I>(IndependenceTree)
                                                         , detail::layout_get<I>(Layout)
                                                         , get<I>(UsageTree)>(cur_tree)...
             };
@@ -533,10 +560,12 @@ namespace senluo::detail
             static_assert(size<decltype(UsageTree)> > 0);
             constexpr size_t last = size<decltype(UsageTree)> - 1uz;
             auto inverse_result = tuple<decltype(detail::get_sequence_stricture_tree_impl<detail::tag_tree_get<last - I>(RawStrictureTree)
+                                                        , detail::tag_tree_get<last - I>(IndependenceTree)
                                                         , detail::layout_get<last - I>(Layout)
                                                         , get<last - I>(UsageTree)>(cur_tree))...>
             {
                 detail::get_sequence_stricture_tree_impl<detail::tag_tree_get<last - I>(RawStrictureTree)
+                                                        , detail::tag_tree_get<last - I>(IndependenceTree)
                                                         , detail::layout_get<last - I>(Layout)
                                                         , get<last - I>(UsageTree)>(cur_tree)...
             };
@@ -544,19 +573,19 @@ namespace senluo::detail
         }(std::make_index_sequence<size<decltype(UsageTree)>>{});
     }
 
-    template<auto RawStrictureTree, auto Layout, auto UsageTree, class DataShape>
-    constexpr auto get_inverse_sequence_stricture_tree(DataShape data_shape = {})
-    {
-        auto data_stricture_tree = detail::make_tree_of_same_value(stricture_t::none, data_shape);
-        return get_inverse_sequence_stricture_tree_impl<RawStrictureTree, Layout, UsageTree>(data_stricture_tree);
-    }
+    // template<auto RawStrictureTree, auto Layout, auto UsageTree, class DataShape>
+    // constexpr auto get_inverse_sequence_stricture_tree(DataShape data_shape = {})
+    // {
+    //     auto data_stricture_tree = detail::make_tree_of_same_value(stricture_t::none, data_shape);
+    //     return get_inverse_sequence_stricture_tree_impl<RawStrictureTree, Layout, UsageTree>(data_stricture_tree);
+    // }
 
-    template<auto RawStrictureTree, auto Layout, auto UsageTree, class DataShape>
-    constexpr auto get_sequence_stricture_tree(DataShape data_shape = {})
-    {
-        auto data_stricture_tree = detail::make_tree_of_same_value(stricture_t::none, data_shape);
-        return detail::get_sequence_stricture_tree_impl<RawStrictureTree, Layout, UsageTree>(data_stricture_tree);
-    }
+    // template<auto RawStrictureTree, auto Layout, auto UsageTree, class DataShape>
+    // constexpr auto get_sequence_stricture_tree(DataShape data_shape = {})
+    // {
+    //     auto data_stricture_tree = detail::make_tree_of_same_value(stricture_t::none, data_shape);
+    //     return detail::get_sequence_stricture_tree_impl<RawStrictureTree, Layout, UsageTree>(data_stricture_tree);
+    // }
 }
 
 namespace senluo::detail
@@ -735,6 +764,533 @@ namespace senluo::detail
             return layout_mapping_type_t::injective;
         }
         return layout_mapping_type_t::bijective;
+    }
+
+    template<class T>
+    struct intrinsic_stricture_tree
+    {
+        static consteval auto get_value()
+        {
+            if constexpr(is_only_input_v<T>)
+            {
+                return stricture_t::readonly;
+            }
+            else if constexpr(terminal<T>)
+            {
+                return stricture_t::none;
+            }
+            else return []<size_t...I>(std::index_sequence<I...>)
+            {
+                return make_tuple(intrinsic_stricture_tree<tree_get_t<I, T>>::value...);
+            }(std::make_index_sequence<size<T>>{});
+        }
+
+        static constexpr auto value = get_value();
+    };
+
+    template<class T>
+    inline constexpr auto intrinsic_stricture_tree_v = intrinsic_stricture_tree<T>::value;
+
+    template<auto BaseStrictureTree, class BaseUsedCountTree>
+    constexpr void increase_used_count_tree(BaseUsedCountTree& count_tree, BaseUsedCountTree& inc_tree)
+    {
+        if constexpr(detail::equal(BaseStrictureTree, stricture_t::readonly))
+        {
+            return;
+        }
+        else if constexpr(std::same_as<BaseUsedCountTree, size_t>)
+        {
+            if(inc_tree == 0uz)
+            {
+                ++count_tree;
+                inc_tree = 1uz;
+            }
+        }
+        else [&]<size_t...I>(std::index_sequence<I...>)
+        {
+            (..., increase_used_count_tree<detail::tag_tree_get<I>(BaseStrictureTree)>(get<I>(count_tree), get<I>(inc_tree)));
+        }(std::make_index_sequence<size<BaseUsedCountTree>>{});
+    }
+
+    template<auto Indexes, auto BaseStrictureTree, class BaseUsedCountTree>
+    constexpr void increase_used_count_tree_by_indexes(BaseUsedCountTree& count_tree, BaseUsedCountTree& inc_tree)
+    {
+        if constexpr(detail::equal(detail::tag_subtree<Indexes>(BaseStrictureTree), stricture_t::readonly))
+        {
+            return;
+        }
+        else if constexpr(std::same_as<BaseUsedCountTree, size_t>)
+        {
+            if(inc_tree == 0uz)
+            {
+                ++count_tree;
+                inc_tree = 1uz;
+            }
+        }
+        else if constexpr(Indexes.size() == 0uz)
+        {
+            increase_used_count_tree<BaseStrictureTree>(count_tree, inc_tree);
+        }
+        else 
+        {   
+            auto& sub_tree = get<Indexes[0]>(count_tree);
+            auto& sub_inc_tree = get<Indexes[0]>(inc_tree);
+            increase_used_count_tree_by_indexes<detail::array_drop<1uz>(Indexes),
+                                                    detail::tag_tree_get<Indexes[0]>(BaseStrictureTree)>(
+                    sub_tree, sub_inc_tree
+                );
+        }
+    }
+
+    template<auto Layout, auto BaseStrictureTree, class BaseUsedCountTree>
+    constexpr void increase_used_count_tree_by_layout(BaseUsedCountTree& count_tree, BaseUsedCountTree& inc_tree)
+    {
+        if constexpr(indexical_array<decltype(Layout)>)
+        {
+            increase_used_count_tree_by_indexes<Layout, BaseStrictureTree>(count_tree, inc_tree);
+        }
+        else [&]<size_t...I>(std::index_sequence<I...>)
+        {
+            (..., increase_used_count_tree_by_layout<get<I>(Layout), BaseStrictureTree>(count_tree, inc_tree));
+        }(std::make_index_sequence<size<decltype(Layout)>>{});
+    }
+
+    template<auto Layout, auto UsageTree, auto BaseStrictureTree, class BaseUsedCountTree>
+    constexpr auto get_used_order_and_set_count(BaseUsedCountTree& count_tree)
+    {
+        if constexpr(std::same_as<decltype(UsageTree), usage_t>)
+        {
+            if constexpr(UsageTree == usage_t::none)
+            {
+                return 0uz;
+            }
+            else
+            {
+                auto result = detail::relayout_tag_tree<Layout>(count_tree);
+                BaseUsedCountTree inc_tree{};
+                increase_used_count_tree_by_layout<Layout, BaseStrictureTree>(count_tree, inc_tree);
+                return result;
+            }
+        }
+        else return [&]<size_t...I>(std::index_sequence<I...>)
+        {
+            return tuple<decltype(detail::get_used_order_and_set_count<detail::layout_get<I>(Layout)
+                                                        , get<I>(UsageTree)
+                                                        , BaseStrictureTree>(count_tree))...>
+            {
+                detail::get_used_order_and_set_count<detail::layout_get<I>(Layout)
+                                                        , get<I>(UsageTree)
+                                                        , BaseStrictureTree>(count_tree)...
+            };
+        }(std::make_index_sequence<size<decltype(UsageTree)>>{});
+    }
+
+    template<auto BaseStrictureTree, class BaseShape>
+    constexpr auto make_used_count_tree(BaseShape = {})
+    {
+        if constexpr(std::same_as<decltype(BaseStrictureTree), stricture_t>)
+        {
+            if constexpr(BaseStrictureTree == stricture_t::readonly)
+            {
+                return 0uz;
+            }
+            else
+            {
+                return detail::make_tree_of_same_value(0uz, BaseShape{});
+            }
+        }
+        else return[]<size_t...I>(std::index_sequence<I...>)
+        {
+            static_assert(size<decltype(BaseStrictureTree)> > 0);
+            return make_tuple(detail::make_used_count_tree<get<I>(BaseStrictureTree)>(get<I>(BaseShape{}))...);
+        }(std::make_index_sequence<size<decltype(BaseStrictureTree)>>{});
+    }
+
+    template<auto Layout, auto UsageTree, auto BaseStrictureTree, class BaseShape>
+    constexpr auto get_used_order_and_count()
+    {
+        auto used_count_tree = make_used_count_tree<BaseStrictureTree, BaseShape>();
+        auto used_order_tree = get_used_order_and_set_count<Layout, UsageTree, BaseStrictureTree>(used_count_tree);
+        struct used_order_and_count_t
+        {
+            decltype(used_order_tree) used_order_tree;
+            decltype(used_count_tree) used_count_tree;
+        };
+        return used_order_and_count_t{ used_order_tree, used_count_tree };
+    }
+
+    template<auto Layout, auto UsageTree, auto BaseStrictureTree, class BaseShape>
+    inline constexpr auto used_order_and_count = detail::get_used_order_and_count<Layout, UsageTree, BaseStrictureTree, BaseShape>();
+
+    template<auto Layout, auto UsedOrderTree, auto UsedCountTree>
+    struct sequence_stricture
+    {
+        static consteval auto get_value()
+        {
+            if constexpr(std::same_as<decltype(UsedOrderTree), size_t>)
+            {
+                static_assert(indexical_array<decltype(Layout)>);
+                static_assert(std::same_as<decltype(detail::tag_subtree<Layout>(UsedCountTree)), size_t>);
+                constexpr size_t used_count = detail::tag_subtree<Layout>(UsedCountTree);
+                if constexpr(used_count == 0uz || UsedOrderTree == used_count - 1uz)
+                {
+                    return stricture_t::none;
+                }
+                else
+                {
+                    return stricture_t::readonly;
+                }
+            }
+            else return[]<size_t...I>(std::index_sequence<I...>)
+            {
+                constexpr auto substrictures = make_tuple(
+                    sequence_stricture<detail::layout_get<I>(Layout), get<I>(UsedOrderTree), UsedCountTree>::value...
+                );
+                if constexpr((std::same_as<decltype(get<0uz>(substrictures)), const stricture_t&> && ... && detail::equal(get<I>(substrictures), get<0uz>(substrictures))))
+                {
+                    return get<0uz>(substrictures);
+                }
+                else
+                {
+                    return substrictures;
+                }
+            }(std::make_index_sequence<size<decltype(UsedOrderTree)>>{});
+        }
+
+        static constexpr auto value = get_value();
+    };
+
+    template<auto Layout, auto UsageTree, auto BaseStrictureTree, class BaseShape>
+    inline constexpr auto sequence_stricture_v = 
+        sequence_stricture<
+            Layout, 
+            used_order_and_count<Layout, UsageTree, BaseStrictureTree, BaseShape>.used_order_tree, 
+            used_order_and_count<Layout, UsageTree, BaseStrictureTree, BaseShape>.used_count_tree
+        >::value;
+
+    template<auto UsedOrderTree>
+    struct inverse_sequence_stricture
+    {
+        static consteval auto get_value()
+        {
+            if constexpr(std::same_as<decltype(UsedOrderTree), size_t>)
+            {
+                if constexpr(UsedOrderTree == 0uz)
+                {
+                    return stricture_t::none;
+                }
+                else
+                {
+                    return stricture_t::readonly;
+                }
+            }
+            else return[]<size_t...I>(std::index_sequence<I...>)
+            {
+                constexpr auto substrictures = make_tuple(
+                    inverse_sequence_stricture<get<I>(UsedOrderTree)>::value...
+                );
+                if constexpr((std::same_as<decltype(get<0uz>(substrictures)), const stricture_t&> && ... && detail::equal(get<I>(substrictures), get<0uz>(substrictures))))
+                {
+                    return get<0uz>(substrictures);
+                }
+                else
+                {
+                    return substrictures;
+                }
+            }(std::make_index_sequence<size<decltype(UsedOrderTree)>>{});
+        }
+
+        static constexpr auto value = get_value();
+    };
+
+    template<auto Layout, auto UsageTree, auto BaseStrictureTree, class BaseShape>
+    inline constexpr auto inverse_sequence_stricture_v = 
+        inverse_sequence_stricture<used_order_and_count<Layout, UsageTree, BaseStrictureTree, BaseShape>.used_order_tree>::value;
+
+    template<auto Layout, auto UsedCountTree>
+    struct seperate_stricture
+    {
+        static consteval auto get_value()
+        {
+            if constexpr(indexical_array<decltype(Layout)>)
+            {
+                constexpr auto used_count = detail::tag_subtree<Layout>(UsedCountTree);
+                if constexpr(std::same_as<decltype(used_count), const size_t>)
+                {
+                    if constexpr(used_count <= 1uz)
+                    {
+                        return stricture_t::none;
+                    }
+                    else
+                    {
+                        return stricture_t::readonly;
+                    }
+                }
+                else return []<size_t...I>(std::index_sequence<I...>)
+                {
+                    constexpr auto used_count = detail::tag_subtree<Layout>(UsedCountTree);
+                    constexpr auto substrictures = make_tuple(
+                        seperate_stricture<array{ I }, used_count>::value...
+                    );
+                    if constexpr((std::same_as<decltype(get<0uz>(substrictures)), const stricture_t&> && ... && detail::equal(get<I>(substrictures), get<0uz>(substrictures))))
+                    {
+                        return get<0uz>(substrictures);
+                    }
+                    else
+                    {
+                        return substrictures;
+                    }
+                }(std::make_index_sequence<size<decltype(used_count)>>{});
+            }
+            else return[]<size_t...I>(std::index_sequence<I...>)
+            {
+                constexpr auto substrictures = make_tuple(
+                    seperate_stricture<detail::layout_get<I>(Layout), UsedCountTree>::value...
+                );
+                if constexpr((std::same_as<decltype(get<0uz>(substrictures)), const stricture_t&> && ... && detail::equal(get<I>(substrictures), get<0uz>(substrictures))))
+                {
+                    return get<0uz>(substrictures);
+                }
+                else
+                {
+                    return substrictures;
+                }
+            }(std::make_index_sequence<size<decltype(Layout)>>{});
+        }
+
+        static constexpr auto value = get_value();
+    };
+
+    template<auto Layout, auto UsageTree, auto BaseStrictureTree, class BaseShape>
+    inline constexpr auto seperate_stricture_v = 
+        seperate_stricture<Layout, used_order_and_count<Layout, UsageTree, BaseStrictureTree, BaseShape>.used_count_tree>::value;
+}
+
+namespace senluo::detail 
+{
+    template<auto Layout, auto BaseLayout, class BaseShape>
+    constexpr auto relayout_layout(BaseShape = {})
+    {
+        if constexpr(indexical_array<decltype(BaseLayout)>)
+        {
+            if constexpr(BaseLayout.size() == 0uz)
+            {
+                return Layout;
+            }
+            else
+            {
+                return detail::layout_add_prefix(Layout, BaseLayout);
+            }
+        }
+        else if constexpr(indexical_array<decltype(Layout)>)
+        {
+            if constexpr(Layout.size() == 0uz)
+            {
+                return BaseLayout;
+            }
+            else
+            {
+                return detail::relayout_layout<detail::array_drop<1uz>(Layout), get<Layout[0]>(BaseLayout), BaseShape>();
+            }
+        }
+        else return []<size_t...I>(std::index_sequence<I...>)
+        {
+            constexpr auto sublayouts = make_tuple(detail::relayout_layout<get<I>(Layout), BaseLayout, BaseShape>()...);
+            constexpr size_t n = size<decltype(get<0uz>(sublayouts))>;
+
+            if constexpr(n > 0uz
+                && (... && detail::indexical_array<decltype(get<I>(sublayouts))>)
+                && (... && (n == size<decltype(get<I>(sublayouts))>))
+            )
+            {
+                constexpr auto prefix = detail::array_take<n - 1uz>(get<0uz>(sublayouts));
+                if constexpr(size<subtree_t<BaseShape, prefix>> == size<decltype(Layout)>
+                    && (... && (prefix == detail::array_take<n - 1uz>(get<I>(sublayouts))))
+                    && (... && (get<I>(sublayouts)[n - 1uz] == I))
+                )
+                {
+                    return prefix;
+                }
+                else
+                {
+                    return sublayouts;
+                }
+            }
+            else
+            {
+                return sublayouts;
+            }
+        }(std::make_index_sequence<size<decltype(Layout)>>{});
+    }
+
+    template<auto Layout, auto Tree>
+    constexpr auto relayout_stricture_tree()
+    {
+        if constexpr(std::same_as<decltype(Tree), stricture_t>)
+        {
+            return Tree;
+        }
+        else if constexpr(indexical<decltype(Layout)>)
+        {
+            return detail::tag_subtree<Layout>(Tree);
+        }
+        else return []<size_t...I>(std::index_sequence<I...>)
+        {
+            constexpr auto subtrees = make_tuple(detail::relayout_stricture_tree<get<I>(Layout), Tree>()...);
+            if constexpr((std::same_as<decltype(get<0uz>(subtrees)), const stricture_t&> && ... && detail::equal(get<I>(subtrees), get<0uz>(subtrees))))
+            {
+                return get<0uz>(subtrees);
+            }
+            else
+            {
+                return subtrees;
+            }
+        }(std::make_index_sequence<size<decltype(Layout)>>{});
+    }
+
+    //todo... should change to discard repeat.
+    template<auto FoldedLayout, class O>
+    constexpr bool is_enable_to_relayout_operation_tree(const O& folded_operation_tree)
+    {
+        if constexpr(std::same_as<O, operation_t>)
+        {
+            if(folded_operation_tree == operation_t::none)
+            {
+                return true;
+            }
+        }
+        if constexpr(indexical<decltype(FoldedLayout)>)
+        {
+            if constexpr(FoldedLayout.size() == 0uz)
+            {
+                return true;
+            }
+            else
+            {
+                //msvc bug
+                constexpr auto i = detail::array_take<FoldedLayout.size() - 1uz>(FoldedLayout);
+                return not std::same_as<decltype(detail::tag_subtree<i>(folded_operation_tree)), operation_t>
+                || detail::equal(detail::tag_subtree<FoldedLayout>(folded_operation_tree), operation_t::none);
+            }
+        }
+        else return [&]<size_t...I>(std::index_sequence<I...>)
+        {
+            return (... && detail::is_enable_to_relayout_operation_tree<get<I>(FoldedLayout)>(folded_operation_tree));
+        }(std::make_index_sequence<size<decltype(FoldedLayout)>>{});
+    };
+
+    template<auto Layout, auto Tree>
+    constexpr auto relayout_operation_tree()
+    {
+        if constexpr(std::same_as<decltype(Tree), operation_t>)
+        {
+            return Tree;
+        }
+        else if constexpr(indexical<decltype(Layout)>)
+        {
+            return detail::tag_subtree<Layout>(Tree);
+        }
+        else return []<size_t...I>(std::index_sequence<I...>)
+        {
+            constexpr auto subtrees = make_tuple(detail::relayout_operation_tree<get<I>(Layout), Tree>()...);
+            if constexpr((... && detail::equal(get<I>(subtrees), operation_t::none)))
+            {
+                return operation_t::none;
+            }
+            else
+            {
+                return subtrees;
+            }
+        }(std::make_index_sequence<size<decltype(Layout)>>{});
+    }
+
+    template<typename UsageTree>
+    constexpr void set_usage_tree(UsageTree& usage_tree, usage_t usage)
+    {
+        if constexpr(std::same_as<UsageTree, usage_t>)
+        {
+            usage_tree = usage_tree & usage;
+        }
+        else return [&]<size_t...I>(std::index_sequence<I...>)
+        {
+            (..., detail::set_usage_tree(get<I>(usage_tree), usage));
+        }(std::make_index_sequence<size<UsageTree>>{});
+    }
+
+    template<auto Indexes, typename U, typename R>
+    constexpr void inverse_usage_tree_at(const U& usage_tree, R& result)
+    {
+        if constexpr(std::same_as<U, usage_t>)
+        {
+            detail::set_usage_tree(result | subtree<Indexes>, usage_tree);
+        }
+        else return [&]<size_t...I>(std::index_sequence<I...>)
+        {
+            (..., detail::inverse_usage_tree_at<detail::array_cat(Indexes, array{I})>(get<I>(usage_tree), result));
+        }(std::make_index_sequence<size<U>>{});
+    }
+
+    template<auto UnfoldedLayout, typename U, typename R>
+    constexpr void inverse_relayout_usage_tree_at(const U& usage_tree, R& result)
+    {
+        if constexpr(indexical<decltype(UnfoldedLayout)>)
+        {
+            detail::inverse_usage_tree_at<UnfoldedLayout>(usage_tree, result);
+        }
+        else return[&]<size_t...I>(std::index_sequence<I...>)
+        {
+            (..., detail::inverse_relayout_usage_tree_at<get<I>(UnfoldedLayout)>(detail::tag_tree_get<I>(usage_tree), result));
+        }(std::make_index_sequence<size<decltype(UnfoldedLayout)>>{});
+    }
+
+    //return an unfolded usage tree
+    template<auto UnfoldedLayout, typename U, typename BaseShape>
+    constexpr auto inverse_relayout_usage_tree(const U& usage_tree, BaseShape = {})
+    {
+        auto result = detail::make_tree_of_same_value(usage_t::none, BaseShape{});
+        detail::inverse_relayout_usage_tree_at<UnfoldedLayout>(usage_tree, result);
+        return result;
+    }
+
+    template<auto UsageTree, class Shape>
+    constexpr auto unfold_usage_when_used()
+    {
+        if constexpr(std::same_as<decltype(UsageTree), usage_t>)
+        {
+            if constexpr(UsageTree == usage_t::none)
+            {
+                return usage_t::none;
+            }
+            else
+            {
+                return detail::make_tree_of_same_value<Shape>(UsageTree);
+            }
+        }
+        else return [&]<size_t...I>(std::index_sequence<I...>)
+        {
+            return make_tuple(detail::unfold_usage_when_used<get<I>(UsageTree), std::tuple_element_t<I, Shape>>()...);
+        }(std::make_index_sequence<size<decltype(UsageTree)>>{});
+    }
+
+    template<auto UsageTree>
+    constexpr auto fold_usage_when_unused()
+    {
+        if constexpr(terminal<decltype(UsageTree)>)
+        {
+            return UsageTree;
+        }
+        else return []<size_t...I>(std::index_sequence<I...>)
+        {
+            constexpr auto subresults = make_tuple(detail::fold_tag_tree<subtree<I>(UsageTree)>()...);
+            if constexpr((... && detail::equal(get<I>(subresults), usage_t::none)))
+            {
+                return usage_t::none;
+            }
+            else
+            {
+                return subresults;
+            }
+        }(std::make_index_sequence<size<decltype(UsageTree)>>{});
     }
 }
 

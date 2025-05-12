@@ -1,3 +1,5 @@
+tuple_specialization_count = 16
+
 def generate_sequence(n, generate_once, split = ", "):
     if n == 0: 
         return ""
@@ -12,12 +14,12 @@ def generate_tuple_specialization(i):
 
     result += generate_sequence(i, lambda i : "    SENLUO(no_unique_address) T" + str(i) + " e" + str(i) + ";\n" , "")
     result += '\n'
-
+    
     result += "    template<size_t I, derived_from<tuple> Self> requires (I < " + str(i) + "uz)\n"
     result += "    friend constexpr auto&& get(Self&& self) noexcept\n    {\n        "
     result += generate_sequence(i, lambda i : "if constexpr(I == " + str(i) + "uz) return FWD(self, " + "e" + str(i) + ");", "\n        else ")
     result += "\n    }\n\n"
-
+    
     result += "    friend constexpr bool operator==(const tuple&, const tuple&) = default;\n"
 
     result += "};\n"
@@ -28,6 +30,13 @@ def generate_tuple_specialization_implement(max_element_count):
     for i in range(max_element_count + 1): 
         result += generate_tuple_specialization(i)
         result += '\n'
+    return result
+
+def generate_tuple_get(count):
+    result = "template<size_t I, class Self> requires (std::tuple_size_v<std::remove_cvref_t<Self>> <= " + str(count) + "uz)\n"
+    result += "constexpr auto&& get(Self&& self) noexcept\n{\n    "
+    result += generate_sequence(count, lambda i : "if constexpr(I == " + str(i) + "uz) return FWD(self, " + "e" + str(i) + ");", "\n    else ")
+    result += "\n}\n\n"
     return result
 
 def generate_aggregate_getter_invoker_for(memeber_count):
@@ -48,7 +57,8 @@ def generate_aggregate_getter_invoker(max_memeber_count):
 
 
 with open("include/senluo/code_generate/tuple_specialization.code", 'w') as file:
-    file.write(generate_tuple_specialization_implement(16))
+    file.write(generate_tuple_specialization_implement(tuple_specialization_count))
+    #file.write(generate_tuple_get(tuple_specialization_count))
 
 with open("include/senluo/code_generate/aggregate_getter_invoker.code", 'w') as file:
     file.write(generate_aggregate_getter_invoker(64))

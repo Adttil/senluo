@@ -64,17 +64,19 @@ namespace senluo
     template<class Pretreater>
     struct pretreater_interface : adaptor_closure<Pretreater>
     {
-        constexpr decltype(auto) operator()(auto&& tree) const
+        template<class T>
+        constexpr decltype(auto) operator()(T&& tree) const
         {
-            auto p = FWD(tree) | principle<Pretreater::usage_tree()>;
+            //gcc workround
+            auto p = ((T&&)tree) | principle<Pretreater::usage_tree>;
             
-            using data_t = decltype(FWD(p).data());
+            using data_t = decltype(std::move(p).data());
             
-            constexpr auto layout = p.layout();
-            constexpr auto raw_stricture_tree = p.stricture_tree();
-            constexpr auto independence_tree = p.independence_tree();
-            constexpr auto stricture_tree = Pretreater::template pretreat_stricture<raw_stricture_tree, independence_tree, layout>(shape<data_t>);
-            constexpr auto operation_tree = p.operation_tree();
+            constexpr auto layout = p.layout;
+            //constexpr auto independence_tree = p.independence_tree();
+            constexpr auto pretreat_stricture_tree = Pretreater::template stricture_tree<layout, data_t>;
+            constexpr auto stricture_tree = detail::merge_stricture_tree<p.stricture_tree, pretreat_stricture_tree>();
+            constexpr auto operation_tree = p.operation_tree;
 
             if constexpr(std::is_rvalue_reference_v<data_t>)
             {
@@ -106,58 +108,31 @@ namespace senluo
         template<auto UsageTree>
         struct sequence_by_usage_t : pretreater_interface<sequence_by_usage_t<UsageTree>>
         {
-            static consteval auto usage_tree()
-            {
-                return UsageTree;
-            }
+            static constexpr auto usage_tree = UsageTree;
 
-            template<auto RawStrictureTree, auto IndependenceTree, auto Layout, class S>
-            static consteval auto pretreat_stricture(S data_shape)
-            {
-                if constexpr(requires{ requires IndependenceTree >= independence_t::safe; })
-                {
-                    return RawStrictureTree;
-                }
-                else
-                {
-                    auto cur_data_stricture_tree = detail::make_tree_of_same_value(stricture_t::none, data_shape);
-                    return detail::get_sequence_stricture_tree_impl<RawStrictureTree, IndependenceTree, Layout, UsageTree>(cur_data_stricture_tree);
-                }
-            }
+            template<auto Layout, class Base>
+            static constexpr auto stricture_tree = 
+                detail::sequence_stricture_v<Layout, UsageTree, intrinsic_stricture_tree_v<Base>, shape_t<Base>>;
         };
 
         template<auto UsageTree>
         struct inverse_sequence_by_usage_t : pretreater_interface<inverse_sequence_by_usage_t<UsageTree>>
         {
-            static consteval auto usage_tree()
-            {
-                return UsageTree;
-            }
+            static constexpr auto usage_tree = UsageTree;
 
-            template<auto RawStrictureTree, auto IndependenceTree, auto Layout, class S>
-            static consteval auto pretreat_stricture(S data_shape)
-            {
-                auto cur_data_stricture_tree = detail::make_tree_of_same_value(stricture_t::none, data_shape);
-                return detail::get_inverse_sequence_stricture_tree_impl<RawStrictureTree, IndependenceTree, Layout, UsageTree>(data_shape);
-            }
+            template<auto Layout, class Base>
+            static constexpr auto stricture_tree = 
+                detail::inverse_sequence_stricture_v<Layout, UsageTree, intrinsic_stricture_tree_v<Base>, shape_t<Base>>;
         };
 
         template<auto UsageTree>
         struct seperate_by_usage_t : pretreater_interface<seperate_by_usage_t<UsageTree>>
         {
-            static consteval auto usage_tree()
-            {
-                return UsageTree;
-            }
+            static constexpr auto usage_tree = UsageTree;
 
-            template<auto RawStrictureTree, auto IndependenceTree, auto Layout, class S>
-            static consteval auto pretreat_stricture(S data_shape)
-            {
-                constexpr auto seq_stricture_tree = sequence_by_usage_t<UsageTree>::template pretreat_stricture<RawStrictureTree, IndependenceTree, Layout>(S{});
-                constexpr auto inv_stricture_tree = inverse_sequence_by_usage_t<UsageTree>::template pretreat_stricture<RawStrictureTree, IndependenceTree, Layout>(S{});
-
-                return detail::merge_stricture_tree<seq_stricture_tree, inv_stricture_tree>();
-            }
+            template<auto Layout, class Base>
+            static constexpr auto stricture_tree = 
+                detail::seperate_stricture_v<Layout, UsageTree, intrinsic_stricture_tree_v<Base>, shape_t<Base>>;
         };
     }
 

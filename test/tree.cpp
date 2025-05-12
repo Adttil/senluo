@@ -2,7 +2,6 @@
 #include <senluo/tools/constant.hpp>
 #include "test_tool.hpp"
 #include <magic/raw_name.h>
-#include <print>
 
 using namespace senluo;
 
@@ -58,7 +57,7 @@ TEST(tree, aggregate)
 
     constexpr int* px = &tree_get<0>(a);
     constexpr auto x_name = magic::raw_name_of_member<px>();
-    std::println("{}", x_name);
+    std::cout << x_name << '\n';
 
     MAGIC_CHECK(3, size<A>);
     MAGIC_CHECK(1, tree_get<0>(a));

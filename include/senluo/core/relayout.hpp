@@ -8,8 +8,33 @@
 
 #include "../tools/macro_define.hpp"
 
+namespace senluo::detail
+{
+    template<class BasePrinciple, auto FoldedLayout>
+    struct relayout_principle
+    {
+        BasePrinciple base;
+
+        constexpr decltype(auto) data()&&
+        {
+            return std::move(base).data();
+        }
+
+        static constexpr auto layout = 
+            detail::relayout_layout<FoldedLayout, BasePrinciple::layout, shape_t<decltype(std::move(base).data())>>();
+
+        static constexpr auto stricture_tree = 
+            detail::relayout_stricture_tree<FoldedLayout, BasePrinciple::stricture_tree>();
+
+        static constexpr auto operation_tree = 
+            detail::relayout_operation_tree<FoldedLayout, BasePrinciple::operation_tree>();
+    };
+}
+
 namespace senluo
 {
+    
+
     template<class T, auto FoldedLayout>
     struct relayout_tree : based_on<T>
     {
@@ -19,7 +44,7 @@ namespace senluo
             constexpr auto layout = detail::layout_get<I>(FoldedLayout);
             if constexpr(indexical<decltype(layout)>)
             {
-                return FWD(self).unwrap_base() | senluo::subtree<detail::layout_get<I>(FoldedLayout)>;
+                return FWD(self).unwrap_base() | subtree<detail::layout_get<I>(FoldedLayout)>;
             }
             else
             {
@@ -29,18 +54,26 @@ namespace senluo
             }
         }
         
-        // template<auto UsageTree, unwarp_derived_from<relayout_tree> Self>
-        // friend constexpr decltype(auto) principle(Self&& self)
-        // {
-        //     constexpr auto unfolded_layout = detail::unfold_layout<FoldedLayout>();
-        //     if constexpr(plain<decltype(FWD(self).unwrap_base()), UsageTree> 
-        //         && detail::get_layout_cache<unfolded_layout>(shape<T>).mapping_type >= layout_mapping_type_t::injective
-        //     )
-        //     {
-        //         return plain_principle<unwrap_t<Self>>{ unwrap_fwd(FWD(self)) };
-        //     }
-        //     return principle_impl<UsageTree>(FWD(self).unwrap_base() | principle<UsageTree>);
-        // }        
+        template<auto UsageTree, unwarp_derived_from<relayout_tree> Self>
+        friend constexpr auto principle(Self&& self)
+        {
+            constexpr auto base_usage = detail::fold_usage_when_unused<detail::inverse_relayout_usage_tree<FoldedLayout>(UsageTree, shape<T>)>();
+            using base_principle_t = principle_t<decltype(FWD(self).unwrap_base()), base_usage>;
+
+            if constexpr(detail::is_enable_to_relayout_operation_tree<FoldedLayout>(base_principle_t::operation_tree))
+            {
+                return detail::relayout_principle<base_principle_t, FoldedLayout>{
+                    principle<base_usage>(FWD(self).unwrap_base())
+                };
+            }
+            else
+            {
+                using plain_principle_t = plain_principle<decltype(detail::plainized_unchecked<base_usage>(FWD(self).unwrap_base()))>;
+                detail::relayout_principle<plain_principle_t, FoldedLayout>{
+                    plain_principle_t{ detail::plainized_unchecked<base_usage>(FWD(self).unwrap_base()) }
+                };
+            }
+        }        
     };
 
     template<class T, auto FoldedLayout>

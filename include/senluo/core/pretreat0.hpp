@@ -106,14 +106,14 @@ namespace senluo
         template<class T, auto UsageTree>
         constexpr bool is_plain()
         {
-            constexpr bool no_custom = not bool
+            return []<size_t...I>(std::index_sequence<I...>)
             {
-                requires{ std::declval<unwrap_t<T>>().template principle<UsageTree>(); }
-                ||
-                requires{ principle<UsageTree>(std::declval<unwrap_t<T>>()); }
-            };
-            return [&]<size_t...I>(std::index_sequence<I...>)
-            {
+                constexpr bool no_custom = not bool
+                {
+                    requires{ std::declval<unwrap_t<T>>().template principle<UsageTree>(); }
+                    ||
+                    requires{ principle<UsageTree>(std::declval<unwrap_t<T>>()); }
+                };
                 return (no_custom && ... && is_plain<subtree_t<T, I>, detail::tag_tree_get<I>(UsageTree)>());
             }(std::make_index_sequence<size<T>>{});
         }

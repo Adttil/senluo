@@ -13,18 +13,16 @@ namespace senluo
 {
     struct null_principle
     {
-        constexpr auto data() noexcept
+        constexpr std::in_place_t data() noexcept
         {
             return std::in_place_t{};
         }
         
-        static consteval auto layout(){ return indexes_of_whole; }
+        static constexpr auto layout = indexes_of_whole;
+        static constexpr auto stricture_tree = stricture_t::none;
+        static constexpr auto operation_tree = operation_t::none;
         
-        static consteval auto stricture_tree(){ return stricture_t::none; }
-        
-        static consteval auto operation_tree(){ return operation_t::none; }
-
-        static consteval auto independence_tree(){ return independence_t::safe; }
+        //static constexpr auto independence_tree(){ return independence_t::safe; }
     };
 
     template<class T>
@@ -32,26 +30,37 @@ namespace senluo
     {
         T&& value;
 
+        // template<class Self>
+        // constexpr decltype(auto) data(this Self&& self)
+        // {
+        //     if constexpr(std::is_object_v<Self> && std::is_object_v<T>)
+        //     {
+        //         return senluo::decay_copy(std::move(self.value));
+        //     }
+        //     else
+        //     {
+        //         return FWD(((Self&&)self), value);
+        //     }
+        // }
+
+        //gcc workround
         template<class Self>
-        constexpr decltype(auto) data(this Self&& self)
+        constexpr auto&& data(this Self&& self)
         {
-            if constexpr(std::is_object_v<Self> && std::is_object_v<T>)
-            {
-                return senluo::decay_copy(std::move(self.value));
-            }
-            else
-            {
-                return FWD(self, value);
-            }
+            return FWD(self, value);
+        }
+
+        template<class Self> requires(std::is_object_v<Self> && std::is_object_v<T>)
+        constexpr auto data(this Self&& self)
+        {
+            return senluo::decay_copy(std::move(self.value));
         }
         
-        static consteval auto layout(){ return indexes_of_whole; }
-        
-        static consteval auto stricture_tree(){ return stricture_t::none; }
-        
-        static consteval auto operation_tree(){ return operation_t::none; }
+        static constexpr auto layout = indexes_of_whole;
+        static constexpr auto stricture_tree = stricture_t::none;
+        static constexpr auto operation_tree = operation_t::none;
 
-        static consteval auto independence_tree(){ return independence_t::safe; }
+        //static consteval auto independence_tree(){ return independence_t::safe; }
     };
 
     template<class T, auto UsageTree>
@@ -64,65 +73,57 @@ namespace senluo
         {
             if constexpr(std::is_object_v<Self> && std::is_object_v<T>)
             {
-                return std::move(self.value);
+                return std::move(self.value_);
             }
             else
             {
-                return FWD(self, value) | refer;
+                return FWD(self, value_) | refer;
             }
         }
 
-        // Complex sfinae and noexcept are not currently provided.
-        constexpr auto data(this auto&& self)
+        // gcc workround
+        template<class Self>
+        constexpr auto data(this Self&& self)
         {
             return [&]<size_t...I>(std::index_sequence<I...>)
             {
-                return tuple<decltype((FWD(self).value() | tree_get<I> | principle<detail::tag_tree_get<I>(UsageTree)>).data())...>
+                return tuple<decltype((((Self&&)self).value() | tree_get<I> | principle<detail::tag_tree_get<I>(UsageTree)>).data())...>
                 {
-                    (FWD(self).value() | tree_get<I> | principle<detail::tag_tree_get<I>(UsageTree)>).data()...
+                    (((Self&&)self).value() | tree_get<I> | principle<detail::tag_tree_get<I>(UsageTree)>).data()...
                 };
             }(std::make_index_sequence<size<T>>{});
         }
 
-        static consteval auto layout()
+        static constexpr auto layout = []<size_t...I>(std::index_sequence<I...>)
         {
-            return []<size_t...I>(std::index_sequence<I...>)
-            {
-                return make_tuple(
-                    detail::layout_add_prefix(principle_t<subtree_t<T, I>, detail::tag_tree_get<I>(UsageTree)>::layout(), array{ I })...
-                );
-            }(std::make_index_sequence<size<T>>{});
-        }
+            return make_tuple(
+                detail::layout_add_prefix(principle_t<subtree_t<T, I>, detail::tag_tree_get<I>(UsageTree)>::layout, array{ I })...
+            );
+        }(std::make_index_sequence<size<T>>{});
 
-        static consteval auto stricture_tree()
+        static constexpr auto stricture_tree = []<size_t...I>(std::index_sequence<I...>)
         {
-            return []<size_t...I>(std::index_sequence<I...>)
-            {
-                return make_tuple(
-                    principle_t<subtree_t<T, I>, detail::tag_tree_get<I>(UsageTree)>::stricture_tree()...
-                );
-            }(std::make_index_sequence<size<T>>{});
-        }
+            return make_tuple(
+                principle_t<subtree_t<T, I>, detail::tag_tree_get<I>(UsageTree)>::stricture_tree...
+            );
+        }(std::make_index_sequence<size<T>>{});
 
-        static consteval auto operation_tree()
+        static constexpr auto operation_tree = []<size_t...I>(std::index_sequence<I...>)
         {
-            return []<size_t...I>(std::index_sequence<I...>)
-            {
-                return make_tuple(
-                    principle_t<subtree_t<T, I>, detail::tag_tree_get<I>(UsageTree)>::operation_tree()...
-                );
-            }(std::make_index_sequence<size<T>>{});
-        }
+            return make_tuple(
+                principle_t<subtree_t<T, I>, detail::tag_tree_get<I>(UsageTree)>::operation_tree...
+            );
+        }(std::make_index_sequence<size<T>>{});
 
-        static consteval auto independence_tree()
-        {
-            return []<size_t...I>(std::index_sequence<I...>)
-            {
-                return make_tuple(
-                    principle_t<subtree_t<T, I>, detail::tag_tree_get<I>(UsageTree)>::independence_tree()...
-                );
-            }(std::make_index_sequence<size<T>>{});
-        }
+        // static consteval auto independence_tree()
+        // {
+        //     return []<size_t...I>(std::index_sequence<I...>)
+        //     {
+        //         return make_tuple(
+        //             principle_t<subtree_t<T, I>, detail::tag_tree_get<I>(UsageTree)>::independence_tree()...
+        //         );
+        //     }(std::make_index_sequence<size<T>>{});
+        // }
     };
 
     template<class T, auto UsageTree>
@@ -151,15 +152,82 @@ namespace senluo
             {
                 if constexpr((... && plain<tree_get_t<I, T>, detail::tag_tree_get<I>(UsageTree)>))
                 {
-                    return plain_principle<unwrap_t<T>>{ unwrap_fwd(FWD(tree)) };
+                    return plain_principle<unwrap_t<T>>{ unwrap_fwd((T&&)(tree)) };
                 }
                 else
                 {
-                    return trivial_principle<unwrap_t<T>, UsageTree>{ unwrap_fwd(FWD(tree)) };
+                    //static_assert(std::same_as<decltype(tree), T&&>);
+                    return trivial_principle<unwrap_t<T&&>, UsageTree>(unwrap_fwd((T&&)tree));
                 }
             }(std::make_index_sequence<size<T>>{});
         }
     };
+
+    namespace detail
+    {
+        template<auto UsageTree, size_t I, template<class...> class Tpl, class T>
+        constexpr decltype(auto) subplainized_pretreated_unchecked(T&& t)
+        {
+            if constexpr(detail::equal(UsageTree, usage_t::none))
+            {
+                return tuple{};
+            }
+            else if constexpr(terminal<tree_get_t<I, T>>)
+            {
+                return tree_get<I>(FWD(t));
+            }
+            else return [&]<size_t...J>(std::index_sequence<J...>)
+            {
+                return tuple<decltype(detail::subplainized_pretreated_unchecked<detail::tag_tree_get<J>(UsageTree), J, Tpl>(subtree<I>(FWD(t))))...>
+                {
+                    detail::subplainized_pretreated_unchecked<detail::tag_tree_get<J>(UsageTree), J, Tpl>(subtree<I>(FWD(t)))...
+                };
+            }(std::make_index_sequence<size<tree_get_t<I, T>>>{});
+        }
+
+        template<auto UsageTree, template<class...> class Tpl, class T>
+        constexpr decltype(auto) plainized_pretreated_unchecked(T&& t)
+        {
+            if constexpr(detail::equal(UsageTree, usage_t::none))
+            {
+                return tuple{};
+            }
+            else if constexpr(terminal<T>)
+            {
+                return (T)FWD(t);
+            }
+            else return [&]<size_t...I>(std::index_sequence<I...>)
+            {
+                return tuple<decltype(detail::subplainized_pretreated_unchecked<detail::tag_tree_get<I>(UsageTree), I, Tpl>(FWD(t)))...>
+                {
+                    detail::subplainized_pretreated_unchecked<detail::tag_tree_get<I>(UsageTree), I, Tpl>(FWD(t))...
+                };
+            }(std::make_index_sequence<size<T>>{});
+        }
+
+        template<auto UsageTree, template<class...> class Tpl = tuple, class T>
+        constexpr decltype(auto) plainized_unchecked(T&& t)
+        {
+            return plainized_pretreated_unchecked<UsageTree, Tpl>(FWD(t) | sequence_by_usage<UsageTree>);
+        }
+
+        template<auto FoldedUsageTree, template<class...> class Tpl>
+        struct plainize_fn : adaptor_closure<plainize_fn<FoldedUsageTree, Tpl>>
+        {
+            template<class T>
+            constexpr decltype(auto) operator()(T&& tree) const
+            {
+                constexpr auto usage = detail::unfold_usage_when_used<FoldedUsageTree, shape_t<T>>();
+                return detail::plainized_pretreated_unchecked<usage, Tpl>(FWD(tree));
+            }
+        };
+    }
+    
+    inline namespace functors 
+    {
+        template<auto UsageTree = usage_t::once, template<class...> class Tpl = tuple>
+        inline constexpr detail::plainize_fn<detail::fold_usage_when_unused<UsageTree>(), Tpl> plainize{};
+    }
 }
 
 #include "../tools/macro_undef.hpp"

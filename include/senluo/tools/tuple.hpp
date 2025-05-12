@@ -6,7 +6,7 @@
 
 #include "macro_define.hpp"
 
-namespace senluo
+namespace senluo::tuple_ns
 {
     template<class...T>
     struct tuple;
@@ -40,19 +40,20 @@ namespace senluo
 }
 
 template<class...T>
-struct std::tuple_size<senluo::tuple<T...>> : std::integral_constant<std::size_t, sizeof...(T)> {};
+struct std::tuple_size<senluo::tuple_ns::tuple<T...>> : std::integral_constant<std::size_t, sizeof...(T)> {};
 
 template<size_t I, class...T>
-struct std::tuple_element<I, senluo::tuple<T...>> : std::tuple_element<I, std::tuple<T...>> {};
+struct std::tuple_element<I, senluo::tuple_ns::tuple<T...>> : std::tuple_element<I, std::tuple<T...>> {};
 
 namespace senluo
 {
+	using tuple_ns::tuple;
 	namespace detail 
 	{
 		template<size_t I, class...T>
     	constexpr std::tuple_element_t<I, tuple<T&&...>> arg_at(T&&...args)noexcept
 		{
-	    	return get<I>(tuple<T&&...>(FWD(args)...));
+	    	return get<I>(tuple<T&&...>{ FWD(args)... });
 		}
 
 		struct make_tuple_fn
