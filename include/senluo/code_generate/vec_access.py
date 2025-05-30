@@ -22,10 +22,10 @@ def generate_vec_accesser_m(component_names, m):
             result += component_names[index]
         result += "(this auto&& self) noexcept\n"
         result += "{\n"
-        result += "    return FWD(self).raw_base() | refer | relayout<tuple{" + str(indexes[0])
+        result += "    return detail::relayout_unchecked<tuple{ array{" + str(indexes[0]) + "uz}"
         for i in range(1, m):
-            result += ", " + str(indexes[i])
-        result += "}> | as_vec;\n"
+            result += ", array{" + str(indexes[i]) + "uz}"
+        result += " }>(FWD(self).raw_base() | refer) | as_vec;\n"
         result += "}\n\n"
     return result
 

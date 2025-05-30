@@ -2,6 +2,7 @@
 #define SENLUO_OPERATE_HPP
 
 #include "../tools/adaptor.hpp"
+#include "../tools/constant.hpp"
 #include "tree.hpp"
 #include "relayout.hpp"
 
@@ -95,6 +96,33 @@ namespace senluo
 
     namespace detail
     {
+        template<auto Indexes, auto OperationTree>
+        constexpr auto operate_used_index()
+        {
+            if constexpr(Indexes.size() == 0uz)
+            {
+                return indexes_of_whole;
+            }
+            else if constexpr(std::same_as<decltype(OperationTree), operation_t>)
+            {
+                if constexpr(OperationTree == operation_t::apply_invoke)
+                {
+                    return indexes_of_whole;
+                }
+                else
+                {
+                    return Indexes;
+                }
+            }
+            else
+            {
+                return detail::array_cat(
+                    array{Indexes[0]}, 
+                    detail::operate_used_index<detail::array_drop<1uz>(Indexes), get<Indexes[0]>(OperationTree)>()
+                ); 
+            }
+        }
+
         template<auto OperationTree, class T>
         constexpr decltype(auto) operate_unchecked(T &&t)
         {
@@ -120,6 +148,21 @@ namespace senluo
             {
                 return detail::operate_unchecked<OperationTree>(FWD(t));
             }
+
+            template<class S>
+            static constexpr operate_fn<detail::fold_operation_tree<detail::replicate<S>(OperationTree)>()> replicate(S = {}) noexcept
+            {
+                return {};
+            }
+
+            template<auto Indexes>
+            friend constexpr auto operator/(constant_t<Indexes>, operate_fn)
+            {
+                return []<size_t...I>(std::index_sequence<I...>)
+                {
+                    return constant_t<tuple{ detail::operate_used_index<get<I>(Indexes), OperationTree>()... }>{};
+                }(std::make_index_sequence<std::tuple_size_v<decltype(Indexes)>>{});
+            }
         };
     }
 
@@ -142,7 +185,7 @@ namespace senluo
             {
                 constexpr size_t n = size<ArgTable>;
                 return zip(FWD(fn) | repeat<n>, FWD(arg_table)) 
-                    | operate<detail::make_tree_of_same_value(operation_t::apply_invoke, shape<array<size_t, n>>)>;
+                    | operate<detail::replicate(operation_t::apply_invoke, shape<array<size_t, n>>)>;
             }
         };
     }
@@ -162,7 +205,7 @@ namespace senluo
             {
                 constexpr size_t n = size<Args>;
                 return zip(FWD(fn) | repeat<n>, FWD(args), FWD(rest)...) 
-                    | operate<detail::make_tree_of_same_value(operation_t::apply_invoke, shape<array<size_t, n>>)>;
+                    | operate<detail::replicate(operation_t::apply_invoke, shape<array<size_t, n>>)>;
             }
         };
     }
@@ -181,7 +224,7 @@ namespace senluo
             {
                 using s = int[tensor_shape<T>[0]][tensor_shape<T>[1]];
                 return mat_zip(FWD(fn) | repeat_as<s>, FWD(t)) 
-                    | operate<detail::make_tree_of_same_value(operation_t::apply_invoke, shape<s>)>;
+                    | operate<detail::replicate(operation_t::apply_invoke, shape<s>)>;
             }
         };
     }
@@ -201,7 +244,7 @@ namespace senluo
                 constexpr auto ts = tensor_shape<Args>;
                 using s = array<array<int, ts[1]>, ts[0]>;
                 return mat_zip(FWD(fn) | repeat_as<s>, FWD(args), FWD(rest)...) 
-                    | operate<detail::make_tree_of_same_value(operation_t::apply_invoke, shape<s>)>;
+                    | operate<detail::replicate(operation_t::apply_invoke, shape<s>)>;
             }
         };
     }

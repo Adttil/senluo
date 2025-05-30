@@ -86,13 +86,13 @@ namespace senluo
                 {
                     return { strategy_t::convert, noexcept((T)std::declval<U>()) };
                 }
-                else if constexpr(requires{ { maker<T>::make_from(std::declval<U>()) } -> std::same_as<T>; })
+                else if constexpr(requires{ maker<T>::make_from(std::declval<U>()); })
                 {
                     return { strategy_t::make, noexcept(maker<T>::make_from(std::declval<U>())) };
                 }
                 else
                 {
-                    return { strategy_t::none, false };
+                    return { strategy_t::none };
                 }
             }
 

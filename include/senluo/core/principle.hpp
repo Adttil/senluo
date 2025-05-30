@@ -20,7 +20,7 @@ namespace senluo
         
         static constexpr auto layout = indexes_of_whole;
         static constexpr auto stricture_tree = stricture_t::none;
-        static constexpr auto operation_tree = operation_t::none;
+        static constexpr size_t operation_tree_count = 0uz;
         
         //static constexpr auto independence_tree(){ return independence_t::safe; }
     };
@@ -58,7 +58,7 @@ namespace senluo
         
         static constexpr auto layout = indexes_of_whole;
         static constexpr auto stricture_tree = stricture_t::none;
-        static constexpr auto operation_tree = operation_t::none;
+        static constexpr size_t operation_tree_count = 0uz;
 
         //static consteval auto independence_tree(){ return independence_t::safe; }
     };
@@ -68,28 +68,25 @@ namespace senluo
     {        
         T&& value_;
 
-        template<class Self>
-        constexpr decltype(auto) value(this Self&& self)
+        constexpr decltype(auto) value()
         {
-            if constexpr(std::is_object_v<Self> && std::is_object_v<T>)
+            if constexpr(std::is_rvalue_reference_v<T>)
             {
-                return std::move(self.value_);
+                return wrapper<T>{ (T)value_ };
             }
             else
             {
-                return FWD(self, value_) | refer;
+                return (T)value_;
             }
         }
 
-        // gcc workround
-        template<class Self>
-        constexpr auto data(this Self&& self)
+        constexpr auto data()&&
         {
             return [&]<size_t...I>(std::index_sequence<I...>)
             {
-                return tuple<decltype((((Self&&)self).value() | tree_get<I> | principle<detail::tag_tree_get<I>(UsageTree)>).data())...>
+                return tuple<decltype((value() | tree_get<I> | principle<detail::tag_tree_get<I>(UsageTree)>).data())...>
                 {
-                    (((Self&&)self).value() | tree_get<I> | principle<detail::tag_tree_get<I>(UsageTree)>).data()...
+                    (value() | tree_get<I> | principle<detail::tag_tree_get<I>(UsageTree)>).data()...
                 };
             }(std::make_index_sequence<size<T>>{});
         }
@@ -108,10 +105,18 @@ namespace senluo
             );
         }(std::make_index_sequence<size<T>>{});
 
-        static constexpr auto operation_tree = []<size_t...I>(std::index_sequence<I...>)
+        static constexpr size_t operation_tree_count = []<size_t...I>(std::index_sequence<I...>)
+        {
+            return std::max({
+                principle_t<subtree_t<T, I>, detail::tag_tree_get<I>(UsageTree)>::operation_tree_count...
+            });
+        }(std::make_index_sequence<size<T>>{});
+
+        template<size_t I>
+        static constexpr auto operation_tree = []<size_t...J>(std::index_sequence<J...>)
         {
             return make_tuple(
-                principle_t<subtree_t<T, I>, detail::tag_tree_get<I>(UsageTree)>::operation_tree...
+                detail::principle_operation_tree<principle_t<subtree_t<T, J>, detail::tag_tree_get<J>(UsageTree)>, I>()...
             );
         }(std::make_index_sequence<size<T>>{});
 
@@ -130,7 +135,7 @@ namespace senluo
     concept plain = std::same_as<principle_t<T, UsageTree>, plain_principle<unwrap_t<T>>>;
 
     template<auto UsageTree>
-    struct detail::principle_t_ns::principle_fn : adaptor_closure<principle_fn<UsageTree>>
+    struct detail::principle_fn_ns::principle_fn : adaptor_closure<principle_fn<UsageTree>>
     {
         // Complex sfinae and noexcept are not currently provided.
         template<typename T>

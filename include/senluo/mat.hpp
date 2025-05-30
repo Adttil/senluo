@@ -57,7 +57,7 @@ namespace senluo
                 constexpr size_t m = size<R>;
                 
                 constexpr auto layout = get_layout<n, s, m>();
-                constexpr auto op_tree = detail::make_tree_of_same_value(operation_t::apply_invoke, shape<int[m][n]>);
+                constexpr auto op_tree = detail::replicate(operation_t::apply_invoke, shape<int[m][n]>);
 
                 return decltype(combine(decltype(dot){}, FWD(l), FWD(r)) | relayout<layout> | operate<op_tree>)
                 {

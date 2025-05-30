@@ -2,6 +2,8 @@
 #define SENLUO_ASTRICT_HPP
 
 #include "../tools/general.hpp"
+#include "../tools/adaptor.hpp"
+#include "../tools/constant.hpp"
 #include "principle.hpp"
 #include "subtree.hpp"
 #include "wrap.hpp"
@@ -96,6 +98,18 @@ namespace senluo
             constexpr decltype(auto) operator()(T&& t) const
             {
                 return detail::astrict_unchecked<FoldedStrictureTree>(FWD(t));
+            }
+
+            template<class S>
+            static constexpr astrict_fn<detail::fold_tag_tree<detail::replicate<S>(FoldedStrictureTree)>()> replicate(S = {}) noexcept
+            {
+                return {};
+            }
+
+            template<auto Indexes>
+            friend constexpr constant_t<Indexes> operator/(constant_t<Indexes>, astrict_fn)
+            {
+                return {};
             }
         };
     }

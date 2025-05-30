@@ -1,5 +1,6 @@
 #include <senluo/mat.hpp>
 #include "test_tool.hpp"
+#include <vector>
 
 using namespace senluo;
 

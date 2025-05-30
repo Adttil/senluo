@@ -230,13 +230,13 @@ namespace senluo
         inline constexpr detail::seperate_by_usage_t<UsageTree> seperate_by_usage{};
 
         template<class Tree>
-        inline constexpr detail::sequence_by_usage_t<detail::make_tree_of_same_value(usage_t::once, shape<Tree>)> sequence_by_shape{};
+        inline constexpr detail::sequence_by_usage_t<detail::replicate(usage_t::once, shape<Tree>)> sequence_by_shape{};
 
         template<class Tree>
-        inline constexpr detail::inverse_sequence_by_usage_t<detail::make_tree_of_same_value(usage_t::once, shape<Tree>)> inverse_sequence_by_shape{};
+        inline constexpr detail::inverse_sequence_by_usage_t<detail::replicate(usage_t::once, shape<Tree>)> inverse_sequence_by_shape{};
 
         template<class Tree>
-        inline constexpr detail::seperate_by_usage_t<detail::make_tree_of_same_value(usage_t::once, shape<Tree>)> seperate_by_shape{};
+        inline constexpr detail::seperate_by_usage_t<detail::replicate(usage_t::once, shape<Tree>)> seperate_by_shape{};
     }
 
     namespace detail
@@ -246,7 +246,7 @@ namespace senluo
             template<branched T>
             constexpr decltype(auto) operator()(T&& tree)const
             AS_EXPRESSION(
-                FWD(tree) | sequence_by_usage<detail::make_tree_of_same_value(usage_t::once, shape<array<int, size<T>>>)>
+                FWD(tree) | sequence_by_usage<detail::replicate(usage_t::once, shape<array<int, size<T>>>)>
             )
 
             template<terminal T>
@@ -261,7 +261,7 @@ namespace senluo
             template<branched T>
             constexpr decltype(auto) operator()(T&& tree)const
             AS_EXPRESSION(
-                FWD(tree) | inverse_sequence_by_usage<detail::make_tree_of_same_value(usage_t::once, shape<array<int, size<T>>>)>
+                FWD(tree) | inverse_sequence_by_usage<detail::replicate(usage_t::once, shape<array<int, size<T>>>)>
             )
 
             template<terminal T>
@@ -276,7 +276,7 @@ namespace senluo
             template<branched T>
             constexpr decltype(auto) operator()(T&& tree)const
             AS_EXPRESSION(
-                FWD(tree) | seperate_by_usage<detail::make_tree_of_same_value(usage_t::once, shape<array<int, size<T>>>)>
+                FWD(tree) | seperate_by_usage<detail::replicate(usage_t::once, shape<array<int, size<T>>>)>
             )
 
             template<terminal T>

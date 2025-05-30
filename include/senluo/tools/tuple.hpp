@@ -71,11 +71,42 @@ namespace senluo
 			    return { FWD(args)... };
 			};
 		};
+
+		struct tuple_cat_fn
+		{
+    		constexpr tuple<> operator()()const noexcept
+			{
+				return {};
+			}
+
+			template<class...Args>
+			constexpr tuple<Args...> operator()(const tuple<Args...>& tpl)const
+			{
+				return tpl;
+			}
+
+			template<class...Args1, class...Args2>
+    		constexpr tuple<Args1..., Args2...> operator()(const tuple<Args1...>& tpl1, const tuple<Args2...>& tpl2) const
+			{
+			    return [&]<size_t...I, size_t...J>(std::index_sequence<I...>, std::index_sequence<J...>)
+				{
+					return tuple<Args1..., Args2...>{ get<I>(tpl1)..., get<J>(tpl2)... };
+				}(std::make_index_sequence<sizeof...(Args1)>{}, std::make_index_sequence<sizeof...(Args2)>{});
+			};
+
+			template<class Tpl1, class Tpl2, class...Rest>
+			constexpr auto operator()(const Tpl1& tpl1, const Tpl2& tpl2, const Rest&...rest) const
+			{
+				return tuple_cat_fn{}(tuple_cat_fn{}(tpl1, tpl2), rest...);
+			}
+		};
 	}
 
 	inline constexpr detail::make_tuple_fn make_tuple{};
 
 	inline constexpr detail::fwd_as_tuple_fn fwd_as_tuple{};
+
+	inline constexpr detail::tuple_cat_fn tuple_cat{};
 }
 
 #include "macro_undef.hpp"

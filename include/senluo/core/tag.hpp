@@ -139,6 +139,23 @@ namespace senluo::detail
         //     return invalid_index;
         // }
     }
+
+    template<auto Indexes, class L>
+    constexpr auto sublayout(const L& layout)
+    {
+        if constexpr(detail::equal(Indexes, indexes_of_whole))
+        {
+            return layout;
+        }
+        else if constexpr(indexical<L>)
+        {
+            return detail::array_cat(layout, Indexes);
+        }
+        else
+        {
+            return detail::sublayout<detail::array_drop<1uz>(Indexes)>(detail::layout_get<Indexes[0]>(layout));
+        }
+    }
     
     template<typename TLayout, size_t N>
     constexpr auto layout_add_prefix(const TLayout& layout, const array<size_t, N>& prefix)
@@ -154,20 +171,44 @@ namespace senluo::detail
     }
     
     template<indexical auto Indices, class Shape>
-    constexpr auto normalize_indices(Shape shape)
+    struct normalize_indices
     {
-        if constexpr(std::integral<decltype(Indices)>)
+        static consteval auto get_value()
         {
-            return array{ detail::normalize_index(Indices, size<Shape>) };
-        }
-        else return []<size_t...I>(std::index_sequence<I...>)
-        {
-            return array<size_t, Indices.size()>
+            if constexpr(std::integral<decltype(Indices)>)
             {
-                detail::normalize_index(Indices[I], size<subtree_t<Shape, detail::array_take<I>(Indices)>>)...
-            };
-        }(std::make_index_sequence<Indices.size()>{});
-    }
+                return array{ detail::normalize_index(Indices, size<Shape>) };
+            }
+            else return []<size_t...I>(std::index_sequence<I...>)
+            {
+                return array<size_t, Indices.size()>
+                {
+                    detail::normalize_index(Indices[I], size<subtree_t<Shape, detail::array_take<I>(Indices)>>)...
+                };
+            }(std::make_index_sequence<Indices.size()>{});
+        }
+
+        static constexpr auto value = get_value();
+    };
+
+    template<indexical auto Indices, class Shape>
+    inline constexpr auto normalize_indices_v = normalize_indices<Indices, Shape>::value;
+
+    // template<indexical auto Indices, class Shape>
+    // constexpr auto normalize_indices(Shape shape = {})
+    // {
+    //     if constexpr(std::integral<decltype(Indices)>)
+    //     {
+    //         return array{ detail::normalize_index(Indices, size<Shape>) };
+    //     }
+    //     else return []<size_t...I>(std::index_sequence<I...>)
+    //     {
+    //         return array<size_t, Indices.size()>
+    //         {
+    //             detail::normalize_index(Indices[I], size<subtree_t<Shape, detail::array_take<I>(Indices)>>)...
+    //         };
+    //     }(std::make_index_sequence<Indices.size()>{});
+    // }
 
     template<typename T>
     constexpr auto default_unfolded_layout()
@@ -183,48 +224,93 @@ namespace senluo::detail
     };
 
     template<auto Layout, class Shape>
-    constexpr auto fold_layout(Shape shape = {})
+    struct fold_layout
     {
-        if constexpr(indexical<decltype(Layout)>)
+        static consteval auto get_value()
         {
-            return detail::normalize_indices<Layout>(shape);
-        }
-        else return []<size_t...I>(std::index_sequence<I...>)
-        {
-            constexpr auto child_relayout = make_tuple(detail::fold_layout<subtree<I>(Layout)>(Shape{})...);
-            constexpr size_t n = size<decltype(get<0uz>(child_relayout))>;
-
-            if constexpr(n > 0uz
-                && (... && detail::indexical_array<decltype(get<I>(child_relayout))>)
-                && (... && (n == size<decltype(get<I>(child_relayout))>))
-            )
+            if constexpr(indexical<decltype(Layout)>)
             {
-                constexpr auto prefix = detail::array_take<n - 1uz>(get<0uz>(child_relayout));
-                if constexpr(size<subtree_t<Shape, prefix>> == size<decltype(Layout)>
-                    && (... && (prefix == detail::array_take<n - 1uz>(get<I>(child_relayout))))
-                    && (... && (get<I>(child_relayout)[n - 1uz] == I))
+                return detail::normalize_indices_v<Layout, Shape>;
+            }
+            else return []<size_t...I>(std::index_sequence<I...>)
+            {
+                constexpr auto child_relayout = make_tuple(detail::fold_layout<subtree<I>(Layout), Shape>::value...);
+                constexpr size_t n = size<decltype(get<0uz>(child_relayout))>;
+
+                if constexpr(n > 0uz
+                    && (... && detail::indexical_array<decltype(get<I>(child_relayout))>)
+                    && (... && (n == size<decltype(get<I>(child_relayout))>))
                 )
                 {
-                    return prefix;
+                    constexpr auto prefix = detail::array_take<n - 1uz>(get<0uz>(child_relayout));
+                    if constexpr(size<subtree_t<Shape, prefix>> == size<decltype(Layout)>
+                        && (... && (prefix == detail::array_take<n - 1uz>(get<I>(child_relayout))))
+                        && (... && (get<I>(child_relayout)[n - 1uz] == I))
+                    )
+                    {
+                        return prefix;
+                    }
+                    else
+                    {
+                        return child_relayout;
+                    }
                 }
                 else
                 {
                     return child_relayout;
                 }
-            }
-            else
-            {
-                return child_relayout;
-            }
-        }(std::make_index_sequence<size<decltype(Layout)>>{});
-    }
+            }(std::make_index_sequence<size<decltype(Layout)>>{});
+        }
+
+        static constexpr auto value = get_value();
+    };
+
+    template<auto Layout, class Shape>
+    inline constexpr auto fold_layout_v = fold_layout<Layout, Shape>::value;
+
+    // template<auto Layout, class Shape>
+    // constexpr auto fold_layout(Shape shape = {})
+    // {
+    //     if constexpr(indexical<decltype(Layout)>)
+    //     {
+    //         return detail::normalize_indices<Layout>(shape);
+    //     }
+    //     else return []<size_t...I>(std::index_sequence<I...>)
+    //     {
+    //         constexpr auto child_relayout = make_tuple(detail::fold_layout<subtree<I>(Layout)>(Shape{})...);
+    //         constexpr size_t n = size<decltype(get<0uz>(child_relayout))>;
+
+    //         if constexpr(n > 0uz
+    //             && (... && detail::indexical_array<decltype(get<I>(child_relayout))>)
+    //             && (... && (n == size<decltype(get<I>(child_relayout))>))
+    //         )
+    //         {
+    //             constexpr auto prefix = detail::array_take<n - 1uz>(get<0uz>(child_relayout));
+    //             if constexpr(size<subtree_t<Shape, prefix>> == size<decltype(Layout)>
+    //                 && (... && (prefix == detail::array_take<n - 1uz>(get<I>(child_relayout))))
+    //                 && (... && (get<I>(child_relayout)[n - 1uz] == I))
+    //             )
+    //             {
+    //                 return prefix;
+    //             }
+    //             else
+    //             {
+    //                 return child_relayout;
+    //             }
+    //         }
+    //         else
+    //         {
+    //             return child_relayout;
+    //         }
+    //     }(std::make_index_sequence<size<decltype(Layout)>>{});
+    // }
 
     template<auto Layout, class BaseShape>
     constexpr auto unfold_layout(BaseShape base_shape = {})
     {
         if constexpr(indexical<decltype(Layout)>)
         {
-            constexpr auto indexes = detail::normalize_indices<Layout>(BaseShape{});
+            constexpr auto indexes = detail::normalize_indices_v<Layout, BaseShape>;
             using subshape_t = subtree_t<BaseShape, indexes>;
             if constexpr(terminal<subshape_t>)
             {
@@ -232,7 +318,7 @@ namespace senluo::detail
             }
             else return [&]<size_t...I>(std::index_sequence<I...>)
             {
-                constexpr auto indexes = detail::normalize_indices<Layout>(BaseShape{});
+                constexpr auto indexes = detail::normalize_indices_v<Layout, BaseShape>;
                 return make_tuple(detail::unfold_layout<detail::array_cat(indexes, array{ I })>(base_shape)...);
             }(std::make_index_sequence<size<subshape_t>>{});
         }
@@ -364,7 +450,7 @@ namespace senluo::detail
     }
     
     template<class Shape, class T>
-    constexpr auto make_tree_of_same_value(const T& value, Shape shape)
+    constexpr auto replicate(const T& value, Shape shape)
     {
         if constexpr (terminal<Shape>)
         {
@@ -372,7 +458,7 @@ namespace senluo::detail
         }
         else return [&]<size_t...I>(std::index_sequence<I...>)
         {
-            return make_tuple(detail::make_tree_of_same_value(value, get<I>(shape))...);
+            return make_tuple(detail::replicate(value, get<I>(shape))...);
         }(std::make_index_sequence<size<Shape>>{});
     }
 
@@ -381,7 +467,7 @@ namespace senluo::detail
     {
         if constexpr(terminal<TagTree>)
         {
-            return detail::make_tree_of_same_value(tree, S{});
+            return detail::replicate(tree, S{});
         }
         else return [&]<size_t...I>(std::index_sequence<I...>)
         {
@@ -576,14 +662,14 @@ namespace senluo::detail
     // template<auto RawStrictureTree, auto Layout, auto UsageTree, class DataShape>
     // constexpr auto get_inverse_sequence_stricture_tree(DataShape data_shape = {})
     // {
-    //     auto data_stricture_tree = detail::make_tree_of_same_value(stricture_t::none, data_shape);
+    //     auto data_stricture_tree = detail::replicate(stricture_t::none, data_shape);
     //     return get_inverse_sequence_stricture_tree_impl<RawStrictureTree, Layout, UsageTree>(data_stricture_tree);
     // }
 
     // template<auto RawStrictureTree, auto Layout, auto UsageTree, class DataShape>
     // constexpr auto get_sequence_stricture_tree(DataShape data_shape = {})
     // {
-    //     auto data_stricture_tree = detail::make_tree_of_same_value(stricture_t::none, data_shape);
+    //     auto data_stricture_tree = detail::replicate(stricture_t::none, data_shape);
     //     return detail::get_sequence_stricture_tree_impl<RawStrictureTree, Layout, UsageTree>(data_stricture_tree);
     // }
 }
@@ -896,7 +982,7 @@ namespace senluo::detail
             }
             else
             {
-                return detail::make_tree_of_same_value(0uz, BaseShape{});
+                return detail::replicate(0uz, BaseShape{});
             }
         }
         else return[]<size_t...I>(std::index_sequence<I...>)
@@ -1247,7 +1333,7 @@ namespace senluo::detail
     template<auto UnfoldedLayout, typename U, typename BaseShape>
     constexpr auto inverse_relayout_usage_tree(const U& usage_tree, BaseShape = {})
     {
-        auto result = detail::make_tree_of_same_value(usage_t::none, BaseShape{});
+        auto result = detail::replicate(usage_t::none, BaseShape{});
         detail::inverse_relayout_usage_tree_at<UnfoldedLayout>(usage_tree, result);
         return result;
     }
@@ -1263,7 +1349,7 @@ namespace senluo::detail
             }
             else
             {
-                return detail::make_tree_of_same_value<Shape>(UsageTree);
+                return detail::replicate<Shape>(UsageTree);
             }
         }
         else return [&]<size_t...I>(std::index_sequence<I...>)

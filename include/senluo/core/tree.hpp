@@ -179,7 +179,6 @@ namespace senluo
             array,
             array_copy,
             
-            member_tree_get,
             adl_tree_get,
             
             member_get,
@@ -216,10 +215,6 @@ namespace senluo
                     }
                 }
                 //custom
-                else if constexpr (requires{ std::declval<T>().template tree_get<I>(); })
-                {
-                    return { strategy_t::member_tree_get, noexcept(std::declval<T>().template tree_get<I>()) };
-                }
                 else if constexpr (requires{ tree_get<I>(std::declval<T>()); })
                 {
                     return { strategy_t::adl_tree_get, noexcept(tree_get<I>(std::declval<T>())) };
@@ -282,11 +277,7 @@ namespace senluo
                 }
                 else if constexpr (strategy == strategy_t::array_copy)
                 {
-                    return decay_copy(std::forward_like<unwrap_t<T>>(unwrap_fwd(t)[I]));
-                }
-                else if constexpr (strategy == strategy_t::member_tree_get)
-                {
-                    return FWD(t).template tree_get<I>();
+                    return senluo::decay_copy(std::forward_like<unwrap_t<T>>(unwrap_fwd(t)[I]));
                 }
                 else if constexpr (strategy == strategy_t::adl_tree_get)
                 {
@@ -298,7 +289,7 @@ namespace senluo
                 }
                 else if constexpr (strategy == strategy_t::member_get_copy)
                 {
-                    return decay_copy(unwrap_fwd(FWD(t)).template get<I>());
+                    return senluo::decay_copy(unwrap_fwd(FWD(t)).template get<I>());
                 }
                 else if constexpr (strategy == strategy_t::adl_get)
                 {
@@ -306,7 +297,7 @@ namespace senluo
                 }
                 else if constexpr (strategy == strategy_t::adl_get_copy)
                 {
-                    return decay_copy(get<I>(unwrap_fwd(FWD(t))));
+                    return senluo::decay_copy(get<I>(unwrap_fwd(FWD(t))));
                 }
                 else if constexpr(strategy == strategy_t::aggregate)
                 {
@@ -314,7 +305,7 @@ namespace senluo
                 }
                 else if constexpr(strategy == strategy_t::aggregate_copy)
                 {
-                    return decay_copy(detail::aggregate_get<I>(unwrap_fwd(FWD(t))));
+                    return senluo::decay_copy(detail::aggregate_get<I>(unwrap_fwd(FWD(t))));
                 }
                 else
                 {
@@ -356,20 +347,39 @@ namespace senluo
     }();
 
     template<class T>
-    inline constexpr auto shape = []
+    struct get_shape
     {
-        if constexpr (terminal<T>)
+        static consteval auto get_value()
         {
-            return tuple{};
+            if constexpr (size<T> == 0uz)
+            {
+                return type_tag<tuple<>>{};
+            }
+            else return[]<size_t...I>(std::index_sequence<I...>)
+            {
+                return type_tag<tuple<typename get_shape<tree_get_t<I, T&>>::type...>>{};
+            }(std::make_index_sequence<size<T>>{});
         }
-        else return[]<size_t...I>(std::index_sequence<I...>)
-        {
-            return make_tuple(shape<tree_get_t<I, T&>>...);
-        }(std::make_index_sequence<size<T>>{});
-    }();
+
+        using type = decltype(get_value())::type;
+        static constexpr type value{};
+    };
 
     template<class T>
-    using shape_t = std::remove_const_t<decltype(shape<T>)>;
+    inline constexpr auto shape = get_shape<T>::value; //[] 
+    // {
+    //     if constexpr (terminal<T>)
+    //     {
+    //         return tuple{};
+    //     }
+    //     else return[]<size_t...I>(std::index_sequence<I...>)
+    //     {
+    //         return make_tuple(shape<tree_get_t<I, T&>>...);
+    //     }(std::make_index_sequence<size<T>>{});
+    // }();
+
+    template<class T>
+    using shape_t = get_shape<T>::type;
 
     template<class T>
     inline constexpr size_t tensor_rank = []
