@@ -23,7 +23,7 @@ namespace senluo::detail
         }
         else
         {
-            return static_cast<size_t>(size - -index % size);
+            return static_cast<size_t>((size - -index % size) % size);
         }
     }
 
@@ -72,9 +72,9 @@ namespace senluo
     struct detail::subtree_fn<> : tree_adaptor_closure<subtree_fn<>>
     {
         template<class T>
-        static constexpr T&& adapt(T&& t) noexcept
+        static constexpr decltype(auto) operator()(T&& t) noexcept
         {
-            return FWD(t);
+            return (T)FWD(t);
         }
     };
 
@@ -82,21 +82,21 @@ namespace senluo
     struct detail::subtree_fn<I> : tree_adaptor_closure<subtree_fn<I>>
     {
         template<class T>
-        static constexpr decltype(auto) adapt(T&& t)
-        {
-            return tree_get<(size_t)I>.adapt(FWD(t));
-        }
+        static constexpr decltype(auto) operator()(T&& t)
+        AS_EXPRESSION(
+            pass(tree_get<detail::normalize_index(I, size<T>)>(FWD(t)))
+        )
     };
 
     template<array Indexes>
     struct detail::subtree_fn<Indexes> : tree_adaptor_closure<subtree_fn<Indexes>>
     {
         template<class T>
-        static constexpr decltype(auto) adapt(T&& t)
+        static constexpr decltype(auto) operator()(T&& t)
         {
             return [&]<size_t...I>(std::index_sequence<I...>) -> decltype(auto)
             {
-                return (FWD(t) || ... || subtree<Indexes[I]>);
+                return (FWD(t) | ... | subtree<Indexes[I]>);
             }(std::make_index_sequence<Indexes.size()>{});
         }
     };
@@ -104,26 +104,10 @@ namespace senluo
     template<auto...I>
     struct detail::subtree_fn : tree_adaptor_closure<subtree_fn<I...>>
     {
-    //     using Indexes = array<size_t, I, Rest...>;
-
-    //     template<class T> requires
-    // {
-    //     template<class T> requires (Indexes.size() == 0uz)
-    //     constexpr decltype(auto) operator()(T&& t) const
-    //     {
-    //         return unwrap(FWD(t));
-    //     }
-
-    //     template<class T> requires (Indexes.size() == 1uz && size<T> > 0)
-    //     constexpr decltype(auto) operator()(T&& t) const
-    //     {
-    //         return tree_get<detail::normalize_index(Indexes[0], size<T>)>(FWD(t));
-    //     }
-
         template<class T>
-        static constexpr decltype(auto) adapt(T&& t)
+        static constexpr decltype(auto) operator()(T&& t)
         {
-            return (FWD(t) || ... || subtree<I>);
+            return (FWD(t) | ... | subtree<I>);
         }
     };
 

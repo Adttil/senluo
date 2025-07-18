@@ -225,7 +225,7 @@ namespace senluo
         };
 
         template<size_t I>
-        struct tree_get_fn : tree_adaptor_closure<tree_get_fn<I>>
+        struct tree_get_fn
         {
         private:
             template<class T>
