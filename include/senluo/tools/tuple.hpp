@@ -13,38 +13,52 @@
 namespace senluo::tuple_ns
 {
 	template<class T, size_t I>
-	struct tuple_element : wrapper<T>
+	struct tuple_unit
 	{
-		using wrapper<T>::get;
+		T element;
 
-		template<class Self>
-		constexpr auto&& get(this Self&& self, constant_t<I>) noexcept
+		constexpr auto&& get(constant_t<I>)& noexcept
 		{
-			return std::forward<Self>(self).tuple_element<T, I>::get();
+			return element;
 		}
 
-		static consteval std::type_identity<T> type_identity(constant_t<I> = {})
+		constexpr auto&& get(constant_t<I>)const & noexcept
+		{
+			return element;
+		}
+
+		constexpr auto&& get(constant_t<I>)&& noexcept
+		{
+			return FWD(std::move(*this), element);
+		}
+
+		constexpr auto&& get(constant_t<I>)const && noexcept
+		{
+			return FWD(std::move(*this), element);
+		}
+
+		static consteval std::type_identity<T> type_identity_at(constant_t<I> = {})noexcept
 		{
 			return {};
 		}
 
-		static consteval constant_t<I> index_constant(std::type_identity<T> = {})
+		static consteval size_t index_of(std::type_identity<T> = {})noexcept
 		{
 			return {};
 		}
 
-		friend bool operator==(const tuple_element&, const tuple_element&) = default;
+		friend bool operator==(const tuple_unit&, const tuple_unit&) = default;
 	};
 
 	template<class IndexSeq, class...T>
 	struct tuple_impl;
 
 	template<size_t...I, class...T>
-	struct tuple_impl<std::index_sequence<I...>, T...> : tuple_element<T, I>...
+	struct tuple_impl<std::index_sequence<I...>, T...> : tuple_unit<T, I>...
 	{
-		using tuple_element<T, I>::get...;
-		using tuple_element<T, I>::type_identity...;
-		using tuple_element<T, I>::index_constant...;
+		using tuple_unit<T, I>::get...;
+		using tuple_unit<T, I>::type_identity_at...;
+		using tuple_unit<T, I>::index_of...;
 
 		static consteval size_t size()
 		{
@@ -54,26 +68,23 @@ namespace senluo::tuple_ns
 		template<size_t J, class Self>
 		constexpr auto&& get(this Self&& self) noexcept
 		{
-			return std::forward<Self>(self).get(constant_t<J>{});
+			return FWD(self).get(constant_t<J>{});
 		}
 
 		template<size_t J>
-		static consteval auto type_identity()
+		static consteval auto type_identity_at()noexcept
 		{
-			return type_identity(constant_t<J>{});
+			return type_identity_at(constant_t<J>{});
 		}
 
 		template<size_t J>
-		using type = decltype(type_identity(constant_t<J>{}))::type;
+		using type_at = decltype(type_identity_at(constant_t<J>{}))::type;
 
 		template<class U>
-		static consteval auto index_constant()
+		static consteval size_t index_of()noexcept
 		{
-			return index_constant(std::type_identity<U>{});
+			return index_of(std::type_identity<U>{});
 		}
-
-		template<class U>
-		static constexpr size_t index = index_constant(std::type_identity<U>{}).value;
 
 		friend bool operator==(const tuple_impl&, const tuple_impl&) = default;
 	};
@@ -101,16 +112,17 @@ struct std::tuple_size<senluo::tuple_ns::tuple<T...>>
 
 template<size_t I, class...T>
 struct std::tuple_element<I, senluo::tuple_ns::tuple<T...>>
- : decltype(senluo::tuple_ns::tuple<T...>::template type_identity<I>())
+ : decltype(senluo::tuple_ns::tuple<T...>::template type_identity_at<I>())
 {};
 
 namespace senluo
 {
 	using tuple_ns::tuple;
+
 	namespace detail 
 	{
 		template<size_t I, class...Args>
-    	constexpr tuple<Args&&...>::template type<I> arg_at(Args&&...args)noexcept
+    	constexpr tuple<Args&&...>::template type_at<I> arg_at(Args&&...args)noexcept
 		{
 	    	return tuple<Args&&...>{ std::forward<Args>(args)... }.get(constant_t<I>{});
 		}
