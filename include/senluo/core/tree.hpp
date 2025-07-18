@@ -6,7 +6,7 @@
 #include "../tools/general.hpp"
 #include "../tools/array.hpp"
 #include "../tools/tuple.hpp"
-#include "../tools/wrapper.hpp"
+//#include "../tools/wrapper.hpp"
 
 #include "tree_adaptor.hpp"
 
@@ -144,7 +144,7 @@ namespace senluo
         struct get_size_fn
         {
             template<class T>
-            constexpr size_t operator()(std::type_identity<T>)
+            static consteval size_t operator()(std::type_identity<T>)
             {
                 if constexpr (std::is_bounded_array_v<T>)
                 {
@@ -216,21 +216,12 @@ namespace senluo
         enum class strategy_t
         {
             none,
-
             array,
-            array_refer,
-            
             member_tree_get,
             adl_tree_get,
-            
             member_get,
-            member_get_refer,
-            
             adl_get,
-            adl_get_refer,
-
             aggregate,
-            aggregate_refer
         };
 
         template<size_t I>
@@ -240,67 +231,40 @@ namespace senluo
             template<class T>
             static consteval choice_t<strategy_t> choose()
             {
-                using utype = ideal_unwrap_t<T>;
-                using type = std::remove_cvref_t<utype>;
+                using type = std::remove_cvref_t<T>;
                 //array
                 if constexpr(std::is_bounded_array_v<type>)
                 {
-                    using etype = std::remove_cvref_t<decltype(std::declval<type>()[0])>;
-                    if constexpr(std::is_rvalue_reference_v<utype>)
-                    {
-                        
-                        return { strategy_t::array_refer, true };
-                    }
-                    else
-                    {
-                        return { strategy_t::array, true };
-                    }
+                    return { strategy_t::array, true };
                 }
                 //custom
-                else if constexpr (requires{ std::declval<utype>().template tree_get<I, utype>(custom_t{}); })
+                else if constexpr (requires{ std::declval<T>().template tree_get<I>(custom_t{}); })
                 {
-                    return { strategy_t::member_tree_get, noexcept(std::declval<utype>().template tree_get<I, utype>(custom_t{})) };
+                    return { strategy_t::member_tree_get, noexcept(std::declval<T>().template tree_get<I>(custom_t{})) };
                 }
-                else if constexpr (requires{ tree_get<I, utype>(std::declval<utype>(), custom_t{}); })
+                else if constexpr (requires{ tree_get<I>(std::declval<T>(), custom_t{}); })
                 {
-                    return { strategy_t::adl_tree_get, noexcept(tree_get<I, utype>(std::declval<utype>(), custom_t{})) };
+                    return { strategy_t::adl_tree_get, noexcept(tree_get<I>(std::declval<T>(), custom_t{})) };
                 }
                 //tuple-like
-                else if constexpr (requires{ std::tuple_size<type>::value; std::declval<utype>().template get<I>(); })
+                else if constexpr (requires{ std::tuple_size<type>::value; })
                 {
-                    using etype = std::tuple_element_t<I, type>;
-                    if constexpr(std::is_rvalue_reference_v<decltype(std::declval<utype>().template get<I>())> && (std::is_reference_v<utype> || std::is_reference_v<etype>))
+                    if constexpr(requires{ std::declval<T>().template get<I>(); })
                     {
-                        return { strategy_t::member_get_refer, noexcept(std::declval<utype>().template get<I>()) };
+                        return { strategy_t::member_get, noexcept(std::declval<T>().template get<I>()) };
+                    }
+                    else if constexpr(requires{ get<I>(std::declval<T>()); })
+                    {
+                        return { strategy_t::adl_get, noexcept(get<I>(std::declval<T>())) };
                     }
                     else
                     {
-                        return { strategy_t::member_get, noexcept(std::declval<utype>().template get<I>()) };
-                    }
-                }
-                else if constexpr(requires{ std::tuple_size<type>::value; get<I>(std::declval<utype>()); })
-                {
-                    using etype = std::tuple_element_t<I, type>;
-                    if constexpr(std::is_rvalue_reference_v<decltype(get<I>(std::declval<utype>()))> && (std::is_reference_v<utype> || std::is_reference_v<etype>))
-                    {
-                        return { strategy_t::adl_get_refer, noexcept(get<I>(std::declval<utype>())) };
-                    }
-                    else
-                    {
-                        return { strategy_t::adl_get, noexcept(get<I>(std::declval<utype>())) };
+                        return { strategy_t::none };
                     }
                 }
                 else if constexpr(std::is_aggregate_v<type> && aggregate_member_count<type> != 0uz)
                 {
-                    using mtype = aggregate_member_t<I, type>;
-                    if constexpr(std::is_rvalue_reference_v<decltype(detail::aggregate_get<I>(std::declval<utype>()))> && (std::is_reference_v<utype> || std::is_reference_v<mtype>))
-                    {
-                        return { strategy_t::aggregate_refer, true };
-                    }
-                    else
-                    {
-                        return { strategy_t::aggregate, true };
-                    }
+                    return { strategy_t::aggregate, true };
                 }
                 else
                 {
@@ -314,48 +278,32 @@ namespace senluo
             
         public:
             template<class T> requires (choice<T>.strategy != strategy_t::none)
-            static constexpr decltype(auto) adapt(T&& t) noexcept(choice<T>.nothrow)
+            static constexpr decltype(auto) operator()(T&& t) noexcept(choice<T>.nothrow)
             {
                 constexpr strategy_t strategy = choice<T>.strategy;
                 if constexpr(strategy == strategy_t::array)
                 {
-                    return std::forward_like<ideal_unwrap_t<T>>(unwrap_fwd(t)[I]);
-                }
-                else if constexpr (strategy == strategy_t::array_refer)
-                {
-                    return refer(std::move(unwrap_fwd(t)[I]));
+                    return std::forward_like<T>(t[I]);
                 }
                 else if constexpr (strategy == strategy_t::member_tree_get)
                 {
-                    return unwrap_fwd(FWD(t)).template tree_get<I, ideal_unwrap_t<T>>(custom_t{});
+                    return FWD(t).template tree_get<I>(custom_t{});
                 }
                 else if constexpr (strategy == strategy_t::adl_tree_get)
                 {
-                    return tree_get<I, ideal_unwrap_t<T>>(unwrap_fwd(FWD(t)), custom_t{});
+                    return tree_get<I>(FWD(t), custom_t{});
                 }
                 else if constexpr (strategy == strategy_t::member_get)
                 {
-                    return unwrap_fwd(FWD(t)).template get<I>();
-                }
-                else if constexpr (strategy == strategy_t::member_get_refer)
-                {
-                    return refer(unwrap_fwd(FWD(t)).template get<I>());
+                    return FWD(t).template get<I>();
                 }
                 else if constexpr (strategy == strategy_t::adl_get)
                 {
-                    return get<I>(unwrap_fwd(FWD(t)));
-                }
-                else if constexpr (strategy == strategy_t::adl_get_refer)
-                {
-                    return refer(get<I>(unwrap_fwd(FWD(t))));
+                    return get<I>(FWD(t));
                 }
                 else if constexpr(strategy == strategy_t::aggregate)
                 {
-                    return detail::aggregate_get<I>(unwrap_fwd(FWD(t)));
-                }
-                else if constexpr(strategy == strategy_t::aggregate_refer)
-                {
-                    return refer(detail::aggregate_get<I>(unwrap_fwd(FWD(t))));
+                    return detail::aggregate_get<I>(FWD(t));
                 }
                 else
                 {
@@ -485,15 +433,6 @@ namespace senluo::detail
             return make_tuple(detail::replicate(value, get<I>(shape))...);
         }(std::make_index_sequence<size<S>>{});
     }
-}
-
-namespace senluo 
-{
-    // template<class T, size_t N>
-    // struct tree_size<T[N]> : std::integral_constant<size_t, N> {};
-
-    template<class T>
-    struct tree_size<wrapper<T>> : tree_size<std::remove_cvref_t<T>> {};
 }
 
 #include "../tools/macro_undef.hpp"
