@@ -136,6 +136,45 @@ namespace senluo
         using aggregate_member_t = aggregate_member<I, T>::type;
     }
 
+    namespace detail::get_size_ns
+    {
+        template<class T>
+        void get_size();
+
+        struct get_size_fn
+        {
+            template<class T>
+            constexpr size_t operator()(std::type_identity<T>)
+            {
+                if constexpr (std::is_bounded_array_v<T>)
+                {
+                    return std::extent_v<T>;
+                }
+                else if constexpr(requires{ { get_size(std::type_identity<T>{}) } -> std::same_as<size_t>; })
+                {
+                    return get_size(std::type_identity<T>{});
+                }
+                else if constexpr(requires{ std::tuple_size<T>::value; })
+                {
+                    return std::tuple_size_v<T>;
+                }
+                else if constexpr(std::is_aggregate_v<T> && detail::aggregate_member_count<T> != 0uz)
+                {
+                    return detail::aggregate_member_count<T>;
+                }
+                else
+                {
+                    return 0uz;
+                }
+            }
+        };
+    }
+
+    inline namespace functors
+    {
+        inline constexpr detail::get_size_ns::get_size_fn get_size{};
+    }
+
     template<class T>
     struct tree_size
     {
@@ -164,7 +203,7 @@ namespace senluo
     inline constexpr size_t tree_size_v = tree_size<T>::value;
 
     template<class T>
-    inline constexpr size_t size = tree_size_v<std::remove_cvref_t<T>>;
+    inline constexpr size_t size = get_size(std::type_identity<std::remove_cvref_t<T>>{});
 
     namespace detail::subtree_ns
     {

@@ -5,7 +5,7 @@
 #include <cstddef>
 #include <utility>
 
-#include "wrapper.hpp"
+#include "general.hpp"
 #include "constant.hpp"
 
 #include "macro_define.hpp"

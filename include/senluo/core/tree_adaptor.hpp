@@ -12,49 +12,6 @@ namespace senluo
 {
     using std::size_t;
 
-    // template<class T>
-    // struct materialize : std::type_identity<ideal_store_t<T>> {};
-
-    // template<class T>
-    // using materialize_t = materialize<T>::type;
-
-    namespace detail::materialize_ns
-    {
-        void materialize();
-
-        struct materialize_fn
-        {
-            template<class T>
-            static constexpr decltype(auto) operator()(T&& t)
-            {
-                if constexpr(requires{ std::forward<T>(t).materialize(custom_t{}); })
-                {
-                    return std::forward<T>(t).materialize(custom_t{});
-                }
-                else if constexpr(requires{ materialize(std::forward<T>(t), custom_t{}); })
-                {
-                    return materialize(std::forward<T>(t), custom_t{});
-                }
-                else if constexpr(std::is_rvalue_reference_v<T&&>)
-                {
-                    return std::remove_cvref_t<T>{ std::forward<T>(t) };
-                }
-                else
-                {
-                    return std::forward<T>(t);
-                }
-            }
-        };
-    }
-
-    inline namespace functors
-    {
-        inline constexpr detail::materialize_ns::materialize_fn materialize{};
-    }
-
-    template<class T>
-    using materialize_t = decltype(materialize(std::declval<T>()));
-
     template<class F>
     struct tree_adaptor_closure
     {
@@ -64,27 +21,27 @@ namespace senluo
         //     std::forward<Self>(self).adapt(std::forward<T>(t))
         // )
 
-        template<class T, class Self>
-        constexpr auto operator()(this Self&& self, T&& t) 
-            noexcept(noexcept(materialize(FWD(self).adapt(FWD(t)))))
-            -> materialize_t<decltype(FWD(self).adapt(FWD(t)))>
-        {
-            using rtype = decltype(FWD(self).adapt(FWD(t)));
-            if constexpr(std::same_as<rtype, materialize_t<rtype>>)
-            {
-                return FWD(self).adapt(FWD(t));
-            }
-            else
-            {
-                return materialize(FWD(self).adapt(FWD(t)));
-            }
-        }
+        // template<class T, class Self>
+        // constexpr auto operator()(this Self&& self, T&& t) 
+        //     noexcept(noexcept(materialize(FWD(self).adapt(FWD(t)))))
+        //     -> materialize_t<decltype(FWD(self).adapt(FWD(t)))>
+        // {
+        //     using rtype = decltype(FWD(self).adapt(FWD(t)));
+        //     if constexpr(std::same_as<rtype, materialize_t<rtype>>)
+        //     {
+        //         return FWD(self).adapt(FWD(t));
+        //     }
+        //     else
+        //     {
+        //         return materialize(FWD(self).adapt(FWD(t)));
+        //     }
+        // }
 
-        template<array Indexes>
-        static consteval tuple<array<size_t, 0uz>> dependencies()
-        {
-            return {};
-        }
+        // template<array Indexes>
+        // static consteval tuple<array<size_t, 0uz>> dependencies()
+        // {
+        //     return {};
+        // }
     };
 
     template<class T>
@@ -123,18 +80,10 @@ namespace senluo
     {
         template<typename...Args>
         static constexpr auto operator()(Args&&...args) 
-            noexcept(noexcept(materialize(F::adapt(FWD(args)...))))
-            -> materialize_t<decltype(F::adapt(FWD(args)...))>
+            noexcept(noexcept(F::adapt(FWD(args)...)))
+            -> decltype(F::adapt(FWD(args)...))
         {
-            using rtype = decltype(F::adapt(FWD(args)...));
-            if constexpr(std::same_as<rtype, materialize_t<rtype>>)
-            {
-                return F::adapt(FWD(args)...);
-            }
-            else 
-            {
-                return materialize(F::adapt(FWD(args)...));
-            }
+            return F::adapt(FWD(args)...);
         }
 
         template<typename...Args> 
@@ -155,20 +104,10 @@ namespace senluo::detail
         SENLUO(no_unique_address) ClosureRight right;
 
         template<class T, class Self>
-        constexpr decltype(auto) adapt(this Self&& self, T&& val)
+        constexpr decltype(auto) operator()(this Self&& self, T&& val)
         AS_EXPRESSION(
-            FWD(self, right).adapt(FWD(self, left).adapt(FWD(val)))
+            FWD(self, right)(FWD(self, left)(FWD(val)))
         )
-
-        template<array Indexes>
-        static consteval auto dependencies()
-        {
-            const auto local_dependencies = std::remove_cvref_t<ClosureRight>::template dependencies<Indexes>();
-            return [&]<size_t...I>(std::index_sequence<I...>)
-            {
-                return tuple_cat(std::remove_cvref_t<ClosureLeft>::template data_dependencies<local_dependencies.template get<I>()>()...);
-            }(std::make_index_sequence<local_dependencies.size()>{});
-        }
 
         friend constexpr bool operator==(const pipeline&, const pipeline&) = default; 
     };
@@ -188,13 +127,6 @@ namespace senluo
     AS_EXPRESSION(
         FWD(r)(FWD(l))
     )
-
-    template<class L, adaptor_closuroid R>
-    requires (not adaptor_closuroid<L>)
-    constexpr decltype(auto) operator||(L&& l, R&& r)
-    AS_EXPRESSION(
-        FWD(r).adapt(FWD(l))
-    )
 }
 
 namespace senluo 
@@ -204,43 +136,9 @@ namespace senluo
         struct pass_fn : tree_adaptor_closure<pass_fn>
         {
             template<class T>
-            static constexpr decltype(auto) adapt(T&& t) noexcept
-            {
-                return FWD(t);
-            }
-
-            template<array Indexes>
-            static consteval auto dependencies()
-            {
-                return tuple{ Indexes };
-            }
-        };
-
-        struct refer_fn : tree_adaptor_closure<refer_fn>
-        {
-            template<class T>
-            static constexpr decltype(auto) adapt(T&& t) noexcept
-            {
-                if constexpr(std::is_lvalue_reference_v<T>)
-                {
-                    return FWD(t);
-                }
-                else
-                {
-                    return wrapper<T&&>{ FWD(t) };
-                }
-            }
-
-            template<array Indexes>
-            static consteval auto dependencies()
-            {
-                return tuple{ Indexes };
-            }
-
-            template<class T>
             static constexpr decltype(auto) operator()(T&& t) noexcept
             {
-                return adapt(FWD(t));
+                return (T)FWD(t);
             }
         };
     }
@@ -248,87 +146,6 @@ namespace senluo
     inline namespace functors
     {
         inline constexpr detail::pass_fn pass{};
-        inline constexpr detail::refer_fn refer{};
-    }
-
-    namespace detail
-    {
-        struct as_input_fn : tree_adaptor_closure<as_input_fn>
-        {
-            template<class T>
-            static constexpr decltype(auto) adapt(T&& t) noexcept
-            {
-                using utype = ideal_unwrap_t<T>;
-                if constexpr(std::is_object_v<utype>)
-                {
-                    auto&& ref = unwrap_fwd(FWD(t));
-                    return std::move(std::as_const(ref));
-                }
-                else if constexpr(std::is_rvalue_reference_v<utype>)
-                {
-                    auto&& ref = unwrap_fwd(FWD(t));
-                    return std::move(std::as_const(ref)) | refer;
-                }
-                else
-                {
-                    return std::as_const(unwrap_fwd(FWD(t)));
-                }
-            }
-
-            template<array Indexes>
-            static consteval auto dependencies()
-            {
-                return tuple{ Indexes };
-            }
-        };
-    }
-
-    inline namespace functors
-    {
-        inline constexpr detail::as_input_fn as_input{};
-    }
-
-    namespace detail
-    {
-        template<class T>
-        struct unwrap_opt_refer_fn
-        {
-            template<class U>
-            static constexpr decltype(auto) operator()(wrapper<U>& t) noexcept
-            {
-                if constexpr(std::is_rvalue_reference_v<decltype(std::forward_like<T>(t).get())>
-                    && (std::is_reference_v<T> || std::is_reference_v<U>)
-                )
-                {
-                    return refer(std::forward_like<T>(t).get());
-                }
-                else
-                {
-                    return std::forward_like<T>(t).get();
-                }
-            }
-
-            template<class U>
-            static constexpr decltype(auto) operator()(const wrapper<U>& t) noexcept
-            {
-                if constexpr(std::is_rvalue_reference_v<decltype(std::forward_like<T>(t).get())>
-                    && (std::is_reference_v<T> || std::is_reference_v<U>)
-                )
-                {
-                    return refer(std::forward_like<T>(t).get());
-                }
-                else
-                {
-                    return std::forward_like<T>(t).get();
-                }
-            }
-        };
-    }
-
-    inline namespace functors
-    {
-        template<class T>
-        inline constexpr detail::unwrap_opt_refer_fn<T> unwrap_opt_refer{};
     }
 }
 
