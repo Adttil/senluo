@@ -134,7 +134,7 @@ namespace senluo
 
     namespace detail
     {
-        struct as_mat_fn : adaptor_closure<as_mat_fn>
+        struct as_mat_fn : tree_adaptor_closure<as_mat_fn>
         {
             template<class T>
             constexpr mat<T> operator()(T&& t) const noexcept

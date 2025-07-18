@@ -15,9 +15,9 @@ namespace senluo::test
 #define MAGIC_TCHECK(type1, ...) \
 GTEST_EXPECT_TRUE((std::same_as<type1, __VA_ARGS__>)) \
     << "Type [" << #type1 << "] is:\n" << magic::visualize<type1>(::senluo::test::magic_option) << '\n'\
-    << "Type [" << #__VA_ARGS__ << "] is:\n" << magic::visualize<__VA_ARGS__>(::senluo::test::magic_option) << '\n'
+    << "Type [" << #__VA_ARGS__ << "] is:\n" << magic::visualize<__VA_ARGS__>(::senluo::test::magic_option) << '\n';
 
-#define MAGIC_CHECK(exp1_, ...) \
+#define MAGIC_VCHECK(exp1_, ...) \
 []<typename T1, typename T2>(const char* exp1_str, const char* exp2_str, const auto& exp1, const auto& exp2)\
 {\
     constexpr bool equal_valid = requires{ requires requires{ exp1 == exp2; }; };\
@@ -30,5 +30,7 @@ GTEST_EXPECT_TRUE((std::same_as<type1, __VA_ARGS__>)) \
         GTEST_ASSERT_(::testing::internal::EqHelper::Compare(exp1_str, exp2_str, exp1, exp2), GTEST_NONFATAL_FAILURE_);\
     }\
 }.template operator()<decltype(exp1_), decltype(__VA_ARGS__)>(#exp1_, #__VA_ARGS__, exp1_, __VA_ARGS__);
+
+#define MAGIC_CHECK(exp, value, ...) MAGIC_TCHECK(decltype exp, __VA_ARGS__) MAGIC_VCHECK(exp, value)
 
 #endif

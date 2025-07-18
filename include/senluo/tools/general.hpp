@@ -25,12 +25,6 @@ namespace senluo
 
     struct custom_t{};
 
-	template<typename T>
-	struct type_tag
-	{
-		using type = T;
-	};
-
 	template<class T, class U>
     concept derived_from = std::derived_from<std::remove_cvref_t<T>, std::remove_cvref_t<U>>;
 
@@ -51,98 +45,6 @@ namespace senluo
     {
         return static_cast<std::decay_t<T>>(FWD(t));
     }
-
-    namespace detail 
-    {
-        struct pass_fn
-        {
-            template<class T>
-            constexpr decltype(auto) operator()(T&& t) const noexcept(noexcept((T)FWD(t)))
-            {
-                return (T)FWD(t);
-            }
-        };
-    }
-
-    inline namespace functors
-    {
-        inline constexpr detail::pass_fn pass{};
-    }
-}
-
-namespace senluo 
-{
-	template<class T, template<class> class Impl>
-    struct modifier
-    {
-        using base_type = T;
-
-        template<class U>
-        using modifier_type = Impl<U>;
-
-        T base;
-    };
-
-    template<class T>
-    concept modified = std::derived_from<T, modifier<typename T::base_type, T::template modifier_type>>
-        && std::same_as<T, typename T::template modifier_type<typename T::base_type>>;
-
-    template<class T>
-    struct remove_cvref : std::remove_cvref<T>{};
-
-    template<class T>
-    using remove_cvref_t = remove_cvref<T>::type;
-
-    template<modified T>
-    struct remove_cvref<T>
-    {
-        using type = T::template modifier_type<std::remove_cvref_t<typename T::base_type>>;
-    };
-
-    template<class T>
-    struct add_lref
-    {
-        using type = T&;
-    };
-
-    template<class T>
-    using add_lref_t = add_lref<T>::type;
-
-    template<modified T>
-    struct add_lref<T>
-    {
-        using type = T::template modifier_type<typename T::base_type&>;
-    };
-
-    template<class T>
-    struct add_rref
-    {
-        using type = T&&;
-    };
-
-    template<class T>
-    using add_rref_t = add_rref<T>::type;
-
-    template<modified T>
-    struct add_rref<T>
-    {
-        using type = T::template modifier_type<typename T::base_type&&>;
-    };
-
-    template<class T>
-    struct add_const
-    {
-        using type = const T;
-    };
-
-    template<class T>
-    using add_const_t = add_const<T>::type;
-
-    template<modified T>
-    struct add_const<T>
-    {
-        using type = T::template modifier_type<const typename T::base_type>;
-    };
 }
 
 namespace senluo::detail

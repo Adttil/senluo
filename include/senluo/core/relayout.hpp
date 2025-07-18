@@ -139,7 +139,7 @@ namespace senluo
         }
 
         template<auto Layout>
-        struct relayout_fn : adaptor_closure<relayout_fn<Layout>>
+        struct relayout_fn : tree_adaptor_closure<relayout_fn<Layout>>
         {
             template<class T>
             constexpr decltype(auto) operator()(T&& t) const noexcept
@@ -178,7 +178,7 @@ namespace senluo
     struct relayouter_interface;
 
     template<class Relayouter>
-    struct relayouter_interface : adaptor_closure<Relayouter>
+    struct relayouter_interface : tree_adaptor_closure<Relayouter>
     {
         template<class T>
         static consteval auto layout() noexcept

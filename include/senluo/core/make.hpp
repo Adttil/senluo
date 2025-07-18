@@ -29,7 +29,7 @@ namespace senluo
         };
 
         template<size_t I, class T>
-        struct sub_make_fn : adaptor_closure<sub_make_fn<I, T>>
+        struct sub_make_fn : tree_adaptor_closure<sub_make_fn<I, T>>
         {
             using strategy_t = make_strategy_t;
 
@@ -74,7 +74,7 @@ namespace senluo
         };
 
         template<class T>
-        struct make_fn : adaptor_closure<make_fn<T>>
+        struct make_fn : tree_adaptor_closure<make_fn<T>>
         {
             using strategy_t = make_strategy_t;
 

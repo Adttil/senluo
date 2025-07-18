@@ -35,7 +35,7 @@ namespace senluo
 
     namespace detail 
     {
-        struct as_vec_fn : adaptor_closure<as_vec_fn>
+        struct as_vec_fn : tree_adaptor_closure<as_vec_fn>
         {
             template<class T>
             constexpr vec<T> operator()(T&& t) const noexcept

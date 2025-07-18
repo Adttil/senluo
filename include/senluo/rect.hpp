@@ -23,7 +23,7 @@ namespace senluo
 
     namespace detail 
     {
-        struct as_rect_fn : adaptor_closure<as_rect_fn>
+        struct as_rect_fn : tree_adaptor_closure<as_rect_fn>
         {
             template<class T>
             constexpr rect<T> operator()(T&& t) const noexcept

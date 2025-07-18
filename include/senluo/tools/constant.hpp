@@ -1,7 +1,7 @@
 #ifndef SENLUO_CONSTANT_H
 #define SENLUO_CONSTANT_H
 
-#include "general.hpp"
+#include <type_traits>
 #include "macro_define.hpp"
 
 namespace senluo

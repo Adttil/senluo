@@ -5,13 +5,13 @@ using namespace senluo;
 
 TEST(tuple, get)
 {
-    std::tuple<int> t{1};
+    //std::tuple<int> t{1};
     auto tpl = tuple{ 1, 3.14, std::string{"wow"} };
 
-    MAGIC_CHECK(get<0>(tpl), 1);
-    MAGIC_CHECK(get<1>(tpl), 3.14);
-    MAGIC_CHECK(get<2>(tpl), "wow");
-    MAGIC_CHECK(tpl, tuple{ 1, 3.14, std::string{"wow"} });
+    MAGIC_VCHECK(get<0>(tpl), 1);
+    MAGIC_VCHECK(get<1>(tpl), 3.14);
+    MAGIC_VCHECK(get<2>(tpl), "wow");
+    MAGIC_VCHECK(tpl, tuple{ 1, 3.14, std::string{"wow"} });
 }
 
 TEST(tuple, structure_binding)
@@ -19,10 +19,10 @@ TEST(tuple, structure_binding)
     auto tpl = tuple{ 1, 3.14, std::string{"wow"} };
 
     auto&&[x, y, z] = tpl;
-    MAGIC_CHECK(x, 1);
-    MAGIC_CHECK(y, 3.14);
-    MAGIC_CHECK(z, "wow");
-    MAGIC_CHECK((tuple{x, y, z}), tuple{ 1, 3.14, std::string{"wow"} });
+    MAGIC_VCHECK(x, 1);
+    MAGIC_VCHECK(y, 3.14);
+    MAGIC_VCHECK(z, "wow");
+    MAGIC_VCHECK((tuple{x, y, z}), tuple{ 1, 3.14, std::string{"wow"} });
 }
 
 TEST(tuple_category, object)

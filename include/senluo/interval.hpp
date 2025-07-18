@@ -21,7 +21,7 @@ namespace senluo
 
     namespace detail 
     {
-        struct as_interval_fn : adaptor_closure<as_interval_fn>
+        struct as_interval_fn : tree_adaptor_closure<as_interval_fn>
         {
             template<class T>
             constexpr interval<T> operator()(T&& t) const noexcept

@@ -13,7 +13,7 @@ namespace senluo
     {
         void cos();
 
-        struct cos_fn : adaptor_closure<cos_fn>
+        struct cos_fn : tree_adaptor_closure<cos_fn>
         {
             template<class T>
             constexpr decltype(auto) operator()(T&& t) const
@@ -33,7 +33,7 @@ namespace senluo
     {
         void sin();
 
-        struct sin_fn : adaptor_closure<sin_fn>
+        struct sin_fn : tree_adaptor_closure<sin_fn>
         {
             template<class T>
             constexpr decltype(auto) operator()(T&& t) const

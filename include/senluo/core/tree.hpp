@@ -6,7 +6,9 @@
 #include "../tools/general.hpp"
 #include "../tools/array.hpp"
 #include "../tools/tuple.hpp"
-#include "wrap.hpp"
+#include "../tools/wrapper.hpp"
+
+#include "tree_adaptor.hpp"
 
 #include "../tools/macro_define.hpp"
 
@@ -177,22 +179,23 @@ namespace senluo
             none,
 
             array,
-            array_copy,
+            array_refer,
             
+            member_tree_get,
             adl_tree_get,
             
             member_get,
-            member_get_copy,
+            member_get_refer,
             
             adl_get,
-            adl_get_copy,
+            adl_get_refer,
 
             aggregate,
-            aggregate_copy
+            aggregate_refer
         };
 
         template<size_t I>
-        struct tree_get_fn : adaptor_closure<tree_get_fn<I>>
+        struct tree_get_fn : tree_adaptor_closure<tree_get_fn<I>>
         {
         private:
             template<class T>
@@ -204,10 +207,10 @@ namespace senluo
                 if constexpr(std::is_bounded_array_v<type>)
                 {
                     using etype = std::remove_cvref_t<decltype(std::declval<type>()[0])>;
-                    if constexpr(std::is_object_v<utype> && std::is_move_constructible_v<etype> )
+                    if constexpr(std::is_rvalue_reference_v<utype>)
                     {
                         
-                        return { strategy_t::array_copy, noexcept(std::is_nothrow_move_constructible_v<etype>) };
+                        return { strategy_t::array_refer, true };
                     }
                     else
                     {
@@ -215,17 +218,21 @@ namespace senluo
                     }
                 }
                 //custom
-                else if constexpr (requires{ tree_get<I>(std::declval<T>()); })
+                else if constexpr (requires{ std::declval<utype>().template tree_get<I, utype>(custom_t{}); })
                 {
-                    return { strategy_t::adl_tree_get, noexcept(tree_get<I>(std::declval<T>())) };
+                    return { strategy_t::member_tree_get, noexcept(std::declval<utype>().template tree_get<I, utype>(custom_t{})) };
+                }
+                else if constexpr (requires{ tree_get<I, utype>(std::declval<utype>(), custom_t{}); })
+                {
+                    return { strategy_t::adl_tree_get, noexcept(tree_get<I, utype>(std::declval<utype>(), custom_t{})) };
                 }
                 //tuple-like
                 else if constexpr (requires{ std::tuple_size<type>::value; std::declval<utype>().template get<I>(); })
                 {
                     using etype = std::tuple_element_t<I, type>;
-                    if constexpr(std::is_object_v<utype> && std::is_object_v<etype> && std::is_move_constructible_v<etype>)
+                    if constexpr(std::is_rvalue_reference_v<decltype(std::declval<utype>().template get<I>())> && (std::is_reference_v<utype> || std::is_reference_v<etype>))
                     {
-                        return { strategy_t::member_get_copy, noexcept((etype)std::declval<utype>().template get<I>()) };
+                        return { strategy_t::member_get_refer, noexcept(std::declval<utype>().template get<I>()) };
                     }
                     else
                     {
@@ -235,9 +242,9 @@ namespace senluo
                 else if constexpr(requires{ std::tuple_size<type>::value; get<I>(std::declval<utype>()); })
                 {
                     using etype = std::tuple_element_t<I, type>;
-                    if constexpr(std::is_object_v<utype> && std::is_object_v<etype> && std::is_move_constructible_v<etype>)
+                    if constexpr(std::is_rvalue_reference_v<decltype(get<I>(std::declval<utype>()))> && (std::is_reference_v<utype> || std::is_reference_v<etype>))
                     {
-                        return { strategy_t::adl_get_copy, noexcept((etype)get<I>(std::declval<utype>())) };
+                        return { strategy_t::adl_get_refer, noexcept(get<I>(std::declval<utype>())) };
                     }
                     else
                     {
@@ -247,9 +254,9 @@ namespace senluo
                 else if constexpr(std::is_aggregate_v<type> && aggregate_member_count<type> != 0uz)
                 {
                     using mtype = aggregate_member_t<I, type>;
-                    if constexpr(std::is_object_v<utype> && std::is_object_v<mtype> && std::is_move_constructible_v<mtype>)
+                    if constexpr(std::is_rvalue_reference_v<decltype(detail::aggregate_get<I>(std::declval<utype>()))> && (std::is_reference_v<utype> || std::is_reference_v<mtype>))
                     {
-                        return { strategy_t::aggregate_copy, std::is_nothrow_move_constructible_v<mtype> };
+                        return { strategy_t::aggregate_refer, true };
                     }
                     else
                     {
@@ -268,48 +275,52 @@ namespace senluo
             
         public:
             template<class T> requires (choice<T>.strategy != strategy_t::none)
-            constexpr decltype(auto) operator()(T&& t) const noexcept(choice<T>.nothrow)
+            static constexpr decltype(auto) adapt(T&& t) noexcept(choice<T>.nothrow)
             {
                 constexpr strategy_t strategy = choice<T>.strategy;
                 if constexpr(strategy == strategy_t::array)
                 {
-                    return std::forward_like<unwrap_t<T>>(unwrap_fwd(t)[I]);
+                    return std::forward_like<ideal_unwrap_t<T>>(unwrap_fwd(t)[I]);
                 }
-                else if constexpr (strategy == strategy_t::array_copy)
+                else if constexpr (strategy == strategy_t::array_refer)
                 {
-                    return senluo::decay_copy(std::forward_like<unwrap_t<T>>(unwrap_fwd(t)[I]));
+                    return refer(std::move(unwrap_fwd(t)[I]));
+                }
+                else if constexpr (strategy == strategy_t::member_tree_get)
+                {
+                    return unwrap_fwd(FWD(t)).template tree_get<I, ideal_unwrap_t<T>>(custom_t{});
                 }
                 else if constexpr (strategy == strategy_t::adl_tree_get)
                 {
-                    return tree_get<I>(FWD(t));
+                    return tree_get<I, ideal_unwrap_t<T>>(unwrap_fwd(FWD(t)), custom_t{});
                 }
                 else if constexpr (strategy == strategy_t::member_get)
                 {
                     return unwrap_fwd(FWD(t)).template get<I>();
                 }
-                else if constexpr (strategy == strategy_t::member_get_copy)
+                else if constexpr (strategy == strategy_t::member_get_refer)
                 {
-                    return senluo::decay_copy(unwrap_fwd(FWD(t)).template get<I>());
+                    return refer(unwrap_fwd(FWD(t)).template get<I>());
                 }
                 else if constexpr (strategy == strategy_t::adl_get)
                 {
                     return get<I>(unwrap_fwd(FWD(t)));
                 }
-                else if constexpr (strategy == strategy_t::adl_get_copy)
+                else if constexpr (strategy == strategy_t::adl_get_refer)
                 {
-                    return senluo::decay_copy(get<I>(unwrap_fwd(FWD(t))));
+                    return refer(get<I>(unwrap_fwd(FWD(t))));
                 }
                 else if constexpr(strategy == strategy_t::aggregate)
                 {
                     return detail::aggregate_get<I>(unwrap_fwd(FWD(t)));
                 }
-                else if constexpr(strategy == strategy_t::aggregate_copy)
+                else if constexpr(strategy == strategy_t::aggregate_refer)
                 {
-                    return senluo::decay_copy(detail::aggregate_get<I>(unwrap_fwd(FWD(t))));
+                    return refer(detail::aggregate_get<I>(unwrap_fwd(FWD(t))));
                 }
                 else
                 {
-                    static_assert(strategy != strategy_t::none, "No suitable tree_get or get function found.");
+                    static_assert(false, "No suitable tree_get or get function found.");
                 }
             }
         };
@@ -347,39 +358,20 @@ namespace senluo
     }();
 
     template<class T>
-    struct get_shape
+    inline constexpr auto shape = [] 
     {
-        static consteval auto get_value()
+        if constexpr (terminal<T>)
         {
-            if constexpr (size<T> == 0uz)
-            {
-                return type_tag<tuple<>>{};
-            }
-            else return[]<size_t...I>(std::index_sequence<I...>)
-            {
-                return type_tag<tuple<typename get_shape<tree_get_t<I, T&>>::type...>>{};
-            }(std::make_index_sequence<size<T>>{});
+            return tuple{};
         }
-
-        using type = decltype(get_value())::type;
-        static constexpr type value{};
-    };
-
-    template<class T>
-    inline constexpr auto shape = get_shape<T>::value; //[] 
-    // {
-    //     if constexpr (terminal<T>)
-    //     {
-    //         return tuple{};
-    //     }
-    //     else return[]<size_t...I>(std::index_sequence<I...>)
-    //     {
-    //         return make_tuple(shape<tree_get_t<I, T&>>...);
-    //     }(std::make_index_sequence<size<T>>{});
-    // }();
+        else return[]<size_t...I>(std::index_sequence<I...>)
+        {
+            return make_tuple(shape<tree_get_t<I, T&>>...);
+        }(std::make_index_sequence<size<T>>{});
+    }();
 
     template<class T>
-    using shape_t = get_shape<T>::type;
+    using shape_t = std::remove_const_t<decltype(shape<T>)>;
 
     template<class T>
     inline constexpr size_t tensor_rank = []
@@ -433,12 +425,27 @@ namespace senluo
 
     template<class T, class...Rest>
     struct default_container<T, Rest...>
-    {
-        using type = std::conditional_t<(std::is_object_v<T> && ... && std::same_as<T, Rest>), 
+     : std::conditional<(std::is_object_v<T> && ... && std::same_as<T, Rest>), 
             array<T, sizeof...(Rest) + 1>, 
             tuple<T, Rest...>
-        >;
-    };
+        >
+    {};
+}
+
+namespace senluo::detail 
+{
+    template<class S, class T>
+    constexpr auto replicate(const T& value, S shape = {})
+    {
+        if constexpr (terminal<S>)
+        {
+            return value;
+        }
+        else return [&]<size_t...I>(std::index_sequence<I...>)
+        {
+            return make_tuple(detail::replicate(value, get<I>(shape))...);
+        }(std::make_index_sequence<size<S>>{});
+    }
 }
 
 namespace senluo 
