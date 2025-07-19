@@ -148,9 +148,13 @@ namespace senluo
                 {
                     return std::extent_v<T>;
                 }
-                else if constexpr(requires{ { get_size(std::type_identity<T>{}) } -> std::same_as<size_t>; })
+                else if constexpr(requires{ T::get_size(custom_t{}); })
                 {
-                    return get_size(std::type_identity<T>{});
+                    return T::get_size(custom_t{});
+                }
+                else if constexpr(requires{ get_size(std::type_identity<T>{}, custom_t{}); })
+                {
+                    return get_size(std::type_identity<T>{}, custom_t{});
                 }
                 else if constexpr(requires{ std::tuple_size<T>::value; })
                 {

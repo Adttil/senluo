@@ -138,7 +138,7 @@ namespace senluo
             }
         }
         
-        friend consteval size_t get_size(std::type_identity<relayout_tree>)
+        static consteval size_t get_size(custom_t = {})
         {
             if constexpr(detail::indexical_array<decltype(FoldedLayout)>)
             {

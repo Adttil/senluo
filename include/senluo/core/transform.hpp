@@ -22,7 +22,7 @@ namespace senluo
                 return self.fn(senluo::tree_get<I>(FWD(self, base)));
             }
 
-            friend consteval size_t get_size(std::type_identity<transform_tree>)
+            static consteval size_t get_size(custom_t = {})
             {
                 return size<T>;
             }
@@ -74,7 +74,7 @@ namespace senluo
                 return senluo::tree_get<I>(FWD(self, base)) | transform(FWD(self, fn));
             }
 
-            friend consteval size_t get_size(std::type_identity<mat_transform_tree>)
+            static consteval size_t get_size(custom_t = {})
             {
                 return size<T>;
             }

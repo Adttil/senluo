@@ -88,7 +88,7 @@ struct X
         return std::forward_like<Self>(self.base);
     }
 
-    friend consteval size_t get_size(std::type_identity<X>)
+    static consteval size_t get_size(custom_t = {})
     {
         return 3uz;
     }
