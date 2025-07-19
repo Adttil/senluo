@@ -415,6 +415,26 @@ namespace senluo
             tuple<T, Rest...>
         >
     {};
+
+    namespace detail
+    {
+        struct apply_fn : adaptor<apply_fn>
+        {
+            template<class T, class Fn>
+            static constexpr decltype(auto) adapt(T&& t, Fn&& fn)
+            {
+                return [&]<size_t...I>(std::index_sequence<I...>) -> decltype(auto)
+                {
+                    return FWD(fn)(tree_get<I>(FWD(t))...);
+                }(std::make_index_sequence<size<T>>{});
+            }
+        };
+    }
+
+    inline namespace functors
+    {
+        inline constexpr detail::apply_fn apply{};
+    }
 }
 
 namespace senluo::detail 

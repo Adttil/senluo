@@ -37,23 +37,21 @@ namespace senluo
 
         public:
             template<typename T, typename Self>
-            constexpr decltype(auto) adapt(this Self&& self, T&& t)
+            constexpr decltype(auto) operator()(this Self&& self, T&& t)
             AS_EXPRESSION(
                 FWD(self).impl(FWD(t), std::index_sequence_for<Args...>{})
             )
         };
     }
 
-    template<class F> 
+    template<class F>
     struct adaptor
     {
         template<typename...Args>
-        static constexpr auto operator()(Args&&...args) 
-            noexcept(noexcept(F::adapt(FWD(args)...)))
-            -> decltype(F::adapt(FWD(args)...))
-        {
-            return F::adapt(FWD(args)...);
-        }
+        static constexpr decltype(auto) operator()(Args&&...args) 
+        AS_EXPRESSION(
+            F::adapt(FWD(args)...)
+        )
 
         template<typename...Args> 
             requires (not requires{ F{}.adapt(std::declval<Args>()...); })
@@ -116,6 +114,9 @@ namespace senluo
     {
         inline constexpr detail::pass_fn pass{};
     }
+
+    template<class T>
+    using pass_t = decltype(pass(std::declval<T>()));
 }
 
 #include "macro_undef.hpp"

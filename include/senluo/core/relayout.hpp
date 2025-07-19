@@ -2,93 +2,143 @@
 #define SENLUO_RELAYOUT_HPP
 
 #include "../tools/adaptor.hpp"
-#include "../tools/constant.hpp"
-#include "wrap.hpp"
+
 #include "subtree.hpp"
-#include "tag.hpp"
-#include "principle.hpp"
 
 #include "../tools/macro_define.hpp"
 
 namespace senluo::detail
 {
-    template<class BasePrinciple, auto FoldedLayout>
-    struct relayout_principle
+    template<size_t I>
+    void get();
+
+    template<size_t I, class L>
+    constexpr auto layout_get(const L& layout)
     {
-        BasePrinciple base;
-
-        constexpr decltype(auto) data()&&
+        if constexpr(indexical<L>)
         {
-            return std::move(base).data();
+            return detail::array_cat(layout, array{ I });
         }
+        else if constexpr(I < std::tuple_size_v<L>)
+        {
+            return get<I>(layout);
+        }
+        // else
+        // {
+        //     return invalid_index;
+        // }
+    }
 
-        static constexpr auto layout = 
-            detail::relayout_layout<FoldedLayout, BasePrinciple::layout, shape_t<decltype(std::move(base).data())>>();
+    template<indexical auto Indices, class Shape>
+    constexpr auto normalize_indices(Shape shape = {})
+    {
+        if constexpr(std::integral<decltype(Indices)>)
+        {
+            return array{ detail::normalize_index(Indices, size<Shape>) };
+        }
+        else return []<size_t...I>(std::index_sequence<I...>)
+        {
+            return array<size_t, Indices.size()>
+            {
+                detail::normalize_index(Indices[I], size<subtree_t<Shape, detail::array_take<I>(Indices)>>)...
+            };
+        }(std::make_index_sequence<Indices.size()>{});
+    }
 
-        static constexpr auto stricture_tree = 
-            detail::relayout_stricture_tree<FoldedLayout, BasePrinciple::stricture_tree>();
+    template<auto Layout, class Shape>
+    constexpr auto fold_layout(Shape shape = {})
+    {
+        if constexpr(indexical<decltype(Layout)>)
+        {
+            return detail::normalize_indices<Layout>(shape);
+        }
+        else return []<size_t...I>(std::index_sequence<I...>)
+        {
+            constexpr auto child_relayout = make_tuple(detail::fold_layout<subtree<I>(Layout)>(Shape{})...);
+            constexpr size_t n = size<decltype(get<0uz>(child_relayout))>;
 
-        static constexpr auto operation_tree_count = BasePrinciple::operation_tree_count;
+            if constexpr(n > 0uz
+                && (... && detail::indexical_array<decltype(get<I>(child_relayout))>)
+                && (... && (n == size<decltype(get<I>(child_relayout))>))
+            )
+            {
+                constexpr auto prefix = detail::array_take<n - 1uz>(get<0uz>(child_relayout));
+                if constexpr(size<subtree_t<Shape, prefix>> == size<decltype(Layout)>
+                    && (... && (prefix == detail::array_take<n - 1uz>(get<I>(child_relayout))))
+                    && (... && (get<I>(child_relayout)[n - 1uz] == I))
+                )
+                {
+                    return prefix;
+                }
+                else
+                {
+                    return child_relayout;
+                }
+            }
+            else
+            {
+                return child_relayout;
+            }
+        }(std::make_index_sequence<size<decltype(Layout)>>{});
+    }
 
-        template<size_t I>
-        static constexpr auto operation_tree = 
-            detail::relayout_operation_tree<FoldedLayout, BasePrinciple::template operation_tree<I>>();
+    template<typename TLayout, size_t N>
+    constexpr auto layout_add_prefix(const TLayout& layout, const array<size_t, N>& prefix)
+    {
+        if constexpr(detail::indexical_array<TLayout>)
+        {
+            return detail::array_cat(prefix, layout);
+        }
+        else return[&]<size_t...I>(std::index_sequence<I...>)
+        {
+            return make_tuple(detail::layout_add_prefix(get<I>(layout), prefix)...);
+        }(std::make_index_sequence<size<TLayout>>{});
+    }
+
+    template<typename T>
+    constexpr auto default_unfolded_layout()
+    {
+        if constexpr (terminal<T>)
+        {
+            return indexes_of_whole;
+        }
+        else return[]<size_t...I>(std::index_sequence<I...>)
+        {
+            return make_tuple(detail::layout_add_prefix(detail::default_unfolded_layout<subtree_t<T&, I>>(), array{I})...);
+        }(std::make_index_sequence<size<T>>{});    
     };
 }
 
 namespace senluo
 {
-    
+    namespace detail::relayout_ns 
+    {
+        template<class T, auto FoldedLayout>
+        struct relayout_tree;
+    }
 
     template<class T, auto FoldedLayout>
-    struct relayout_tree : based_on<T>
+    struct detail::relayout_ns::relayout_tree
     {
-        template<size_t I, unwarp_derived_from<relayout_tree> Self>
-        friend constexpr decltype(auto) tree_get(Self&& self)
+        T base;
+
+        template<size_t I, class Self>
+        constexpr decltype(auto) tree_get(this Self&& self, custom_t = {})
         {
             constexpr auto layout = detail::layout_get<I>(FoldedLayout);
             if constexpr(indexical<decltype(layout)>)
             {
-                return FWD(self).unwrap_base() | subtree<detail::layout_get<I>(FoldedLayout)>;
+                return FWD(self, base) | subtree<detail::layout_get<I>(FoldedLayout)>;
             }
             else
             {
-                return relayout_tree<unwrap_t<decltype(FWD(self).unwrap_base())>, detail::layout_get<I>(FoldedLayout)>{
-                    unwrap_fwd(FWD(self).unwrap_base()) 
+                return relayout_tree<decltype(pass(FWD(self, base))), detail::layout_get<I>(FoldedLayout)>{
+                    FWD(self, base)
                 };
             }
         }
         
-        template<auto UsageTree, unwarp_derived_from<relayout_tree> Self>
-        friend constexpr auto principle(Self&& self)
-        {
-            constexpr auto base_usage = detail::fold_usage_when_unused<detail::inverse_relayout_usage_tree<FoldedLayout>(UsageTree, shape<T>)>();
-            using base_principle_t = principle_t<decltype(FWD(self).unwrap_base()), base_usage>;
-
-            return detail::relayout_principle<base_principle_t, FoldedLayout>{
-                    principle<base_usage>(FWD(self).unwrap_base())
-            };
-
-            // if constexpr(detail::is_enable_to_relayout_operation_tree<FoldedLayout>(base_principle_t::operation_tree))
-            // {
-            //     return detail::relayout_principle<base_principle_t, FoldedLayout>{
-            //         principle<base_usage>(FWD(self).unwrap_base())
-            //     };
-            // }
-            // else
-            // {
-            //     using plain_principle_t = plain_principle<decltype(detail::plainized_unchecked<base_usage>(FWD(self).unwrap_base()))>;
-            //     detail::relayout_principle<plain_principle_t, FoldedLayout>{
-            //         plain_principle_t{ detail::plainized_unchecked<base_usage>(FWD(self).unwrap_base()) }
-            //     };
-            // }
-        }        
-    };
-
-    template<class T, auto FoldedLayout>
-    struct tree_size<relayout_tree<T, FoldedLayout>>
-    {
-        static constexpr size_t value = []
+        friend consteval size_t get_size(std::type_identity<relayout_tree>)
         {
             if constexpr(detail::indexical_array<decltype(FoldedLayout)>)
             {
@@ -98,42 +148,22 @@ namespace senluo
             {
                 return std::tuple_size_v<std::remove_const_t<decltype(FoldedLayout)>>;
             }
-        }();
+        }        
     };
 
     namespace detail 
     {
-        template<auto Layout>
-        constexpr auto layout_used_indexes()
-        {
-            if constexpr(indexical_array<decltype(Layout)>)
-            {
-                return tuple{ Layout };
-            }
-            else return[]<size_t...I>(std::index_sequence<I...>)
-            {
-                return tuple_cat(detail::layout_used_indexes<get<I>(Layout)>()...); 
-            }(std::make_index_sequence<std::tuple_size_v<decltype(Layout)>>{});
-        }
-
         template<auto FoldedLayout, class T>
         constexpr decltype(auto) relayout_unchecked(T&& t)
         {
             if constexpr(detail::indexical_array<decltype(FoldedLayout)>)
             {
-                if constexpr(std::is_rvalue_reference_v<decltype(FWD(t) | subtree<FoldedLayout>)>)
-                {
-                    return wrapper<decltype(FWD(t) | subtree<FoldedLayout>)>{ FWD(t) | subtree<FoldedLayout> };
-                }
-                else
-                {
-                    return FWD(t) | subtree<FoldedLayout>;
-                }
+                return FWD(t) | subtree<FoldedLayout>;
             }
             else
             {
-                return relayout_tree<unwrap_t<T>, FoldedLayout>{
-                    unwrap_fwd(FWD(t))
+                return detail::relayout_ns::relayout_tree<decltype(pass(FWD(t))), FoldedLayout>{
+                    FWD(t)
                 };
             }
         }
@@ -144,23 +174,8 @@ namespace senluo
             template<class T>
             constexpr decltype(auto) operator()(T&& t) const noexcept
             {
-                constexpr auto folded_layout = detail::fold_layout_v<Layout, shape_t<T>>;
+                constexpr auto folded_layout = detail::fold_layout<Layout>(shape<T>);
                 return detail::relayout_unchecked<folded_layout>(FWD(t));
-            }
-
-            template<class S>
-            static constexpr relayout_fn<detail::replicate<S>(Layout)> replicate(S = {})noexcept
-            {
-                return {};
-            }
-
-            template<auto Indexes>
-            friend constexpr auto operator/(constant_t<Indexes>, relayout_fn)
-            {
-                return []<size_t...I>(std::index_sequence<I...>)
-                {
-                    return constant_t<tuple_cat(detail::layout_used_indexes<detail::sublayout<get<I>(Indexes)>(Layout)>()...)>{};
-                }(std::make_index_sequence<std::tuple_size_v<decltype(Indexes)>>{});
             }
         };
     }
@@ -184,7 +199,7 @@ namespace senluo
         static consteval auto layout() noexcept
         {
             constexpr auto tree = detail::default_unfolded_layout<T>();
-            return detail::fold_layout_v<Relayouter::relayout(tree), shape_t<T>>;
+            return detail::fold_layout<Relayouter::relayout(tree)>(shape<T>);
         }
 
         template<typename T>
@@ -194,62 +209,6 @@ namespace senluo
             return detail::relayout_unchecked<layout>(FWD(tree));
         }
     };
-
-    namespace detail
-    {
-        template<size_t N>
-        struct repeat_t : relayouter_interface<repeat_t<N>>
-        {
-            template<class T>
-            static consteval auto layout() noexcept
-            {
-                return [&]<size_t...I>(std::index_sequence<I...>)
-                {
-                    return tuple{ (I, indexes_of_whole)... };
-                }(std::make_index_sequence<N>{});
-            }
-
-            static constexpr auto relayout(const auto& tree)
-            {
-                return [&]<size_t...I>(std::index_sequence<I...>)
-                {
-                    return tuple{ (I, tree)... };
-                }(std::make_index_sequence<N>{});
-            }
-        };
-
-        template<class T>
-        struct repeat_as_t : relayouter_interface<repeat_as_t<T>>
-        {
-            template<class U>
-            static consteval auto layout() noexcept
-            {
-                return detail::replicate(indexes_of_whole, shape<T>);
-            }
-        };
-
-        // template<array TensorShape>
-        // struct repeat_by_t : relayouter_interface<repeat_by_t<TensorShape>>
-        // {
-        //     template<class T>
-        //     static consteval auto layout() noexcept
-        //     {
-        //         //return detail::replicate(indexes_of_whole, shape<>);
-        //     }
-        // };
-    }
-
-    inline namespace functors
-    {
-        template<size_t N>
-        inline constexpr detail::repeat_t<N> repeat{};
-        
-        template<class Tree>
-        inline constexpr detail::repeat_as_t<Tree> repeat_as{};
-
-        // template<array TensorShape>
-        // inline constexpr detail::repeat_by_t<TensorShape> repeat_by{};
-    }
 
     namespace detail
     {
@@ -438,41 +397,47 @@ namespace senluo
 
     namespace detail
     {
-        struct combine_t
+        struct combine_fn
         {
             template<typename...T>
             constexpr auto operator()(T&&...t) const
             {
-                return tuple<unwrap_t<T>...>{ unwrap_fwd(FWD(t))... };
+                return tuple<pass_t<T>...>{ FWD(t)... };
             }
         };
     }
 
     inline namespace functors
     {
-        inline constexpr detail::combine_t combine{};  
+        inline constexpr detail::combine_fn combine{};  
     }
+
+    template<class...T>
+    using combine_t = decltype(combine(std::declval<T>()...));
 
     namespace detail
     {
-        struct zip_t
+        struct zip_fn
         {
             template<typename...T>
             constexpr auto operator()(T&&...t) const
             {
-                return tuple<T...>{ FWD(t)... } | transpose<>;
+                return combine(FWD(t)...) | transpose<>;
             }
         };
     }
 
     inline namespace functors
     {
-        inline constexpr detail::zip_t zip{};  
+        inline constexpr detail::zip_fn zip{};  
     }
+
+    template<class...T>
+    using zip_t = decltype(zip(std::declval<T>()...));
 
     namespace detail
     {
-        struct mat_zip_t
+        struct mat_zip_fn
         {
             template<typename...T>
             constexpr auto operator()(T&&...t) const
@@ -484,8 +449,11 @@ namespace senluo
 
     inline namespace functors
     {
-        inline constexpr detail::mat_zip_t mat_zip{};  
+        inline constexpr detail::mat_zip_fn mat_zip{};  
     }
+
+    template<class...T>
+    using mat_zip_t = decltype(mat_zip(std::declval<T>()...));
 }
 
 #include "../tools/macro_undef.hpp"
