@@ -92,7 +92,7 @@ namespace senluo
     namespace detail
     {
         template<auto FoldedStrictureTree>
-        struct astrict_fn : tree_adaptor_closure<astrict_fn<FoldedStrictureTree>>
+        struct astrict_fn : adaptor_closure<astrict_fn<FoldedStrictureTree>>
         {
             template<typename T>
             constexpr decltype(auto) operator()(T&& t) const

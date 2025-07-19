@@ -33,7 +33,7 @@ namespace senluo
 
     namespace detail
     {
-        struct enumerate_fn : tree_adaptor_closure<enumerate_fn>
+        struct enumerate_fn : adaptor_closure<enumerate_fn>
         {
             template<branched T>
             constexpr decltype(auto) operator()(T&& t)const noexcept

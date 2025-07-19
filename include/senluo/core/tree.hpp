@@ -6,9 +6,7 @@
 #include "../tools/general.hpp"
 #include "../tools/array.hpp"
 #include "../tools/tuple.hpp"
-//#include "../tools/wrapper.hpp"
-
-#include "tree_adaptor.hpp"
+#include "../tools/adaptor.hpp"
 
 #include "../tools/macro_define.hpp"
 

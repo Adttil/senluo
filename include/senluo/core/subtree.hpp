@@ -69,7 +69,7 @@ namespace senluo
     }
 
     template<>
-    struct detail::subtree_fn<> : tree_adaptor_closure<subtree_fn<>>
+    struct detail::subtree_fn<> : adaptor_closure<subtree_fn<>>
     {
         template<class T>
         static constexpr decltype(auto) operator()(T&& t) noexcept
@@ -79,7 +79,7 @@ namespace senluo
     };
 
     template<std::integral auto I>
-    struct detail::subtree_fn<I> : tree_adaptor_closure<subtree_fn<I>>
+    struct detail::subtree_fn<I> : adaptor_closure<subtree_fn<I>>
     {
         template<class T>
         static constexpr decltype(auto) operator()(T&& t)
@@ -89,7 +89,7 @@ namespace senluo
     };
 
     template<array Indexes>
-    struct detail::subtree_fn<Indexes> : tree_adaptor_closure<subtree_fn<Indexes>>
+    struct detail::subtree_fn<Indexes> : adaptor_closure<subtree_fn<Indexes>>
     {
         template<class T>
         static constexpr decltype(auto) operator()(T&& t)
@@ -102,7 +102,7 @@ namespace senluo
     };
 
     template<auto...I>
-    struct detail::subtree_fn : tree_adaptor_closure<subtree_fn<I...>>
+    struct detail::subtree_fn : adaptor_closure<subtree_fn<I...>>
     {
         template<class T>
         static constexpr decltype(auto) operator()(T&& t)

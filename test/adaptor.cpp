@@ -1,9 +1,9 @@
-#include <senluo/core/tree_adaptor.hpp>
+#include <senluo/tools/adaptor.hpp>
 #include "test_tool.hpp"
 
 using namespace senluo;
 
-TEST(tree_adaptor, refer_pass)
+TEST(adaptor, refer_pass)
 {
     int i = 0;
 

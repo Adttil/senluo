@@ -24,7 +24,7 @@ namespace senluo
     //         }
     //     };
         
-    //     struct apply_invoke_t : tree_adaptor_closure<apply_invoke_t>
+    //     struct apply_invoke_t : adaptor_closure<apply_invoke_t>
     //     {
     //         // Complex sfinae and noexcept are not currently provided.
     //         template<class T>
@@ -180,7 +180,7 @@ namespace senluo
     namespace detail
     {
         template<auto OperationTree>
-        struct operate_fn : tree_adaptor_closure<operate_fn<OperationTree>>
+        struct operate_fn : adaptor_closure<operate_fn<OperationTree>>
         {
             template<class T>
             static constexpr decltype(auto) adapt(T&& t)

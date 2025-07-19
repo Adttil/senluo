@@ -35,7 +35,7 @@ namespace senluo::detail
     // constexpr decltype(auto) operate_unchecked(T&& t);
 
     // template<auto FoldedOperationTree>
-    // struct operate_unchecked_fn : tree_adaptor_closure<operate_unchecked_fn<FoldedOperationTree>>
+    // struct operate_unchecked_fn : adaptor_closure<operate_unchecked_fn<FoldedOperationTree>>
     // {
     //     template<class T>
     //     constexpr decltype(auto) operator()(T&& t) const
@@ -392,7 +392,7 @@ namespace senluo
     using principle_data_t = decltype((principle(std::declval<T>())).data());
 
     template<class Pretreater>
-    struct pretreater_interface : tree_adaptor_closure<Pretreater>
+    struct pretreater_interface : adaptor_closure<Pretreater>
     {
         template<class T>
         static constexpr decltype(auto) adapt(T&& tree)
@@ -464,7 +464,7 @@ namespace senluo
 
     namespace detail
     {
-        struct sequence_t : tree_adaptor_closure<sequence_t>
+        struct sequence_t : adaptor_closure<sequence_t>
         {
             template<branched T>
             constexpr decltype(auto) operator()(T&& tree)const
@@ -479,7 +479,7 @@ namespace senluo
             }
         };
 
-        struct inverse_sequence_t : tree_adaptor_closure<inverse_sequence_t>
+        struct inverse_sequence_t : adaptor_closure<inverse_sequence_t>
         {
             template<branched T>
             constexpr decltype(auto) operator()(T&& tree)const
@@ -494,7 +494,7 @@ namespace senluo
             }
         };
 
-        struct seperate_t : tree_adaptor_closure<seperate_t>
+        struct seperate_t : adaptor_closure<seperate_t>
         {
             template<branched T>
             constexpr decltype(auto) operator()(T&& tree)const

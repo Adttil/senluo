@@ -1,59 +1,28 @@
 #ifndef SENLUO_ADAPTOR_CLOSURE_HPP
 #define SENLUO_ADAPTOR_CLOSURE_HPP
 
-#include "../tools/general.hpp"
-#include "../tools/wrapper.hpp"
-#include "../tools/tuple.hpp"
-#include "../tools/array.hpp"
+#include "general.hpp"
+#include "tuple.hpp"
 
-#include "../tools/macro_define.hpp"
+#include "macro_define.hpp"
 
 namespace senluo
 {
     using std::size_t;
 
     template<class F>
-    struct tree_adaptor_closure
-    {
-        // template<class T, class Self>
-        // constexpr decltype(auto) unwrap_adapt(this Self&& self, T&& t)
-        // AS_EXPRESSION(
-        //     std::forward<Self>(self).adapt(std::forward<T>(t))
-        // )
-
-        // template<class T, class Self>
-        // constexpr auto operator()(this Self&& self, T&& t) 
-        //     noexcept(noexcept(materialize(FWD(self).adapt(FWD(t)))))
-        //     -> materialize_t<decltype(FWD(self).adapt(FWD(t)))>
-        // {
-        //     using rtype = decltype(FWD(self).adapt(FWD(t)));
-        //     if constexpr(std::same_as<rtype, materialize_t<rtype>>)
-        //     {
-        //         return FWD(self).adapt(FWD(t));
-        //     }
-        //     else
-        //     {
-        //         return materialize(FWD(self).adapt(FWD(t)));
-        //     }
-        // }
-
-        // template<array Indexes>
-        // static consteval tuple<array<size_t, 0uz>> dependencies()
-        // {
-        //     return {};
-        // }
-    };
+    struct adaptor_closure{};
 
     template<class T>
     concept adaptor_closuroid = requires(std::remove_cvref_t<T>& t) 
     {
-        { []<class F>(tree_adaptor_closure<F>&)->F*{}(t) } -> std::same_as<std::remove_cvref_t<T>*>;
+        { []<class F>(adaptor_closure<F>&)->F*{}(t) } -> std::same_as<std::remove_cvref_t<T>*>;
     };
 
     namespace detail
     {
         template<class Adaptor, class...Args>
-        struct closure : tuple<Args...>, tree_adaptor_closure<closure<Adaptor, Args...>>
+        struct closure : tuple<Args...>, adaptor_closure<closure<Adaptor, Args...>>
         {
             // clang crashed with [[no_unique_address]]
             // https://github.com/llvm/llvm-project/issues/104227
@@ -98,7 +67,7 @@ namespace senluo
 namespace senluo::detail
 {        
     template<class ClosureLeft, class ClosureRight>
-    struct pipeline : tree_adaptor_closure<pipeline<ClosureLeft, ClosureRight>>
+    struct pipeline : adaptor_closure<pipeline<ClosureLeft, ClosureRight>>
     {
         SENLUO(no_unique_address) ClosureLeft  left;
         SENLUO(no_unique_address) ClosureRight right;
@@ -133,7 +102,7 @@ namespace senluo
 {
     namespace detail
     {
-        struct pass_fn : tree_adaptor_closure<pass_fn>
+        struct pass_fn : adaptor_closure<pass_fn>
         {
             template<class T>
             static constexpr decltype(auto) operator()(T&& t) noexcept
@@ -149,5 +118,5 @@ namespace senluo
     }
 }
 
-#include "../tools/macro_undef.hpp"
+#include "macro_undef.hpp"
 #endif
