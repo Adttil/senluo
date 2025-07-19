@@ -7,7 +7,7 @@ def generate_vec_accesser_1(component_names):
     for i in range(n):
         result += "constexpr decltype(auto) " + component_names[i] + "(this auto&& self) noexcept\n"
         result += "{\n"
-        result += "    return tree_get<" + str(i) + ">(FWD(self).raw_base());\n"
+        result += "    return senluo::tree_get<" + str(i) + "uz>(FWD(self, base));\n"
         result += "}\n\n"
     return result
 
@@ -25,7 +25,7 @@ def generate_vec_accesser_m(component_names, m):
         result += "    return detail::relayout_unchecked<tuple{ array{" + str(indexes[0]) + "uz}"
         for i in range(1, m):
             result += ", array{" + str(indexes[i]) + "uz}"
-        result += " }>(FWD(self).raw_base() | refer) | as_vec;\n"
+        result += " }>(FWD(self, base)) | as_vec;\n"
         result += "}\n\n"
     return result
 

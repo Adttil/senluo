@@ -27,11 +27,21 @@ namespace senluo
     template<class T>
     using default_vec_container_t = default_vec_container<T>::type;
 
-    template<class T>
-    struct vec;
+    namespace vec_ns
+    {
+        template<class T>
+        struct vec;
+
+        template<class T>
+        vec(T) -> vec<T>;
+    }
+    using vec_ns::vec;
 
     template<class T>
-    vec(T) -> vec<T>;
+    concept vec_wrapped = requires(std::remove_cvref_t<T>& t) 
+    {
+        { []<class U>(vec<U>&)->vec<U>*{}(t) } -> std::same_as<std::remove_cvref_t<T>*>;
+    };
 
     namespace detail 
     {
@@ -67,6 +77,11 @@ namespace senluo
                 return t;
             }
         };
+
+        struct fwd_as_vec_fn : adaptor_closure<fwd_as_vec_fn>
+        {
+
+        };
     }
 
     inline namespace functors
@@ -75,13 +90,14 @@ namespace senluo
     }
 
     template<class T>
-    struct vec
+    struct vec_ns::vec
     {
+        using base_type = T;
+
         T base;
-//#include "code_generate/vec_access.code"
 
         template<size_t I, class Self>
-        constexpr decltype(auto) tree_get(this Self&& self)
+        constexpr decltype(auto) tree_get(this Self&& self, custom_t = {})
         {
             return senluo::tree_get<I>(FWD(self, base));
         }
@@ -91,300 +107,119 @@ namespace senluo
             return size<T>;
         }
 
+        template<class U>
+        static constexpr vec make_from(U&& u, custom_t = {})
+        AS_EXPRESSION(
+            vec<T>{ FWD(u) | make<T> }
+        )
+
         template<class U, class Self> requires (size<T> == size<U>)
         constexpr operator vec<U>(this Self&& self)
         {
             return vec<U>{ FWD(self, base) | make<U> };
         }
 
-        template<class U> requires (size<T> == size<U>)
-        constexpr vec& operator=(const vec<U>& src)
+        template<vec_wrapped U> requires (size<T> == size<U>)
+        constexpr vec& operator=(U&& src)
         {
             [&]<size_t...I>(std::index_sequence<I...>)
             {
-                (..., (tree_get<I>(this->base) = tree_get<I>(src.base)));
+                (..., (senluo::tree_get<I>(*this) = senluo::tree_get<I>(FWD(src))));
             }(std::make_index_sequence<size<T>>{});
             return *this;
         }
+
+#include "code_generate/vec_access.code"
+
+        friend constexpr bool operator==(const vec&, const vec&) = default;
     };
 }
 
 namespace senluo::detail
 {
-    template<class Op, class LHS, class RHS>
-    constexpr auto vec_operate(const vec<LHS>& lhs, const vec<RHS>& rhs)
+    template<class T, class Lazy>
+    constexpr auto to_vec(Lazy&& lazy_val)
     {
-        if constexpr(std::same_as<LHS, RHS> && requires{ zip_transform(Op{}, lhs.base, rhs.base) | make<LHS>; })
+        using base_t = std::remove_cvref_t<typename std::remove_cvref_t<T>::base_type>;
+        if constexpr(requires{ FWD(lazy_val) | make<base_t>; })
         {
-            return vec<LHS>{ zip_transform(Op{}, lhs.raw_base(), rhs.raw_base()) | make<LHS> };
+            return vec<base_t>{ FWD(lazy_val) | make<base_t> };
         }
-        else return[&]<size_t...I>(std::index_sequence<I...>)
+        else
         {
-            using lazy_t = decltype(zip_transform(Op{}, lhs.raw_base(), rhs.raw_base()));
-            using container_t = default_container_t<tree_get_t<I, lazy_t>...>;
-            return vec<container_t>{ zip_transform(Op{}, lhs.raw_base(), rhs.raw_base()) | make<container_t> };
-        }(std::make_index_sequence<size<LHS>>{});
+            using container_t = default_vec_container_t<Lazy>;
+            return vec<container_t>{ FWD(lazy_val) | make<container_t> };
+        }
+    }
+}
+
+namespace senluo::vec_ns
+{
+    template<class LHS, class RHS>
+    constexpr decltype(auto) operator+(LHS&& lhs, RHS&& rhs)
+    {
+        return detail::to_vec<LHS>(zip_transform(std::plus<>{}, FWD(lhs), FWD(rhs)));
+    }
+
+    template<class LHS, class RHS>
+    constexpr decltype(auto) operator-(LHS&& lhs, RHS&& rhs)
+    {
+        return detail::to_vec<LHS>(zip_transform(std::minus<>{}, FWD(lhs), FWD(rhs)));
+    }
+
+    template<vec_wrapped LHS, vec_wrapped RHS>
+    constexpr decltype(auto) operator*(LHS&& lhs, RHS&& rhs)
+    {
+        return detail::to_vec<LHS>(zip_transform(std::multiplies<>{}, FWD(lhs), FWD(rhs)));
+    }
+
+    template<vec_wrapped LHS, vec_wrapped RHS>
+    constexpr decltype(auto) operator/(LHS&& lhs, RHS&& rhs)
+    {
+        return detail::to_vec<LHS>(zip_transform(std::divides<>{}, FWD(lhs), FWD(rhs)));
+    }
+
+    template<class LHS, class RHS>
+    constexpr decltype(auto) operator%(LHS&& lhs, RHS&& rhs)
+    {
+        return detail::to_vec<LHS>(zip_transform(std::modulus<>{}, FWD(lhs), FWD(rhs)));
+    }
+
+    template<class T>
+    constexpr decltype(auto) operator-(T&& t)
+    {
+        return detail::to_vec<T>(transform(FWD(t), std::negate<>{}));
+    }
+
+    template<class LHS, vec_wrapped RHS>
+    constexpr decltype(auto) operator*(LHS&& lhs, RHS&& rhs)
+    {
+        return detail::to_vec<RHS>(transform(FWD(rhs), [lhs = pass(FWD(lhs))](auto&& e){ return lhs * FWD(e); }));
+    }
+
+    template<vec_wrapped LHS, class RHS>
+    constexpr decltype(auto) operator*(LHS&& lhs, RHS&& rhs)
+    {
+        return FWD(rhs) * FWD(lhs);
+    }
+
+    template<vec_wrapped LHS, class RHS>
+    constexpr decltype(auto) operator/(LHS&& lhs, RHS&& rhs)
+    {
+        return detail::to_vec<LHS>(transform(FWD(lhs), [rhs = pass(FWD(rhs))](auto&& e){ return FWD(e) / rhs; }));
     }
 }
 
 namespace senluo
 {
-    template<class Op, class LHS, class RHS>
-    constexpr auto default_operate(const vec<LHS>& lhs, const vec<RHS>& rhs)
+    namespace detail
     {
-        if constexpr(std::same_as<LHS, RHS> && requires{ zip_transform(Op{}, lhs.raw_base(), rhs.raw_base()) | make<LHS>; })
-        {
-            return vec<LHS>{ zip_transform(Op{}, lhs.raw_base(), rhs.raw_base()) | make<LHS> };
-        }
-        else return[&]<size_t...I>(std::index_sequence<I...>)
-        {
-            using lazy_t = decltype(zip_transform(Op{}, lhs.raw_base(), rhs.raw_base()));
-            using container_t = default_container_t<tree_get_t<I, lazy_t>...>;
-            return vec<container_t>{ zip_transform(Op{}, lhs.raw_base(), rhs.raw_base()) | make<container_t> };
-        }(std::make_index_sequence<size<LHS>>{});
-    }
-
-    template<class LHS, class RHS>
-    constexpr auto plus(const vec<LHS>& lhs, const vec<RHS>& rhs)
-    {
-        return default_operate<std::plus<>>(lhs, rhs);
-    }
-
-    template<class RHS, class LHS>
-    constexpr auto swap_plus(const vec<RHS>& rhs, const vec<LHS>& lhs)
-    {
-        return default_operate<std::plus<>>(lhs, rhs);
-    }
-
-    template<class LHS, class RHS>
-    constexpr auto minus(const vec<LHS>& lhs, const vec<RHS>& rhs)
-    {
-        return default_operate<std::minus<>>(lhs, rhs);
-    }
-
-    template<class RHS, class LHS>
-    constexpr auto swap_minus(const vec<RHS>& rhs, const vec<LHS>& lhs)
-    {
-        return default_operate<std::minus<>>(lhs, rhs);
-    }
-
-    template<class LHS, class RHS>
-    constexpr auto multiplies(const vec<LHS>& lhs, const vec<RHS>& rhs)
-    {
-        return default_operate<std::multiplies<>>(lhs, rhs);
-    }
-
-    template<class RHS, class LHS>
-    constexpr auto swap_multiplies(const vec<RHS>& rhs, const vec<LHS>& lhs)
-    {
-        return default_operate<std::multiplies<>>(lhs, rhs);
-    }
-
-    template<class LHS, class RHS>
-    constexpr auto divides(const vec<LHS>& lhs, const vec<RHS>& rhs)
-    {
-        return default_operate<std::divides<>>(lhs, rhs);
-    }
-
-    template<class RHS, class LHS>
-    constexpr auto swap_divides(const vec<RHS>& rhs, const vec<LHS>& lhs)
-    {
-        return default_operate<std::divides<>>(lhs, rhs);
-    }
-
-    template<class LHS, class RHS>
-    constexpr auto modulus(const vec<LHS>& lhs, const vec<RHS>& rhs)
-    {
-        return default_operate<std::modulus<>>(lhs, rhs);
-    }
-
-    template<class RHS, class LHS>
-    constexpr auto swap_modulus(const vec<RHS>& rhs, const vec<LHS>& lhs)
-    {
-        return default_operate<std::modulus<>>(lhs, rhs);
-    }
-
-    template<class T>
-    constexpr auto negate(const vec<T>& v)
-    {
-        if constexpr(requires{ v.raw_base() | transform(std::negate<>{}) | make<T>; })
-        {
-            return vec<T>{ v.raw_base() | transform(std::negate<>{}) | make<T> };
-        }
-        else
-        {
-            using lazy_t = decltype(v.raw_base() | transform(std::negate<>{}));
-            using container_t = default_vec_container_t<lazy_t>;
-            return vec<container_t>{ v.raw_base() | transform(std::negate<>{}) | make<T> };
-        }
-    }
-
-    template<class LHS, class RHS>
-    constexpr auto multiplies(const LHS& lhs, const vec<RHS>& rhs)
-    {
-        if constexpr(requires{ rhs.raw_base() | transform([&](const auto& e){ return lhs * e; }) | make<RHS>; })
-        {
-            return vec<RHS>{ rhs.raw_base() | transform([&](const auto& e){ return lhs * e; }) | make<RHS> };
-        }
-        else
-        {
-            using lazy_t = decltype(rhs.raw_base() | transform([&](const auto& e){ return lhs * e; }));
-            using container_t = default_vec_container_t<lazy_t>;
-            return vec<container_t>{ rhs.raw_base() | transform([&](const auto& e){ return lhs * e; }) | make<container_t> };
-        }
-    }
-
-    template<class RHS, class LHS>
-    constexpr auto swap_multiplies(const vec<RHS>& rhs, const LHS& lhs)
-    {
-        if constexpr(requires{ rhs.raw_base() | transform([&](const auto& e){ return lhs * e; }) | make<RHS>; })
-        {
-            return vec<RHS>{ rhs.raw_base() | transform([&](const auto& e){ return lhs * e; }) | make<RHS> };
-        }
-        else
-        {
-            using lazy_t = decltype(rhs.raw_base() | transform([&](const auto& e){ return lhs * e; }));
-            using container_t = default_vec_container_t<lazy_t>;
-            return vec<container_t>{ rhs.raw_base() | transform([&](const auto& e){ return lhs * e; }) | make<container_t> };
-        }
-    }
-
-    template<class LHS, class RHS>
-    constexpr auto multiplies(const vec<LHS>& lhs, const RHS& rhs)
-    {
-        if constexpr(requires{ lhs.raw_base() | transform([&](const auto& e){ return rhs * e; }) | make<LHS>; })
-        {
-            return vec<LHS>{ lhs.raw_base() | transform([&](const auto& e){ return rhs * e; }) | make<LHS> };
-        }
-        else
-        {
-            using lazy_t = decltype(lhs.raw_base() | transform([&](const auto& e){ return rhs * e; }));
-            using container_t = default_vec_container_t<lazy_t>;
-            return vec<container_t>{ lhs.raw_base() | transform([&](const auto& e){ return rhs * e; }) | make<container_t> };
-        }
-    }
-
-    template<class RHS, class LHS>
-    constexpr auto swap_multiplies(const RHS& rhs, const vec<LHS>& lhs)
-    {
-        if constexpr(requires{ lhs.raw_base() | transform([&](const auto& e){ return rhs * e; }) | make<LHS>; })
-        {
-            return vec<LHS>{ lhs.raw_base() | transform([&](const auto& e){ return rhs * e; }) | make<LHS> };
-        }
-        else
-        {
-            using lazy_t = decltype(lhs.raw_base() | transform([&](const auto& e){ return rhs * e; }));
-            using container_t = default_vec_container_t<lazy_t>;
-            return vec<container_t>{ lhs.raw_base() | transform([&](const auto& e){ return rhs * e; }) | make<container_t> };
-        }
-    }
-
-    template<class LHS, class RHS>
-    constexpr auto divides(const vec<LHS>& lhs, const RHS& rhs)
-    {
-        if constexpr(requires{ lhs.raw_base() | transform([&](const auto& e){ return e / rhs; }) | make<LHS>; })
-        {
-            return vec<LHS>{ lhs.raw_base() | transform([&](const auto& e){ return e / rhs; }) | make<LHS> };
-        }
-        else
-        {
-            using lazy_t = decltype(lhs.raw_base() | transform([&](const auto& e){ return e / rhs; }));
-            using container_t = default_vec_container_t<lazy_t>;
-            return vec<container_t>{ lhs.raw_base() | transform([&](const auto& e){ return e / rhs; }) | make<container_t> };
-        }
-    }
-
-    template<class RHS, class LHS>
-    constexpr auto swap_divides(const RHS& rhs, const vec<LHS>& lhs)
-    {
-        if constexpr(requires{ lhs.raw_base() | transform([&](const auto& e){ return e / rhs; }) | make<LHS>; })
-        {
-            return vec<LHS>{ lhs.raw_base() | transform([&](const auto& e){ return e / rhs; }) | make<LHS> };
-        }
-        else
-        {
-            using lazy_t = decltype(lhs.raw_base() | transform([&](const auto& e){ return e / rhs; }));
-            using container_t = default_vec_container_t<lazy_t>;
-            return vec<container_t>{ lhs.raw_base() | transform([&](const auto& e){ return e / rhs; }) | make<container_t> };
-        }
-    }
-
-    template<class LHS, class RHS>
-    constexpr decltype(auto) operator+(const vec<LHS>& lhs, const vec<RHS>& rhs)
-    {
-        return plus(lhs, rhs);
-    }
-
-    template<class LHS, class RHS>
-    constexpr decltype(auto) operator-(const vec<LHS>& lhs, const vec<RHS>& rhs)
-    {
-        return minus(lhs, rhs);
-    }
-
-    template<class LHS, class RHS>
-    constexpr decltype(auto) operator*(const vec<LHS>& lhs, const vec<RHS>& rhs)
-    {
-        return multiplies(lhs, rhs);
-    }
-
-    template<class LHS, class RHS>
-    constexpr decltype(auto) operator/(const vec<LHS>& lhs, const vec<RHS>& rhs)
-    {
-        return divides(lhs, rhs);
-    }
-
-    template<class LHS, class RHS>
-    constexpr decltype(auto) operator%(const vec<LHS>& lhs, const vec<RHS>& rhs)
-    {
-        return modulus(lhs, rhs);
-    }
-
-    template<class T>
-    constexpr decltype(auto) operator-(const vec<T>& v)
-    {
-        return negate(v);
-    }
-
-    template<class LHS, class RHS>
-    constexpr decltype(auto) operator*(const LHS& lhs, const vec<RHS>& rhs)
-    {
-        return multiplies(lhs, rhs);
-    }
-
-    template<class LHS, class RHS>
-    constexpr decltype(auto) operator*(const vec<LHS>& lhs, const RHS& rhs)
-    {
-        return multiplies(lhs, rhs);
-    }
-
-    template<class LHS, class RHS>
-    constexpr decltype(auto) operator/(const vec<LHS>& lhs, const RHS& rhs)
-    {
-        return divides(lhs, rhs);
-    }
-}
-
-namespace senluo
-{
-    namespace detail::dot_fn_ns
-    {
-        void dot();
-        void swap_dot();
-
         struct dot_fn
         {
             template<class LHS, class RHS>
             constexpr decltype(auto) operator()(LHS&& lhs, RHS&& rhs) const
             {
-                if constexpr(requires{ dot(FWD(lhs) | as_vec, FWD(rhs) | as_vec); })
-                {
-                    return dot(FWD(lhs) | as_vec, FWD(rhs) | as_vec);
-                }
-                else if constexpr(requires{ swap_dot(FWD(rhs) | as_vec, FWD(lhs) | as_vec); })
-                {
-                    return swap_dot(FWD(rhs) | as_vec, FWD(lhs) | as_vec);
-                }   
-                else return [&]<size_t...I>(std::index_sequence<I...>) -> decltype(auto)
+                return [&]<size_t...I>(std::index_sequence<I...>) -> decltype(auto)
                 {
                     return (... + (tree_get<I>(lhs) * tree_get<I>(rhs)));
                 }(std::make_index_sequence<size<LHS>>{});
@@ -394,13 +229,8 @@ namespace senluo
 
     inline namespace functors
     {
-        inline constexpr detail::dot_fn_ns::dot_fn dot{};
+        inline constexpr detail::dot_fn dot{};
     }
-}
-
-namespace senluo
-{
-  
 }
 
 #include "tools/macro_undef.hpp"
