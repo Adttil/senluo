@@ -136,7 +136,6 @@ namespace senluo
 
     namespace detail::get_size_ns
     {
-        template<class T>
         void get_size();
 
         struct get_size_fn

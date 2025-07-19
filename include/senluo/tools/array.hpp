@@ -6,6 +6,7 @@
 
 #if __STDC_HOSTED__ && !defined(SENLUO_DONOT_USE_STD_ARRAY)
 
+#define SENLUO_USE_STD_ARRAY
 #include <array>
 
 namespace senluo
