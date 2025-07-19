@@ -14,3 +14,11 @@ TEST(make, make)
     MAGIC_VCHECK(get<0>(t), 1);
     MAGIC_VCHECK(get<1>(t), 2);
 }
+
+TEST(make, relayout)
+{
+    constexpr auto a = tuple{1, 2} | inverse;
+    constexpr auto b = tuple{2, 1} | make<decltype(a)>;
+
+    MAGIC_VCHECK(a, b);
+}

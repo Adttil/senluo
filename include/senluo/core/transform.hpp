@@ -26,6 +26,8 @@ namespace senluo
             {
                 return size<T>;
             }
+
+            friend constexpr bool operator==(const transform_tree&, const transform_tree&) = default;
         };
     }
 
@@ -78,6 +80,8 @@ namespace senluo
             {
                 return size<T>;
             }
+
+            friend constexpr bool operator==(const mat_transform_tree&, const mat_transform_tree&) = default;
         };
     }
 

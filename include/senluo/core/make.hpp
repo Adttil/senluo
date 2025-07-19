@@ -163,9 +163,9 @@ namespace senluo
 namespace senluo::tuple_ns
 {
     template<class...T, class Src>
-    constexpr tuple<T...> make_from(std::type_identity<tuple<T...>>, Src& src, custom_t = {})
+    constexpr tuple<T...> make_from(std::type_identity<tuple<T...>>, Src&& src, custom_t = {})
     {
-        return tuple_make<tuple<T...>>(src);
+        return tuple_make<tuple<T...>>(FWD(src));
     }
 }
 

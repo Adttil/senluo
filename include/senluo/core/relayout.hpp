@@ -4,6 +4,7 @@
 #include "../tools/adaptor.hpp"
 
 #include "subtree.hpp"
+#include "make.hpp"
 
 #include "../tools/macro_define.hpp"
 
@@ -82,6 +83,29 @@ namespace senluo::detail
         }(std::make_index_sequence<size<decltype(Layout)>>{});
     }
 
+    template<auto Layout, class BaseShape>
+    constexpr auto unfold_layout(BaseShape base_shape = {})
+    {
+        if constexpr(indexical<decltype(Layout)>)
+        {
+            constexpr auto indexes = detail::normalize_indices<Layout, BaseShape>();
+            using subshape_t = subtree_t<BaseShape, indexes>;
+            if constexpr(terminal<subshape_t>)
+            {
+                return indexes;
+            }
+            else return [&]<size_t...I>(std::index_sequence<I...>)
+            {
+                constexpr auto indexes = detail::normalize_indices<Layout, BaseShape>();
+                return make_tuple(detail::unfold_layout<detail::array_cat(indexes, array{ I })>(base_shape)...);
+            }(std::make_index_sequence<size<subshape_t>>{});
+        }
+        else return [&]<size_t...I>(std::index_sequence<I...>)
+        {
+            return make_tuple(detail::unfold_layout<get<I>(Layout)>(base_shape)...);
+        }(std::make_index_sequence<size<decltype(Layout)>>{});
+    }
+
     template<typename TLayout, size_t N>
     constexpr auto layout_add_prefix(const TLayout& layout, const array<size_t, N>& prefix)
     {
@@ -107,6 +131,131 @@ namespace senluo::detail
             return make_tuple(detail::layout_add_prefix(detail::default_unfolded_layout<subtree_t<T&, I>>(), array{I})...);
         }(std::make_index_sequence<size<T>>{});    
     };
+
+    enum class layout_mapping_type_t
+    {
+        multi_shot,
+        injective,
+        bijective
+    };
+
+    template<auto Layout, size_t Depth = 0uz, typename T>
+    constexpr bool inverse_layout_index_len_at(T& result_index_len, size_t& setted_count)
+    {
+        if constexpr(detail::indexical_array<decltype(Layout)>)
+        {
+            if(subtree<Layout>(result_index_len) == invalid_index)
+            {
+                subtree<Layout>(result_index_len) = Depth;
+                ++setted_count;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        else return [&]<size_t...I>(std::index_sequence<I...>)
+        {   
+            return (... && detail::inverse_layout_index_len_at<get<I>(Layout), Depth + 1uz>(result_index_len, setted_count));
+        }(std::make_index_sequence<size<decltype(Layout)>>{});
+    }
+
+    template<class S, class T>
+    constexpr auto make_tree_of_same_value_and_set_leaf_count(const T& value, size_t& count, S = {})
+    {
+        if constexpr(terminal<S>)
+        {
+            ++count;
+            return value;
+        }
+        else return [&]<size_t...I>(std::index_sequence<I...>)
+        {
+            return make_tuple(detail::make_tree_of_same_value_and_set_leaf_count(value, count, get<I>(S{}))...);
+        }(std::make_index_sequence<size<S>>{});
+    }
+
+    template<auto Layout, typename S>
+    constexpr auto inverse_layout_index_len(S = {})
+    {
+        size_t leaf_count = 0uz;
+        auto index_len_tree = detail::make_tree_of_same_value_and_set_leaf_count(invalid_index, leaf_count, S{});
+        size_t setted_count = 0uz;
+        bool is_injective = detail::inverse_layout_index_len_at<Layout>(index_len_tree, setted_count);
+
+        layout_mapping_type_t mapping_type;
+        if(not is_injective)
+        {
+            mapping_type = layout_mapping_type_t::multi_shot;
+        }
+        else if(leaf_count != setted_count)
+        {
+            mapping_type = layout_mapping_type_t::injective;
+        }
+        else
+        {
+            mapping_type = layout_mapping_type_t::bijective;
+        }
+
+        struct result_t
+        {
+            layout_mapping_type_t mapping_type;
+            decltype(index_len_tree) index_len_tree;
+        };
+        return result_t{ mapping_type, index_len_tree  };
+    }
+
+    template<auto IndexLenTree>
+    constexpr auto init_layout()
+    {
+        if constexpr(std::same_as<decltype(IndexLenTree), size_t>)
+        {
+            return array<size_t, IndexLenTree>{};
+        }
+        else return []<size_t...I>(std::index_sequence<I...>)
+        {
+            return make_tuple(detail::init_layout<get<I>(IndexLenTree)>()...);
+        }(std::make_index_sequence<size<decltype(IndexLenTree)>>{});
+    }
+
+    template<auto Layout, auto CurIndex = indexes_of_whole, typename R>
+    constexpr void inverse_layout_at(R& result)
+    {
+        if constexpr(detail::indexical_array<decltype(Layout)>)
+        {
+            subtree<Layout>(result) = CurIndex;
+        }
+        else return [&]<size_t...I>(std::index_sequence<I...>)
+        {   
+            return (..., detail::inverse_layout_at<get<I>(Layout), detail::array_cat(CurIndex, array{ I })>(result));
+        }(std::make_index_sequence<size<decltype(Layout)>>{});
+    }
+
+    template<auto UnFoldedLayout, typename S>
+    constexpr auto get_layout_cache(S = {})
+    {
+        constexpr auto inverse_layout_index_len_result = detail::inverse_layout_index_len<UnFoldedLayout, S>();
+        
+        if constexpr(inverse_layout_index_len_result.mapping_type == layout_mapping_type_t::bijective)
+        {
+            auto inverse_layout = detail::init_layout<inverse_layout_index_len_result.index_len_tree>();
+            detail::inverse_layout_at<UnFoldedLayout>(inverse_layout);
+            struct layout_chache_t
+            {
+                layout_mapping_type_t mapping_type;
+                decltype(inverse_layout) inverse_layout;
+            };
+            return layout_chache_t{ inverse_layout_index_len_result.mapping_type, inverse_layout };
+        }
+        else
+        {
+            struct layout_chache_t
+            {
+                layout_mapping_type_t mapping_type;
+            };
+            return layout_chache_t{ inverse_layout_index_len_result.mapping_type };
+        }
+    }
 }
 
 namespace senluo
@@ -115,6 +264,18 @@ namespace senluo
     {
         template<class T, auto FoldedLayout>
         struct relayout_tree;
+    }
+
+    namespace detail
+    {
+        template<auto Layout>
+        struct relayout_fn;
+    }
+
+    inline namespace functors
+    {
+        template<auto Layout>
+        inline constexpr detail::relayout_fn<Layout> relayout{};
     }
 
     template<class T, auto FoldedLayout>
@@ -148,7 +309,18 @@ namespace senluo
             {
                 return std::tuple_size_v<std::remove_const_t<decltype(FoldedLayout)>>;
             }
-        }        
+        }
+
+        static constexpr auto unfold_layout = detail::unfold_layout<FoldedLayout>(shape<T>);
+        static constexpr auto layout_cache = detail::get_layout_cache<unfold_layout>(shape<T>);
+        
+        template<class U>
+        static constexpr relayout_tree make_from(U&& u, custom_t = {})
+        AS_EXPRESSION(
+            relayout_tree{ FWD(u) | relayout<layout_cache.inverse_layout> | make<T> }
+        )
+
+        friend constexpr bool operator==(const relayout_tree&, const relayout_tree&) = default;
     };
 
     namespace detail 
@@ -174,16 +346,16 @@ namespace senluo
             template<class T>
             constexpr decltype(auto) operator()(T&& t) const noexcept
             {
+                constexpr auto unfold_layout = detail::unfold_layout<Layout>(shape<T>);
+                constexpr auto layout_cache = detail::get_layout_cache<unfold_layout>(shape<T>);
+                static_assert(
+                    layout_cache.mapping_type != layout_mapping_type_t::multi_shot, 
+                    "multi-shot layout is not supported yet.");
+
                 constexpr auto folded_layout = detail::fold_layout<Layout>(shape<T>);
                 return detail::relayout_unchecked<folded_layout>(FWD(t));
             }
         };
-    }
-
-    inline namespace functors
-    {
-        template<auto Layout>
-        inline constexpr detail::relayout_fn<Layout> relayout{};
     }
 }
 

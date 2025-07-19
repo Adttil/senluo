@@ -17,7 +17,7 @@ namespace senluo
         {
             return []<size_t...I>(std::index_sequence<I...>)
             {
-                return type_tag<default_container_t<tree_get_t<I, T>...>>{};
+                return std::type_identity<default_container_t<tree_get_t<I, T>...>>{};
             }(std::make_index_sequence<size<T>>{});
         }
 
@@ -38,7 +38,7 @@ namespace senluo
         struct as_vec_fn : adaptor_closure<as_vec_fn>
         {
             template<class T>
-            constexpr vec<T> operator()(T&& t) const noexcept
+            constexpr vec<pass_t<T>> operator()(T&& t) const noexcept(noexcept(pass(FWD(t))))
             {
                 return { FWD(t) };
             }
@@ -46,25 +46,25 @@ namespace senluo
             template<class T>
             constexpr vec<T&> operator()(vec<T>& t) const noexcept
             {
-                return { t.raw_base() };
+                return { t.base };
             }
 
             template<class T>
             constexpr vec<const T&> operator()(const vec<T>& t) const noexcept
             {
-                return { t.raw_base() };
+                return { t.base };
             }
 
             template<class T>
-            constexpr vec<T> operator()(vec<T>&& t) const noexcept
+            constexpr vec<T> operator()(vec<T>&& t) const noexcept(std::is_nothrow_move_constructible_v<vec<T>>)
             {
-                return { FWD(t).raw_base() };
+                return std::move(t);
             }
 
             template<class T>
-            constexpr vec<T> operator()(const vec<T>&& t) const noexcept
+            constexpr vec<T> operator()(const vec<T>&& t) const noexcept(std::is_nothrow_copy_constructible_v<vec<T>>)
             {
-                return { FWD(t).raw_base() };
+                return t;
             }
         };
     }
@@ -75,27 +75,26 @@ namespace senluo
     }
 
     template<class T>
-    struct vec : based_on<T>
+    struct vec
     {
-#include "code_generate/vec_access.code"
+        T base;
+//#include "code_generate/vec_access.code"
 
-        template<size_t I, unwarp_derived_from<vec> Self>
-        friend constexpr decltype(auto) tree_get(Self&& self)
+        template<size_t I, class Self>
+        constexpr decltype(auto) tree_get(this Self&& self)
         {
-            return tree_get<I>(FWD(self).unwrap_base());
+            return senluo::tree_get<I>(FWD(self, base));
+        }
+
+        static consteval size_t get_size(custom_t = {})
+        {
+            return size<T>;
         }
 
         template<class U, class Self> requires (size<T> == size<U>)
         constexpr operator vec<U>(this Self&& self)
         {
-            return vec<U>{ FWD(self).raw_base() | make<U> };
-        }
-
-        constexpr decltype(auto) operator[](this auto&& self, size_t i)
-        noexcept(noexcept(FWD(self).raw_base()[i]))
-        requires requires{FWD(self).raw_base()[i];}
-        {
-            return FWD(self).raw_base()[i];
+            return vec<U>{ FWD(self, base) | make<U> };
         }
 
         template<class U> requires (size<T> == size<U>)
@@ -103,17 +102,29 @@ namespace senluo
         {
             [&]<size_t...I>(std::index_sequence<I...>)
             {
-                (..., (tree_get<I>(this->raw_base()) = tree_get<I>(src.raw_base())));
+                (..., (tree_get<I>(this->base) = tree_get<I>(src.base)));
             }(std::make_index_sequence<size<T>>{});
             return *this;
         }
     };
+}
 
-    template<class T>
-    struct tree_size<vec<T>>
+namespace senluo::detail
+{
+    template<class Op, class LHS, class RHS>
+    constexpr auto vec_operate(const vec<LHS>& lhs, const vec<RHS>& rhs)
     {
-        static constexpr size_t value = size<T>;
-    };
+        if constexpr(std::same_as<LHS, RHS> && requires{ zip_transform(Op{}, lhs.base, rhs.base) | make<LHS>; })
+        {
+            return vec<LHS>{ zip_transform(Op{}, lhs.raw_base(), rhs.raw_base()) | make<LHS> };
+        }
+        else return[&]<size_t...I>(std::index_sequence<I...>)
+        {
+            using lazy_t = decltype(zip_transform(Op{}, lhs.raw_base(), rhs.raw_base()));
+            using container_t = default_container_t<tree_get_t<I, lazy_t>...>;
+            return vec<container_t>{ zip_transform(Op{}, lhs.raw_base(), rhs.raw_base()) | make<container_t> };
+        }(std::make_index_sequence<size<LHS>>{});
+    }
 }
 
 namespace senluo
