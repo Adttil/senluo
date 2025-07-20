@@ -3,12 +3,19 @@
 
 #include "../tools/general.hpp"
 #include "../tools/adaptor.hpp"
-#include "../tools/constant.hpp"
-#include "principle.hpp"
 #include "subtree.hpp"
-#include "wrap.hpp"
+#include "make.hpp"
 
 #include "../tools/macro_define.hpp"
+
+namespace senluo
+{
+    enum class stricture_t
+    {
+        none,
+        readonly
+    };
+}
 
 namespace senluo::detail
 {
@@ -28,96 +35,130 @@ namespace senluo::detail
             return (... && detail::only_input<subtree_t<T, I>>());
         }(std::make_index_sequence<size<T>>{});
     }
-}
 
-namespace senluo
-{
-    template<typename T, auto FoldedStrictureTree>
-    struct astrict_tree : based_on<T>
+    template<size_t I, class T>
+    constexpr auto stricture_get(const T& tag_tree)
     {
-        template<size_t I, unwarp_derived_from<astrict_tree> Self> 
-        friend constexpr decltype(auto) tree_get(Self&& self)
+        if constexpr(std::same_as<T, stricture_t>)
         {
-            constexpr auto stricture_subtree = detail::tag_tree_get<I>(FoldedStrictureTree);
-            if constexpr(not std::same_as<decltype(stricture_subtree), const stricture_t>)
+            return tag_tree;
+        }
+        else
+        {
+            return get<I>(tag_tree);
+        }
+    }
+
+    template<auto TagTree>
+    constexpr auto fold_stricture()
+    {
+        if constexpr(terminal<decltype(TagTree)>)
+        {
+            return TagTree;
+        }
+        else return []<size_t...I>(std::index_sequence<I...>)
+        {
+            constexpr auto subresults = make_tuple(detail::fold_stricture<subtree<I>(TagTree)>()...);
+            if constexpr((terminal<decltype(get<0uz>(subresults))> && ... && detail::equal(get<I>(subresults), get<0uz>(subresults))))
             {
-                return astrict_tree<decltype(FWD(self).unwrap_base() | senluo::subtree<I>), stricture_subtree>{
-                     FWD(self).unwrap_base() | senluo::subtree<I> 
-                };
-            }
-            else if constexpr(stricture_subtree == stricture_t::none || detail::only_input<decltype(FWD(self).unwrap_base() | senluo::subtree<I>)>())
-            {
-                return FWD(self).unwrap_base() | senluo::subtree<I>;
-            }
-            else if constexpr(std::is_reference_v<decltype(FWD(self).unwrap_base() | senluo::subtree<I>)> 
-                              && detail::only_input<decltype(detail::to_readonly(detail::to_readonly(FWD(self)).unwrap_base() | senluo::subtree<I>))>())
-            {
-                return detail::to_readonly(detail::to_readonly(FWD(self)).unwrap_base() | senluo::subtree<I>);
+                return get<0uz>(subresults);
             }
             else
             {
-                return astrict_tree<decltype(FWD(self).unwrap_base() | senluo::subtree<I>), stricture_t::readonly>{ FWD(self).unwrap_base() | senluo::subtree<I> };
+                return subresults;
             }
-        }
-    };
+        }(std::make_index_sequence<size<decltype(TagTree)>>{});
+    }
 }
 
-namespace senluo::detail 
+namespace senluo::detail
 {
+    template<class T, auto StrictureTree>
+    struct astrict_tree
+    {
+        T base;
+
+        template<size_t I, class Self> 
+        constexpr decltype(auto) tree_get(this Self&& self, custom_t = {})
+        {
+            constexpr auto substricture = detail::stricture_get<I>(StrictureTree);
+            if constexpr(not std::same_as<decltype(substricture), const stricture_t>)
+            {
+                return astrict_tree<decltype(FWD(self, base) | subtree<I>), substricture>{
+                    senluo::tree_get<I>(FWD(self, base))
+                };
+            }
+            else if constexpr(substricture == stricture_t::none || detail::only_input<decltype(senluo::tree_get<I>(FWD(self, base)))>())
+            {
+                return senluo::tree_get<I>(FWD(self, base));
+            }
+            else if constexpr(detail::only_input<decltype(senluo::tree_get<I>(detail::to_readonly(FWD(self, base))))>())
+            {
+                return senluo::tree_get<I>(detail::to_readonly(FWD(self, base)));
+            }
+            else if constexpr(std::is_rvalue_reference_v<decltype(senluo::tree_get<I>(detail::to_readonly(FWD(self, base))))> 
+                              && detail::only_input<decltype(detail::to_readonly(senluo::tree_get<I>(detail::to_readonly(FWD(self, base)))))>())
+            {
+                return detail::to_readonly(senluo::tree_get<I>(detail::to_readonly(FWD(self, base))));
+            }
+            else
+            {
+                return astrict_tree<decltype(FWD(self, base) | senluo::subtree<I>), stricture_t::readonly>{ 
+                    senluo::tree_get<I>(FWD(self, base)) 
+                };
+            }
+        }
+
+        static consteval size_t get_size(custom_t = {}) noexcept
+        {
+            return size<T>;
+        }
+
+        template<class U>
+        static constexpr astrict_tree make_from(U&& u, custom_t = {})
+        AS_EXPRESSION(
+            astrict_tree{ FWD(u) | make<T> }
+        )
+    };
+
     template<auto FoldedStrictureTree, class T>
     constexpr decltype(auto) astrict_unchecked(T&& t)
     {
         if constexpr(not std::same_as<decltype(FoldedStrictureTree), stricture_t>)
         {
-            return astrict_tree<unwrap_t<T>, FoldedStrictureTree>{ unwrap_fwd(FWD(t)) };
+            return astrict_tree<pass_t<T>, FoldedStrictureTree>{ FWD(t) };
         }
-        else if constexpr(FoldedStrictureTree == stricture_t::none || detail::only_input<T>())
+        else if constexpr(FoldedStrictureTree == stricture_t::none || detail::only_input<pass_t<T>>())
         {
             return pass(FWD(t));
-            //return decltype(wrap(FWD(t))){ unwrap_fwd(FWD(t)) };
         }
-        else if constexpr(std::is_reference_v<T> && detail::only_input<decltype(detail::to_readonly(unwrap(FWD(t))))>())
+        else if constexpr(std::is_reference_v<T> && detail::only_input<decltype(detail::to_readonly(t))>())
         {
-            return decltype(wrap(detail::to_readonly(unwrap_fwd(FWD(t))))){ detail::to_readonly(unwrap_fwd(FWD(t))) };
+            return detail::to_readonly(t);
         }
         else
         {
-            return astrict_tree<unwrap_t<T>, stricture_t::readonly>{ unwrap_fwd(FWD(t)) };
+            return astrict_tree<pass_t<T>, stricture_t::readonly>{ FWD(t) };
         }
     }
+    
+    template<auto FoldedStrictureTree>
+    struct astrict_fn : adaptor_closure<astrict_fn<FoldedStrictureTree>>
+    {
+        template<typename T>
+        constexpr decltype(auto) operator()(T&& t) const
+        {
+            return detail::astrict_unchecked<FoldedStrictureTree>(FWD(t));
+        }
+    };
 }
 
 namespace senluo 
 {
-    namespace detail
-    {
-        template<auto FoldedStrictureTree>
-        struct astrict_fn : adaptor_closure<astrict_fn<FoldedStrictureTree>>
-        {
-            template<typename T>
-            constexpr decltype(auto) operator()(T&& t) const
-            {
-                return detail::astrict_unchecked<FoldedStrictureTree>(FWD(t));
-            }
-
-            template<class S>
-            static constexpr astrict_fn<detail::fold_tag_tree<detail::replicate<S>(FoldedStrictureTree)>()> replicate(S = {}) noexcept
-            {
-                return {};
-            }
-
-            template<auto Indexes>
-            friend constexpr constant_t<Indexes> operator/(constant_t<Indexes>, astrict_fn)
-            {
-                return {};
-            }
-        };
-    }
-
     inline namespace functors
     {
         template<auto StrictureTree>
-        inline constexpr detail::astrict_fn<detail::fold_tag_tree<StrictureTree>()> astrict{};
+        inline constexpr detail::astrict_fn<detail::fold_stricture<StrictureTree>()> astrict{};
     }
 }
 

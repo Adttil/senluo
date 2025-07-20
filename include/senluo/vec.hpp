@@ -120,7 +120,7 @@ namespace senluo
         }
 
         template<vec_wrapped U> requires (size<T> == size<U>)
-        constexpr vec& operator=(U&& src)
+        constexpr vec& operator=(U&& src)&
         {
             [&]<size_t...I>(std::index_sequence<I...>)
             {
