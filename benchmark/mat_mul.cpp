@@ -85,7 +85,7 @@ result_t senluo_ver(size_t n, const array<float, 24>& input)
         a = a * b;
     }
 
-    return a.raw_base();
+    return a.base;
 }
 
 result_t heterogeneous(size_t n, const array<float, 24>& input)
@@ -109,7 +109,7 @@ result_t heterogeneous(size_t n, const array<float, 24>& input)
         a = a * b;
     }
 
-    return a.raw_base() | make<result_t>;
+    return a.base | make<result_t>;
 }
 
 int main()

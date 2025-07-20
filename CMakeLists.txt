@@ -2,6 +2,10 @@ cmake_minimum_required (VERSION 3.8)
 
 project(senluo)
 
+option(SENLUO_INCLUDE_TESTS "build tests" ON)
+option(SENLUO_INCLUDE_BENCHMARKS "build benchmarks" ON)
+option(SENLUO_INCLUDE_BUILD_BENCHMARKS "build build_benchmarks" OFF)
+
 add_library(SENLUO INTERFACE)
 target_include_directories(SENLUO INTERFACE include)
 
@@ -43,14 +47,13 @@ endif()
 
 #add_executable(wrap_test "test/wrapper.cpp")
 
-option(SENLUO_INCLUDE_TESTS "build tests" ON)
 if(SENLUO_INCLUDE_TESTS)
     file(GLOB test_srcs "test/*.cpp")
     add_executable(senluo_tests ${test_srcs})
     target_link_libraries(senluo_tests PRIVATE GTest::gtest_main MAGIC_CPP)
 endif()
 
-option(SENLUO_INCLUDE_BENCHMARKS "build benchmarks" OFF)
+
 if(SENLUO_INCLUDE_BENCHMARKS)
     file(GLOB_RECURSE benchmark_srcs RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "benchmark/*.cpp")
     foreach(srcfile IN LISTS benchmark_srcs)
@@ -59,7 +62,6 @@ if(SENLUO_INCLUDE_BENCHMARKS)
     endforeach()
 endif()
 
-option(SENLUO_INCLUDE_BUILD_BENCHMARKS "build build_benchmarks" OFF)
 if(SENLUO_INCLUDE_BUILD_BENCHMARKS)
     file(GLOB_RECURSE build_benchmark_srcs RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "build_benchmark/*.cpp")
     foreach(srcfile IN LISTS build_benchmark_srcs)
