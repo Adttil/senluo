@@ -228,7 +228,6 @@ namespace senluo
         template<size_t I>
         struct tree_get_fn
         {
-        private:
             template<class T>
             static consteval choice_t<strategy_t> choose()
             {
@@ -277,7 +276,6 @@ namespace senluo
             static constexpr choice_t<strategy_t> choice = choose<T>();
 
             
-        public:
             template<class T> requires (choice<T>.strategy != strategy_t::none)
             static constexpr decltype(auto) operator()(T&& t) noexcept(choice<T>.nothrow)
             {

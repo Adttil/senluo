@@ -17,12 +17,18 @@ namespace senluo
     {
         template<class T>
         struct tuple_make_fn;
+
+        template<class T>
+        struct aggregate_make_fn;
     }
 
     inline namespace functors
     {
         template<class T>
         inline constexpr detail::tuple_make_fn<T> tuple_make{};
+
+        template<class T>
+        inline constexpr detail::aggregate_make_fn<T> aggregate_make{};
     }
 
     namespace detail::make_from_ns
@@ -32,7 +38,8 @@ namespace senluo
             none,
             convert,
             member_make,
-            adl_make
+            adl_make,
+            aggregate
         };
 
         void make_from();
@@ -83,6 +90,11 @@ namespace senluo
                 {
                     return { strategy_t::adl_make, noexcept(make_from(std::type_identity<T>{}, std::declval<U>(), custom_t{})) };
                 }
+                else if constexpr(tree_get<0uz>.template choice<T>.strategy == detail::subtree_ns::strategy_t::aggregate
+                                  && requires{ aggregate_make<T>(std::declval<U>()); })
+                {
+                    return { strategy_t::aggregate, noexcept(aggregate_make<T>(std::declval<U>())) };
+                }
                 else
                 {
                     return { strategy_t::none };
@@ -107,6 +119,10 @@ namespace senluo
                 else if constexpr(strategy == strategy_t::adl_make)
                 {
                     return make_from(std::type_identity<T>{}, FWD(u), custom_t{});
+                }
+                else if constexpr(strategy == strategy_t::aggregate)
+                {
+                    return aggregate_make<T>(FWD(u));
                 }
                 else
                 {
@@ -140,24 +156,38 @@ namespace senluo
         inline constexpr detail::make_fn<T> make{};
     }
 
-    namespace detail 
-    {
-        template<class T>
-        struct tuple_make_fn
-        {
-            template<class U, size_t...I>
-            static constexpr T impl(U&& u, std::index_sequence<I...>)
-            AS_EXPRESSION(
-                T{ tree_get<I>(FWD(u)) | make<std::tuple_element_t<I, T>>... }
-            )
 
-            template<class U>
-            static constexpr T operator()(U&& u)
-            AS_EXPRESSION(
-                impl(FWD(u), std::make_index_sequence<std::tuple_size_v<T>>{})
-            )
-        }; 
-    }
+    template<class T>
+    struct detail::tuple_make_fn
+    {
+        template<class U, size_t...I>
+        static constexpr T impl(U&& u, std::index_sequence<I...>)
+        AS_EXPRESSION(
+            T{ tree_get<I>(FWD(u)) | make<std::tuple_element_t<I, T>>... }
+        )
+
+        template<class U>
+        static constexpr T operator()(U&& u)
+        AS_EXPRESSION(
+            impl(FWD(u), std::make_index_sequence<std::tuple_size_v<T>>{})
+        )
+    };
+
+    template<class T>
+    struct detail::aggregate_make_fn
+    {
+        template<class U, size_t...I>
+        static constexpr T impl(U&& u, std::index_sequence<I...>)
+        AS_EXPRESSION(
+            T{ tree_get<I>(FWD(u)) | make<detail::aggregate_member_t<I, T>>... }
+        )
+
+        template<class U>
+        static constexpr T operator()(U&& u)
+        AS_EXPRESSION(
+            impl(FWD(u), std::make_index_sequence<detail::aggregate_member_count<T>>{})
+        )
+    };
 }
 
 namespace senluo::tuple_ns

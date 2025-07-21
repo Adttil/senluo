@@ -22,3 +22,15 @@ TEST(make, relayout)
 
     MAGIC_VCHECK(a, b);
 }
+
+TEST(make, aggregate)
+{
+    struct Vec2{ int x,y; };
+
+    std::tuple t{ 1, 2 };
+
+    Vec2 v = t | make<Vec2>;
+
+    MAGIC_VCHECK(senluo::tree_get<0>(v), 1);
+    MAGIC_VCHECK(senluo::tree_get<1>(v), 2);
+}
