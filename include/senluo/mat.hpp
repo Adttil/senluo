@@ -13,84 +13,6 @@
 
 namespace senluo
 {
-    namespace detail 
-    {
-        template<class V, class M>
-        struct vec_mul_mat_tree
-        {
-            V vec;
-            M mat;
-            
-            template<size_t I, class Self>
-            constexpr decltype(auto) tree_get(this Self&& self, custom_t = {})
-            {
-                return dot(FWD(self, vec), senluo::tree_get<I>(FWD(self, mat)));
-            }
-
-            static consteval size_t get_size(custom_t = {}) noexcept
-            {
-                return size<M>;
-            }
-        };
-
-        template<class L, class R>
-        struct mat_mul_tree
-        {
-            L lhs;
-            R rhs;
-
-            template<size_t I, class Self>
-            constexpr decltype(auto) tree_get(this Self&& self, custom_t = {})
-            {
-                return vec_mul_mat_tree<decltype(FWD(self, rhs) | subtree<I>), decltype(FWD(self, lhs) | transpose<>)>{
-                    senluo::tree_get<I>(FWD(self, rhs)),
-                    FWD(self, lhs) | transpose<>
-                };
-            }
-
-            static consteval size_t get_size(custom_t = {}) noexcept
-            {
-                return size<L>;
-            }
-        };
-        
-        struct lazy_vec_mul_mat_fn : adaptor<lazy_vec_mul_mat_fn>
-        {
-            template<class M, class V>
-            static constexpr decltype(auto) adapt(M&& mat, V&& vec)
-            {
-                return vec_mul_mat_tree<pass_t<M>, decltype(detail::astrict_unchecked<stricture_t::readonly>(FWD(vec)))>
-                {
-                    FWD(mat),
-                    detail::astrict_unchecked<stricture_t::readonly>(FWD(vec))
-                };
-            }
-        };
-
-        struct lazy_mat_mul_fn : adaptor<lazy_mat_mul_fn>
-        {
-            template<class L, class R>
-            static constexpr auto adapt(L&& l, R&& r)
-            {
-                return mat_mul_tree<decltype(detail::astrict_unchecked<stricture_t::readonly>(FWD(l))),
-                                    decltype(detail::astrict_unchecked<stricture_t::readonly>(FWD(r)))>
-                {
-                    detail::astrict_unchecked<stricture_t::readonly>(FWD(l)),
-                    detail::astrict_unchecked<stricture_t::readonly>(FWD(r))
-                };
-            }
-        };
-    }
-   
-    inline namespace functors
-    {
-        inline constexpr detail::lazy_vec_mul_mat_fn lazy_vec_mul_mat{};
-        inline constexpr detail::lazy_mat_mul_fn lazy_mat_mul{};
-    }
-}
-
-namespace senluo
-{
     template<class T>
     struct default_mat_container
     {
@@ -187,13 +109,18 @@ namespace senluo
         
         T base;
         
+        static consteval bool is_elementary(custom_t = {}) noexcept
+        {
+            return false;
+        }
+
         template<size_t I, class Self>
         constexpr decltype(auto) tree_get(this Self&& self, custom_t = {})
         {
             return senluo::tree_get<I>(FWD(self, base)) | take<nr> | as_vec;
         }
 
-        static consteval size_t get_size(custom_t = {})
+        static consteval size_t get_size(custom_t = {}) noexcept
         {
             return size<T>;
         }
@@ -397,6 +324,81 @@ namespace senluo::detail
             using container_t = default_vec_container_t<Lazy>;
             return mat<container_t>{ FWD(lazy_val) | make<container_t> };
         }
+    }
+
+    template<class V, class M>
+    struct vec_mul_mat_tree
+    {
+        V vec;
+        M mat;
+        
+        template<size_t I, class Self>
+        constexpr decltype(auto) tree_get(this Self&& self, custom_t = {})
+        {
+            return dot(FWD(self, vec), senluo::tree_get<I>(FWD(self, mat)));
+        }
+
+        static consteval size_t get_size(custom_t = {}) noexcept
+        {
+            return size<M>;
+        }
+    };
+
+    template<class L, class R>
+    struct mat_mul_tree
+    {
+        L lhs;
+        R rhs;
+
+        template<size_t I, class Self>
+        constexpr decltype(auto) tree_get(this Self&& self, custom_t = {})
+        {
+            return vec_mul_mat_tree<decltype(FWD(self, rhs) | subtree<I>), decltype(FWD(self, lhs) | transpose<>)>{
+                senluo::tree_get<I>(FWD(self, rhs)),
+                FWD(self, lhs) | transpose<>
+            };
+        }
+
+        static consteval size_t get_size(custom_t = {}) noexcept
+        {
+            return size<L>;
+        }
+    };
+    
+    struct lazy_vec_mul_mat_fn : adaptor<lazy_vec_mul_mat_fn>
+    {
+        template<class M, class V>
+        static constexpr decltype(auto) adapt(M&& mat, V&& vec)
+        {
+            return vec_mul_mat_tree<pass_t<M>, decltype(detail::astrict_unchecked<stricture_t::readonly>(FWD(vec)))>
+            {
+                FWD(mat),
+                detail::astrict_unchecked<stricture_t::readonly>(FWD(vec))
+            };
+        }
+    };
+
+    struct lazy_mat_mul_fn : adaptor<lazy_mat_mul_fn>
+    {
+        template<class L, class R>
+        static constexpr auto adapt(L&& l, R&& r)
+        {
+            return mat_mul_tree<decltype(detail::astrict_unchecked<stricture_t::readonly>(FWD(l))),
+                                decltype(detail::astrict_unchecked<stricture_t::readonly>(FWD(r)))>
+            {
+                detail::astrict_unchecked<stricture_t::readonly>(FWD(l)),
+                detail::astrict_unchecked<stricture_t::readonly>(FWD(r))
+            };
+        }
+    };
+}
+
+namespace senluo
+{   
+    inline namespace functors
+    {
+        inline constexpr detail::lazy_vec_mul_mat_fn lazy_vec_mul_mat{};
+        inline constexpr detail::lazy_mat_mul_fn lazy_mat_mul{};
     }
 }
 

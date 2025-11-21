@@ -66,14 +66,14 @@ namespace senluo::constants
 // +0
 namespace senluo
 {
-	/*template<auto Zero, typename T> requires requires{ requires (Zero == 0); }
-    SENLUO_INLINE constexpr T operator+(constant_t<Zero>, T&& value)
+	template<auto Zero, typename T> requires requires{ requires (Zero == 0); }
+    constexpr auto operator+(constant_t<Zero>, T&& value)
 	{
 	    return FWD(value);
 	}
 
     template<auto Zero, typename T> requires requires{ requires (Zero == 0); }
-    SENLUO_INLINE constexpr T operator+(T&& value, constant_t<Zero>)
+    constexpr auto operator+(T&& value, constant_t<Zero>)
 	{
 	    return FWD(value);
 	}
@@ -82,7 +82,7 @@ namespace senluo
     constexpr auto operator*(constant_t<Zero1>, constant_t<Zero2>)
 	{
 	    return constant<Zero1 * Zero2>();
-	}*/
+	}
 }
 
 //x0
@@ -104,23 +104,23 @@ namespace senluo
 //x1
 namespace senluo
 {
-	/*template<auto One, typename T> requires requires{ requires (One == 1); }
-    SENLUO_INLINE constexpr T operator*(constant_t<One>, T&& value)
+	template<auto One, typename T> requires requires{ requires (One == 1); }
+    constexpr auto operator*(constant_t<One>, T&& value)
 	{
 	    return FWD(value);
 	}
 
     template<auto One, typename T> requires requires{ requires (One == 1); }
-    SENLUO_INLINE constexpr T operator*(T&& value, constant_t<One>)
+    constexpr auto operator*(T&& value, constant_t<One>)
 	{
 	    return FWD(value);
-	}*/
+	}
 
-	/*template<auto One1, auto One2> requires requires{ requires (One1 == 1) && (One2 == 1); }
-    constexpr T operator*(T&& value, constant_t<One>)
-	{
-	    return FWD(value);
-	}*/
+	// template<auto One1, auto One2> requires requires{ requires (One1 == 1) && (One2 == 1); }
+    // constexpr T operator*(constant_t<One1>, constant_t<One2>)
+	// {
+	//     return FWD(value);
+	// }
 }
 
 #include "macro_undef.hpp"

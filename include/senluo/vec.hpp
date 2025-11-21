@@ -96,13 +96,18 @@ namespace senluo
 
         T base;
 
+        static consteval bool is_elementary(custom_t = {}) noexcept
+        {
+            return false;
+        }
+
         template<size_t I, class Self>
         constexpr decltype(auto) tree_get(this Self&& self, custom_t = {})
         {
             return senluo::tree_get<I>(FWD(self, base));
         }
 
-        static consteval size_t get_size(custom_t = {})
+        static consteval size_t get_size(custom_t = {}) noexcept
         {
             return size<T>;
         }
