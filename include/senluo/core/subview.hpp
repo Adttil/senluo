@@ -1,5 +1,5 @@
-#ifndef SENLUO_TREE_HPP
-#define SENLUO_TREE_HPP
+#ifndef SENLUO_SUBVIEW_HPP
+#define SENLUO_SUBVIEW_HPP
 
 #include <tuple>
 
@@ -31,10 +31,55 @@ namespace senluo::detail
             }
         }
     }
+
+    template<class T>
+    concept indexical_array = requires(std::remove_cvref_t<T> t, size_t i)
+    {
+        t[i];
+        requires std::integral<std::remove_cvref_t<decltype(t[i])>>;
+    };
+
+    constexpr size_t normalize_index(std::integral auto index, size_t size)noexcept
+    {
+        if(index >= 0)
+        {
+            return static_cast<size_t>(index % size);
+        }
+        else
+        {
+            return static_cast<size_t>((size - -index % size) % size);
+        }
+    }
+
+    template<class...TIndexes>
+    constexpr auto to_indexes(const TIndexes&...indexes)noexcept
+    {
+        if constexpr(sizeof...(TIndexes) == 0uz)
+        {
+            return array<size_t, 0uz>{};
+        }
+        else if constexpr(sizeof...(indexes) > 1uz)
+        {
+            return detail::array_cat(detail::to_indexes(indexes)...);
+        }
+        else if constexpr(requires{ (..., indexes[0]); })
+        {
+            return (..., indexes);
+        }
+        else
+        {
+            return array{ indexes... };
+        }
+    }
 }
 
 namespace senluo
 {
+    template<class T>
+    concept indexical = std::integral<T> || detail::indexical_array<T>;
+
+    inline constexpr array<size_t, 0uz> indexes_of_whole{};
+
     inline constexpr size_t auto_supported_aggregate_max_size = 16uz;
 
     namespace detail
@@ -161,14 +206,14 @@ namespace senluo
         {
             return 0uz;
         }
-    };
+    }();
 
     namespace detail
     {
         struct child_count_of_fn
         {
             template<class T>
-            static constexpr size_t operator()(T&&)
+            static consteval size_t operator()(T&&) noexcept
             {
                 return child_count<T>;
             }
@@ -180,10 +225,10 @@ namespace senluo
         inline constexpr detail::child_count_of_fn child_count_of{};
     }
 
-    namespace detail::subtree_ns
+    namespace detail::subview_ns
     {
         template<size_t I>
-        void tree_get();
+        void subview();
 
         template<size_t I>
         void get();
@@ -192,15 +237,28 @@ namespace senluo
         {
             none,
             array,
-            member_tree_get,
-            adl_tree_get,
+            member_subview,
+            adl_subview,
             member_get,
             adl_get,
             aggregate,
         };
 
-        template<size_t I>
-        struct tree_get_fn
+        template<auto...I>
+        struct subview_fn;
+
+        template<>
+        struct subview_fn<> : adaptor_closure<subview_fn<>>
+        {
+            template<class T>
+            static constexpr decltype(auto) operator()(T&& t) noexcept
+            {
+                return FWD(t);
+            }
+        };
+
+        template<std::integral auto I>
+        struct subview_fn<I> : adaptor_closure<subview_fn<I>>
         {
             template<class T>
             static consteval choice_t<strategy_t> choose()
@@ -212,13 +270,13 @@ namespace senluo
                     return { strategy_t::array, true };
                 }
                 //custom
-                else if constexpr (requires{ std::declval<T>().template tree_get<I>(custom_t{}); })
+                else if constexpr (requires{ std::declval<T>().template subview<I>(custom_t{}); })
                 {
-                    return { strategy_t::member_tree_get, noexcept(std::declval<T>().template tree_get<I>(custom_t{})) };
+                    return { strategy_t::member_subview, noexcept(std::declval<T>().template subview<I>(custom_t{})) };
                 }
-                else if constexpr (requires{ tree_get<I>(std::declval<T>(), custom_t{}); })
+                else if constexpr (requires{ subview<I>(std::declval<T>(), custom_t{}); })
                 {
-                    return { strategy_t::adl_tree_get, noexcept(tree_get<I>(std::declval<T>(), custom_t{})) };
+                    return { strategy_t::adl_subview, noexcept(subview<I>(std::declval<T>(), custom_t{})) };
                 }
                 //tuple-like
                 else if constexpr (requires{ std::tuple_size<type>::value; })
@@ -258,13 +316,13 @@ namespace senluo
                 {
                     return std::forward_like<T>(t[I]);
                 }
-                else if constexpr (strategy == strategy_t::member_tree_get)
+                else if constexpr (strategy == strategy_t::member_subview)
                 {
-                    return FWD(t).template tree_get<I>(custom_t{});
+                    return FWD(t).template subview<I>(custom_t{});
                 }
-                else if constexpr (strategy == strategy_t::adl_tree_get)
+                else if constexpr (strategy == strategy_t::adl_subview)
                 {
-                    return tree_get<I>(FWD(t), custom_t{});
+                    return subview<I>(FWD(t), custom_t{});
                 }
                 else if constexpr (strategy == strategy_t::member_get)
                 {
@@ -284,16 +342,45 @@ namespace senluo
                 }
             }
         };
+
+        template<array Indexes>
+        struct subview_fn<Indexes> : adaptor_closure<subview_fn<Indexes>>
+        {
+            template<class T>
+            static constexpr decltype(auto) operator()(T&& t)
+            {
+                return [&]<size_t...I>(std::index_sequence<I...>) -> decltype(auto)
+                {
+                    return (FWD(t) | ... | subview_fn<Indexes[I]>{});
+                }(std::make_index_sequence<Indexes.size()>{});
+            }
+        };
+
+        template<auto...I>
+        struct subview_fn : adaptor_closure<subview_fn<I...>>
+        {
+            template<class T>
+            static constexpr decltype(auto) operator()(T&& t)
+            {
+                return (FWD(t) | ... | subview_fn<I>{});
+            }
+        };
     }
 
     inline namespace functors
     {
-        template<size_t I>
-        inline constexpr detail::subtree_ns::tree_get_fn<I> tree_get{};
+        template<indexical auto...I>
+        inline constexpr detail::subview_ns::subview_fn<I...> subview{};
+
+        template<indexical auto...I>
+        inline constexpr auto subtree = subview<I...> | pass;
     }
 
-    template<size_t I, class T>
-    using tree_get_t = decltype(tree_get<I>(std::declval<T>()));
+    template<class T, indexical auto...I>
+    using subview_t = decltype(subview<I...>(std::declval<T>()));
+
+    template<class T, indexical auto...I>
+    using subtree_t = decltype(subtree<I...>(std::declval<T>()));
 
     template<class T>
     concept terminal = child_count<T> == 0;
@@ -312,7 +399,7 @@ namespace senluo
         {
             return[]<size_t...I>(std::index_sequence<I...>)
             {
-                return (0uz + ... + leaf_count<tree_get_t<I, T&>>);
+                return (0uz + ... + leaf_count<subview_t<T, I>>);
             }(std::make_index_sequence<child_count<T>>{});
         }
     }();
@@ -326,7 +413,7 @@ namespace senluo
         }
         else return[]<size_t...I>(std::index_sequence<I...>)
         {
-            return make_tuple(shape<tree_get_t<I, T&>>...);
+            return make_tuple(shape<subview_t<T, I>>...);
         }(std::make_index_sequence<child_count<T>>{});
     }();
 
@@ -342,7 +429,7 @@ namespace senluo
         }
         else return[]<size_t...I>(std::index_sequence<I...>)
         {
-            return 1uz + detail::min(tensor_rank<tree_get_t<I, T>>...);
+            return 1uz + detail::min(tensor_rank<subview_t<T, I>>...);
         }(std::make_index_sequence<child_count<T>>{});
     }();
 
@@ -358,7 +445,7 @@ namespace senluo
             constexpr size_t rank = tensor_rank<T>;
             array<size_t, rank> result{ child_count<T> };
 
-            constexpr auto subshapes = tuple{ tensor_shape<tree_get_t<I, T>>... };
+            constexpr auto subshapes = tuple{ tensor_shape<subview_t<T, I>>... };
             for (size_t i = 0uz; i < rank - 1uz; ++i)
             {
                 result[i + 1uz] = detail::min(get<I>(subshapes)[i]...);

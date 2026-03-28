@@ -98,7 +98,7 @@ namespace senluo
 
 namespace senluo 
 {
-    namespace detail
+    namespace detail::cpos
     {
         struct pass_fn : adaptor_closure<pass_fn>
         {
@@ -112,7 +112,7 @@ namespace senluo
 
     inline namespace functors
     {
-        inline constexpr detail::pass_fn pass{};
+        inline constexpr detail::cpos::pass_fn pass{};
     }
 
     template<class T>
