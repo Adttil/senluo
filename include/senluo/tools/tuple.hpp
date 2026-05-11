@@ -2,7 +2,7 @@
 #define SENLUO_TUPLE_HPP
 //this tuple is aggregate
 
-#include <tuple>
+#include <utility>
 
 #include "general.hpp"
 
@@ -88,62 +88,14 @@ namespace senluo
     	    template<size_t J, class Self>
     	    constexpr auto&& get(this Self&& self) noexcept
     	    {
-    	        return ((Self&&)self).get(std::integral_constant<size_t, J>{});
+    	        return FWD(self).get(std::integral_constant<size_t, J>{});
     	    }
-
-    	    // template<size_t J>
-    	    // constexpr auto&& get()& noexcept
-    	    // {
-    	    //     return (*this).get(std::integral_constant<size_t, J>{});
-    	    // }
-
-    	    // template<size_t J>
-    	    // constexpr auto&& get() const& noexcept
-    	    // {
-    	    //     return (*this).get(std::integral_constant<size_t, J>{});
-    	    // }
-
-    	    // template<size_t J>
-    	    // constexpr auto&& get()&& noexcept
-    	    // {
-    	    //     return std::move(*this).get(std::integral_constant<size_t, J>{});
-    	    // }
-
-    	    // template<size_t J>
-    	    // constexpr auto&& get() const&& noexcept
-    	    // {
-    	    //     return std::move(*this).get(std::integral_constant<size_t, J>{});
-    	    // }
 
     	    template<class U, class Self>
     	    constexpr auto&& get(this Self&& self) noexcept
     	    {
-    	        return ((Self&&)self).get(std::type_identity<U>{});
+    	        return FWD(self).get(std::type_identity<U>{});
     	    }
-
-    	    // template<class U>
-    	    // constexpr auto&& get()& noexcept
-    	    // {
-    	    //     return (*this).get(std::type_identity<U>{});
-    	    // }
-
-    	    // template<class U>
-    	    // constexpr auto&& get() const& noexcept
-    	    // {
-    	    //     return (*this).get(std::type_identity<U>{});
-    	    // }
-
-    	    // template<class U>
-    	    // constexpr auto&& get()&& noexcept
-    	    // {
-    	    //     return std::move(*this).get(std::type_identity<U>{});
-    	    // }
-
-    	    // template<class U>
-    	    // constexpr auto&& get() const&& noexcept
-    	    // {
-    	    //     return std::move(*this).get(std::type_identity<U>{});
-    	    // }
 
     	    template<size_t J>
     	    static consteval auto type_identity() noexcept
@@ -175,13 +127,13 @@ namespace senluo
         template<size_t I, class Self>
         constexpr auto&& get(Self&& self) noexcept
         {
-            return ((Self&&)self).template get<I>();
+            return FWD(self).template get<I>();
         }
 
         template<class T, class Self>
         constexpr auto&& get(Self&& self) noexcept
         {
-            return ((Self&&)self).template get<T>();
+            return FWD(self).template get<T>();
         }
     }
     using tuple_ns::tuple;
