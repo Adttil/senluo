@@ -1,5 +1,5 @@
-#ifndef SENLUO_ADAPTOR_CLOSURE_HPP
-#define SENLUO_ADAPTOR_CLOSURE_HPP
+#ifndef SENLUO_PIPELINE_HPP
+#define SENLUO_PIPELINE_HPP
 
 #include "general.hpp"
 #include "tuple.hpp"
@@ -9,18 +9,18 @@
 namespace senluo
 {
     template<class F>
-    struct adaptor_closure{};
+    struct pipe_closure{};
 
     template<class T>
-    concept adaptor_closuroid = requires(std::remove_cvref_t<T>& t) 
+    concept pipe_closuroid = requires(std::remove_cvref_t<T>& t) 
     {
-        { []<class F>(adaptor_closure<F>&)->F*{}(t) } -> std::same_as<std::remove_cvref_t<T>*>;
+        { []<class F>(pipe_closure<F>&)->F*{}(t) } -> std::same_as<std::remove_cvref_t<T>*>;
     };
 
     namespace detail
     {
-        template<class Adaptor, class...Args>
-        struct closure : tuple<Args...>, adaptor_closure<closure<Adaptor, Args...>>
+        template<class Pipe, class...Args>
+        struct closure : tuple<Args...>, pipe_closure<closure<Pipe, Args...>>
         {
             // clang crashed with [[no_unique_address]]
             // https://github.com/llvm/llvm-project/issues/104227
@@ -30,7 +30,7 @@ namespace senluo
             template<typename T, size_t...I, typename Self>
             constexpr decltype(auto) impl(this Self&& self, T&& t, std::index_sequence<I...>)
             AS_EXPRESSION(
-                Adaptor{}(FWD(t), get<I>(FWD(self))...)
+                Pipe{}(FWD(t), get<I>(FWD(self))...)
             )
 
         public:
@@ -43,16 +43,16 @@ namespace senluo
     }
 
     template<class F> 
-    struct adaptor
+    struct pipe
     {
         template<typename...Args>
         constexpr decltype(auto) operator()(Args&&...args) const
         AS_EXPRESSION(
-            F{}.adapt(FWD(args)...)
+            F{}.apply(FWD(args)...)
         )
 
         template<typename...Args> 
-            requires (not requires{ F{}.adapt(std::declval<Args>()...); })
+            requires (not requires{ F{}.apply(std::declval<Args>()...); })
         constexpr detail::closure<F, Args...> operator()(Args&&...args) const
         AS_EXPRESSION(
             detail::closure<F, Args...>{ FWD(args)... }
@@ -63,7 +63,7 @@ namespace senluo
 namespace senluo::detail
 {        
     template<class ClosureLeft, class ClosureRight>
-    struct pipeline : adaptor_closure<pipeline<ClosureLeft, ClosureRight>>
+    struct pipeline : pipe_closure<pipeline<ClosureLeft, ClosureRight>>
     {
         SENLUO(no_unique_address) ClosureLeft  left;
         SENLUO(no_unique_address) ClosureRight right;
@@ -80,14 +80,14 @@ namespace senluo::detail
 
 namespace senluo
 {
-    template<adaptor_closuroid L, adaptor_closuroid R>
+    template<pipe_closuroid L, pipe_closuroid R>
     constexpr detail::pipeline<L, R> operator|(L&& l, R&& r)
     AS_EXPRESSION(
         detail::pipeline<L, R>{ {}, FWD(l), FWD(r) }
     )
 
-    template<class L, adaptor_closuroid R>
-    requires (not adaptor_closuroid<L>)
+    template<class L, pipe_closuroid R>
+    requires (not pipe_closuroid<L>)
     constexpr decltype(auto) operator|(L&& l, R&& r)
     AS_EXPRESSION(
         FWD(r)(FWD(l))
