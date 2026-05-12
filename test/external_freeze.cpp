@@ -21,327 +21,327 @@ constexpr wrapper<const T&> external_freeze(wrapper<T&> t)
 namespace senluo
 {
     template<class T>
-    inline constexpr auto writability_through<wrapper<T>> = writability_through_aggregate<T>;
+    inline constexpr auto writability_through_object<wrapper<T>> = writability_through<T>;
 }
 
 TEST(external_freeze, mutable_state_sharing_mode_defaults)
 {
     using enum writability;
-    MAGIC_CHECK(writability_through<int>, self);
-    MAGIC_CHECK(writability_through<int*>, external);
-    MAGIC_CHECK(writability_through<const int*>, self);
+    MAGIC_CHECK(writability_through_object<int>, self);
+    MAGIC_CHECK(writability_through_object<int*>, external);
+    MAGIC_CHECK(writability_through_object<const int*>, self);
 
-    MAGIC_CHECK(writability_through<double>, self);
-    MAGIC_CHECK(writability_through<double*>, external);
-    MAGIC_CHECK(writability_through<const double*>, self);
+    MAGIC_CHECK(writability_through_object<double>, self);
+    MAGIC_CHECK(writability_through_object<double*>, external);
+    MAGIC_CHECK(writability_through_object<const double*>, self);
 
     enum enum_t{
         first,
         second
     };
 
-    MAGIC_CHECK(writability_through<enum_t>, self);
-    MAGIC_CHECK(writability_through<enum_t*>, external);
-    MAGIC_CHECK(writability_through<const enum_t*>, self);
+    MAGIC_CHECK(writability_through_object<enum_t>, self);
+    MAGIC_CHECK(writability_through_object<enum_t*>, external);
+    MAGIC_CHECK(writability_through_object<const enum_t*>, self);
 
-    MAGIC_CHECK(writability_through<nullptr_t>, none);
-    MAGIC_CHECK(writability_through<nullptr_t*>, self);
-    MAGIC_CHECK(writability_through<const nullptr_t*>, self);
+    MAGIC_CHECK(writability_through_object<nullptr_t>, none);
+    MAGIC_CHECK(writability_through_object<nullptr_t*>, self);
+    MAGIC_CHECK(writability_through_object<const nullptr_t*>, self);
 
-    MAGIC_CHECK(writability_through<enum_t[3]>, self);
-    MAGIC_CHECK(writability_through<enum_t(*)[3]>, external);
-    MAGIC_CHECK(writability_through<const enum_t(*)[3]>, self);
+    MAGIC_CHECK(writability_through_object<enum_t[3]>, self);
+    MAGIC_CHECK(writability_through_object<enum_t(*)[3]>, external);
+    MAGIC_CHECK(writability_through_object<const enum_t(*)[3]>, self);
 
-    MAGIC_CHECK(writability_through<enum_t[3][3]>, self);
-    MAGIC_CHECK(writability_through<enum_t(*)[3][3]>, external);
-    MAGIC_CHECK(writability_through<const enum_t(*)[3][3]>, self);
+    MAGIC_CHECK(writability_through_object<enum_t[3][3]>, self);
+    MAGIC_CHECK(writability_through_object<enum_t(*)[3][3]>, external);
+    MAGIC_CHECK(writability_through_object<const enum_t(*)[3][3]>, self);
 
-    MAGIC_CHECK(writability_through<nullptr_t[3]>, none);
-    MAGIC_CHECK(writability_through<nullptr_t(*)[3]>, self);
-    MAGIC_CHECK(writability_through<const nullptr_t(*)[3]>, self);
+    MAGIC_CHECK(writability_through_object<nullptr_t[3]>, none);
+    MAGIC_CHECK(writability_through_object<nullptr_t(*)[3]>, self);
+    MAGIC_CHECK(writability_through_object<const nullptr_t(*)[3]>, self);
 
-    MAGIC_CHECK(writability_through<nullptr_t[3][3]>, none);
-    MAGIC_CHECK(writability_through<nullptr_t(*)[3][3]>, self);
-    MAGIC_CHECK(writability_through<const nullptr_t(*)[3][3]>, self);
+    MAGIC_CHECK(writability_through_object<nullptr_t[3][3]>, none);
+    MAGIC_CHECK(writability_through_object<nullptr_t(*)[3][3]>, self);
+    MAGIC_CHECK(writability_through_object<const nullptr_t(*)[3][3]>, self);
 }
 
 TEST(external_freeze, mutable_state_sharing_mode_specialization)
 {
     using enum writability;
 
-    MAGIC_CHECK(writability_through<wrapper<int>>, self);
-    MAGIC_CHECK(writability_through<wrapper<const int>>, none);
-    MAGIC_CHECK(writability_through<wrapper<int&>>, external);
-    MAGIC_CHECK(writability_through<wrapper<const int&>>, none);
-    MAGIC_CHECK(writability_through<wrapper<int&&>>, external);
-    MAGIC_CHECK(writability_through<wrapper<const int&&>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<int>>, self);
+    MAGIC_CHECK(writability_through_object<wrapper<const int>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<int&>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<const int&>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<int&&>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<const int&&>>, none);
 
-    MAGIC_CHECK(writability_through<wrapper<int*>>, external);
-    MAGIC_CHECK(writability_through<wrapper<int* const>>, external);
-    MAGIC_CHECK(writability_through<wrapper<int*&>>, external);
-    MAGIC_CHECK(writability_through<wrapper<int* const&>>, external);
-    MAGIC_CHECK(writability_through<wrapper<int*&&>>, external);
-    MAGIC_CHECK(writability_through<wrapper<int* const&&>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<int*>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<int* const>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<int*&>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<int* const&>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<int*&&>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<int* const&&>>, external);
 
-    MAGIC_CHECK(writability_through<wrapper<const int*>>, self);
-    MAGIC_CHECK(writability_through<wrapper<const int* const>>, none);
-    MAGIC_CHECK(writability_through<wrapper<const int*&>>, external);
-    MAGIC_CHECK(writability_through<wrapper<const int* const&>>, none);
-    MAGIC_CHECK(writability_through<wrapper<const int*&&>>, external);
-    MAGIC_CHECK(writability_through<wrapper<const int* const&&>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<const int*>>, self);
+    MAGIC_CHECK(writability_through_object<wrapper<const int* const>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<const int*&>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<const int* const&>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<const int*&&>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<const int* const&&>>, none);
 
-    MAGIC_CHECK(writability_through<wrapper<double>>, self);
-    MAGIC_CHECK(writability_through<wrapper<const double>>, none);
-    MAGIC_CHECK(writability_through<wrapper<double&>>, external);
-    MAGIC_CHECK(writability_through<wrapper<const double&>>, none);
-    MAGIC_CHECK(writability_through<wrapper<double&&>>, external);
-    MAGIC_CHECK(writability_through<wrapper<const double&&>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<double>>, self);
+    MAGIC_CHECK(writability_through_object<wrapper<const double>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<double&>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<const double&>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<double&&>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<const double&&>>, none);
 
-    MAGIC_CHECK(writability_through<wrapper<double*>>, external);
-    MAGIC_CHECK(writability_through<wrapper<double* const>>, external);
-    MAGIC_CHECK(writability_through<wrapper<double*&>>, external);
-    MAGIC_CHECK(writability_through<wrapper<double* const&>>, external);
-    MAGIC_CHECK(writability_through<wrapper<double*&&>>, external);
-    MAGIC_CHECK(writability_through<wrapper<double* const&&>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<double*>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<double* const>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<double*&>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<double* const&>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<double*&&>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<double* const&&>>, external);
 
-    MAGIC_CHECK(writability_through<wrapper<const double*>>, self);
-    MAGIC_CHECK(writability_through<wrapper<const double* const>>, none);
-    MAGIC_CHECK(writability_through<wrapper<const double*&>>, external);
-    MAGIC_CHECK(writability_through<wrapper<const double* const&>>, none);
-    MAGIC_CHECK(writability_through<wrapper<const double*&&>>, external);
-    MAGIC_CHECK(writability_through<wrapper<const double* const&&>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<const double*>>, self);
+    MAGIC_CHECK(writability_through_object<wrapper<const double* const>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<const double*&>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<const double* const&>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<const double*&&>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<const double* const&&>>, none);
 
     enum enum_t {
         first,
         second
     };
 
-    MAGIC_CHECK(writability_through<wrapper<enum_t>>, self);
-    MAGIC_CHECK(writability_through<wrapper<const enum_t>>, none);
-    MAGIC_CHECK(writability_through<wrapper<enum_t&>>, external);
-    MAGIC_CHECK(writability_through<wrapper<const enum_t&>>, none);
-    MAGIC_CHECK(writability_through<wrapper<enum_t&&>>, external);
-    MAGIC_CHECK(writability_through<wrapper<const enum_t&&>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<enum_t>>, self);
+    MAGIC_CHECK(writability_through_object<wrapper<const enum_t>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<enum_t&>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<const enum_t&>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<enum_t&&>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<const enum_t&&>>, none);
 
-    MAGIC_CHECK(writability_through<wrapper<enum_t*>>, external);
-    MAGIC_CHECK(writability_through<wrapper<enum_t* const>>, external);
-    MAGIC_CHECK(writability_through<wrapper<enum_t*&>>, external);
-    MAGIC_CHECK(writability_through<wrapper<enum_t* const&>>, external);
-    MAGIC_CHECK(writability_through<wrapper<enum_t*&&>>, external);
-    MAGIC_CHECK(writability_through<wrapper<enum_t* const&&>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<enum_t*>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<enum_t* const>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<enum_t*&>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<enum_t* const&>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<enum_t*&&>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<enum_t* const&&>>, external);
 
-    MAGIC_CHECK(writability_through<wrapper<const enum_t*>>, self);
-    MAGIC_CHECK(writability_through<wrapper<const enum_t* const>>, none);
-    MAGIC_CHECK(writability_through<wrapper<const enum_t*&>>, external);
-    MAGIC_CHECK(writability_through<wrapper<const enum_t* const&>>, none);
-    MAGIC_CHECK(writability_through<wrapper<const enum_t*&&>>, external);
-    MAGIC_CHECK(writability_through<wrapper<const enum_t* const&&>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<const enum_t*>>, self);
+    MAGIC_CHECK(writability_through_object<wrapper<const enum_t* const>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<const enum_t*&>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<const enum_t* const&>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<const enum_t*&&>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<const enum_t* const&&>>, none);
 
-    MAGIC_CHECK(writability_through<wrapper<nullptr_t>>, none);
-    MAGIC_CHECK(writability_through<wrapper<const nullptr_t>>, none);
-    MAGIC_CHECK(writability_through<wrapper<nullptr_t&>>, none);
-    MAGIC_CHECK(writability_through<wrapper<const nullptr_t&>>, none);
-    MAGIC_CHECK(writability_through<wrapper<nullptr_t&&>>, none);
-    MAGIC_CHECK(writability_through<wrapper<const nullptr_t&&>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<nullptr_t>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<const nullptr_t>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<nullptr_t&>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<const nullptr_t&>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<nullptr_t&&>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<const nullptr_t&&>>, none);
 
-    MAGIC_CHECK(writability_through<wrapper<nullptr_t*>>, self);
-    MAGIC_CHECK(writability_through<wrapper<nullptr_t* const>>, none);
-    MAGIC_CHECK(writability_through<wrapper<nullptr_t*&>>, external);
-    MAGIC_CHECK(writability_through<wrapper<nullptr_t* const&>>, none);
-    MAGIC_CHECK(writability_through<wrapper<nullptr_t*&&>>, external);
-    MAGIC_CHECK(writability_through<wrapper<nullptr_t* const&&>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<nullptr_t*>>, self);
+    MAGIC_CHECK(writability_through_object<wrapper<nullptr_t* const>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<nullptr_t*&>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<nullptr_t* const&>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<nullptr_t*&&>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<nullptr_t* const&&>>, none);
 
-    MAGIC_CHECK(writability_through<wrapper<const nullptr_t*>>, self);
-    MAGIC_CHECK(writability_through<wrapper<const nullptr_t* const>>, none);
-    MAGIC_CHECK(writability_through<wrapper<const nullptr_t*&>>, external);
-    MAGIC_CHECK(writability_through<wrapper<const nullptr_t* const&>>, none);
-    MAGIC_CHECK(writability_through<wrapper<const nullptr_t*&&>>, external);
-    MAGIC_CHECK(writability_through<wrapper<const nullptr_t* const&&>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<const nullptr_t*>>, self);
+    MAGIC_CHECK(writability_through_object<wrapper<const nullptr_t* const>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<const nullptr_t*&>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<const nullptr_t* const&>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<const nullptr_t*&&>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<const nullptr_t* const&&>>, none);
 
-    MAGIC_CHECK(writability_through<wrapper<enum_t[3]>>, self);
-    MAGIC_CHECK(writability_through<wrapper<const enum_t[3]>>, none);
-    MAGIC_CHECK(writability_through<wrapper<enum_t(&)[3]>>, external);
-    MAGIC_CHECK(writability_through<wrapper<const enum_t(&)[3]>>, none);
-    MAGIC_CHECK(writability_through<wrapper<enum_t(&&)[3]>>, external);
-    MAGIC_CHECK(writability_through<wrapper<const enum_t(&&)[3]>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<enum_t[3]>>, self);
+    MAGIC_CHECK(writability_through_object<wrapper<const enum_t[3]>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<enum_t(&)[3]>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<const enum_t(&)[3]>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<enum_t(&&)[3]>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<const enum_t(&&)[3]>>, none);
 
-    MAGIC_CHECK(writability_through<wrapper<enum_t (*)[3]>>, external);
-    MAGIC_CHECK(writability_through<wrapper<enum_t (* const)[3]>>, external);
-    MAGIC_CHECK(writability_through<wrapper<enum_t (*&)[3]>>, external);
-    MAGIC_CHECK(writability_through<wrapper<enum_t (* const&)[3]>>, external);
-    MAGIC_CHECK(writability_through<wrapper<enum_t (*&&)[3]>>, external);
-    MAGIC_CHECK(writability_through<wrapper<enum_t (* const&&)[3]>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<enum_t (*)[3]>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<enum_t (* const)[3]>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<enum_t (*&)[3]>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<enum_t (* const&)[3]>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<enum_t (*&&)[3]>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<enum_t (* const&&)[3]>>, external);
 
-    MAGIC_CHECK(writability_through<wrapper<const enum_t (*)[3]>>, self);
-    MAGIC_CHECK(writability_through<wrapper<const enum_t (* const)[3]>>, none);
-    MAGIC_CHECK(writability_through<wrapper<const enum_t (*&)[3]>>, external);
-    MAGIC_CHECK(writability_through<wrapper<const enum_t (* const&)[3]>>, none);
-    MAGIC_CHECK(writability_through<wrapper<const enum_t (*&&)[3]>>, external);
-    MAGIC_CHECK(writability_through<wrapper<const enum_t (* const&&)[3]>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<const enum_t (*)[3]>>, self);
+    MAGIC_CHECK(writability_through_object<wrapper<const enum_t (* const)[3]>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<const enum_t (*&)[3]>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<const enum_t (* const&)[3]>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<const enum_t (*&&)[3]>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<const enum_t (* const&&)[3]>>, none);
 
-    MAGIC_CHECK(writability_through<wrapper<enum_t[3][3]>>, self);
-    MAGIC_CHECK(writability_through<wrapper<const enum_t[3][3]>>, none);
-    MAGIC_CHECK(writability_through<wrapper<enum_t(&)[3][3]>>, external);
-    MAGIC_CHECK(writability_through<wrapper<const enum_t(&)[3][3]>>, none);
-    MAGIC_CHECK(writability_through<wrapper<enum_t(&&)[3][3]>>, external);
-    MAGIC_CHECK(writability_through<wrapper<const enum_t(&&)[3][3]>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<enum_t[3][3]>>, self);
+    MAGIC_CHECK(writability_through_object<wrapper<const enum_t[3][3]>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<enum_t(&)[3][3]>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<const enum_t(&)[3][3]>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<enum_t(&&)[3][3]>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<const enum_t(&&)[3][3]>>, none);
 
-    MAGIC_CHECK(writability_through<wrapper<enum_t (*)[3][3]>>, external);
-    MAGIC_CHECK(writability_through<wrapper<enum_t (* const)[3][3]>>, external);
-    MAGIC_CHECK(writability_through<wrapper<enum_t (*&)[3][3]>>, external);
-    MAGIC_CHECK(writability_through<wrapper<enum_t (* const&)[3][3]>>, external);
-    MAGIC_CHECK(writability_through<wrapper<enum_t (*&&)[3][3]>>, external);
-    MAGIC_CHECK(writability_through<wrapper<enum_t (* const&&)[3][3]>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<enum_t (*)[3][3]>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<enum_t (* const)[3][3]>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<enum_t (*&)[3][3]>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<enum_t (* const&)[3][3]>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<enum_t (*&&)[3][3]>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<enum_t (* const&&)[3][3]>>, external);
 
-    MAGIC_CHECK(writability_through<wrapper<const enum_t (*)[3][3]>>, self);
-    MAGIC_CHECK(writability_through<wrapper<const enum_t (* const)[3][3]>>, none);
-    MAGIC_CHECK(writability_through<wrapper<const enum_t (*&)[3][3]>>, external);
-    MAGIC_CHECK(writability_through<wrapper<const enum_t (* const&)[3][3]>>, none);
-    MAGIC_CHECK(writability_through<wrapper<const enum_t (*&&)[3][3]>>, external);
-    MAGIC_CHECK(writability_through<wrapper<const enum_t (* const&&)[3][3]>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<const enum_t (*)[3][3]>>, self);
+    MAGIC_CHECK(writability_through_object<wrapper<const enum_t (* const)[3][3]>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<const enum_t (*&)[3][3]>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<const enum_t (* const&)[3][3]>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<const enum_t (*&&)[3][3]>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<const enum_t (* const&&)[3][3]>>, none);
 
-    MAGIC_CHECK(writability_through<wrapper<nullptr_t[3]>>, none);
-    MAGIC_CHECK(writability_through<wrapper<const nullptr_t[3]>>, none);
-    MAGIC_CHECK(writability_through<wrapper<nullptr_t(&)[3]>>, none);
-    MAGIC_CHECK(writability_through<wrapper<const nullptr_t(&)[3]>>, none);
-    MAGIC_CHECK(writability_through<wrapper<nullptr_t(&&)[3]>>, none);
-    MAGIC_CHECK(writability_through<wrapper<const nullptr_t(&&)[3]>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<nullptr_t[3]>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<const nullptr_t[3]>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<nullptr_t(&)[3]>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<const nullptr_t(&)[3]>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<nullptr_t(&&)[3]>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<const nullptr_t(&&)[3]>>, none);
 
-    MAGIC_CHECK(writability_through<wrapper<nullptr_t (*)[3]>>, self);
-    MAGIC_CHECK(writability_through<wrapper<nullptr_t (* const)[3]>>, none);
-    MAGIC_CHECK(writability_through<wrapper<nullptr_t (*&)[3]>>, external);
-    MAGIC_CHECK(writability_through<wrapper<nullptr_t (* const&)[3]>>, none);
-    MAGIC_CHECK(writability_through<wrapper<nullptr_t (*&&)[3]>>, external);
-    MAGIC_CHECK(writability_through<wrapper<nullptr_t (* const&&)[3]>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<nullptr_t (*)[3]>>, self);
+    MAGIC_CHECK(writability_through_object<wrapper<nullptr_t (* const)[3]>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<nullptr_t (*&)[3]>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<nullptr_t (* const&)[3]>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<nullptr_t (*&&)[3]>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<nullptr_t (* const&&)[3]>>, none);
 
-    MAGIC_CHECK(writability_through<wrapper<const nullptr_t (*)[3]>>, self);
-    MAGIC_CHECK(writability_through<wrapper<const nullptr_t (* const)[3]>>, none);
-    MAGIC_CHECK(writability_through<wrapper<const nullptr_t (*&)[3]>>, external);
-    MAGIC_CHECK(writability_through<wrapper<const nullptr_t (* const&)[3]>>, none);
-    MAGIC_CHECK(writability_through<wrapper<const nullptr_t (*&&)[3]>>, external);
-    MAGIC_CHECK(writability_through<wrapper<const nullptr_t (* const&&)[3]>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<const nullptr_t (*)[3]>>, self);
+    MAGIC_CHECK(writability_through_object<wrapper<const nullptr_t (* const)[3]>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<const nullptr_t (*&)[3]>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<const nullptr_t (* const&)[3]>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<const nullptr_t (*&&)[3]>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<const nullptr_t (* const&&)[3]>>, none);
 
-    MAGIC_CHECK(writability_through<wrapper<nullptr_t[3][3]>>, none);
-    MAGIC_CHECK(writability_through<wrapper<const nullptr_t[3][3]>>, none);
-    MAGIC_CHECK(writability_through<wrapper<nullptr_t(&)[3][3]>>, none);
-    MAGIC_CHECK(writability_through<wrapper<const nullptr_t(&)[3][3]>>, none);
-    MAGIC_CHECK(writability_through<wrapper<nullptr_t(&&)[3][3]>>, none);
-    MAGIC_CHECK(writability_through<wrapper<const nullptr_t(&&)[3][3]>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<nullptr_t[3][3]>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<const nullptr_t[3][3]>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<nullptr_t(&)[3][3]>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<const nullptr_t(&)[3][3]>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<nullptr_t(&&)[3][3]>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<const nullptr_t(&&)[3][3]>>, none);
 
-    MAGIC_CHECK(writability_through<wrapper<nullptr_t (*)[3][3]>>, self);
-    MAGIC_CHECK(writability_through<wrapper<nullptr_t (* const)[3][3]>>, none);
-    MAGIC_CHECK(writability_through<wrapper<nullptr_t (*&)[3][3]>>, external);
-    MAGIC_CHECK(writability_through<wrapper<nullptr_t (* const&)[3][3]>>, none);
-    MAGIC_CHECK(writability_through<wrapper<nullptr_t (*&&)[3][3]>>, external);
-    MAGIC_CHECK(writability_through<wrapper<nullptr_t (* const&&)[3][3]>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<nullptr_t (*)[3][3]>>, self);
+    MAGIC_CHECK(writability_through_object<wrapper<nullptr_t (* const)[3][3]>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<nullptr_t (*&)[3][3]>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<nullptr_t (* const&)[3][3]>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<nullptr_t (*&&)[3][3]>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<nullptr_t (* const&&)[3][3]>>, none);
 
-    MAGIC_CHECK(writability_through<wrapper<const nullptr_t (*)[3][3]>>, self);
-    MAGIC_CHECK(writability_through<wrapper<const nullptr_t (* const)[3][3]>>, none);
-    MAGIC_CHECK(writability_through<wrapper<const nullptr_t (*&)[3][3]>>, external);
-    MAGIC_CHECK(writability_through<wrapper<const nullptr_t (* const&)[3][3]>>, none);
-    MAGIC_CHECK(writability_through<wrapper<const nullptr_t (*&&)[3][3]>>, external);
-    MAGIC_CHECK(writability_through<wrapper<const nullptr_t (* const&&)[3][3]>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<const nullptr_t (*)[3][3]>>, self);
+    MAGIC_CHECK(writability_through_object<wrapper<const nullptr_t (* const)[3][3]>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<const nullptr_t (*&)[3][3]>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<const nullptr_t (* const&)[3][3]>>, none);
+    MAGIC_CHECK(writability_through_object<wrapper<const nullptr_t (*&&)[3][3]>>, external);
+    MAGIC_CHECK(writability_through_object<wrapper<const nullptr_t (* const&&)[3][3]>>, none);
 }
 
-TEST(external_freeze, writability_through_aggregate)
+TEST(external_freeze, writability_through)
 {
     struct unknown_t { int* p; };
     using enum writability;
 
     // empty aggregate
-    MAGIC_CHECK((writability_through_aggregate<>), none);
+    MAGIC_CHECK((writability_through<>), none);
 
     // std::nullptr_t: no mutable state
-    MAGIC_CHECK((writability_through_aggregate<std::nullptr_t>), none);
-    MAGIC_CHECK((writability_through_aggregate<const std::nullptr_t>), none);
-    MAGIC_CHECK((writability_through_aggregate<std::nullptr_t&>), none);
-    MAGIC_CHECK((writability_through_aggregate<const std::nullptr_t&>), none);
-    MAGIC_CHECK((writability_through_aggregate<std::nullptr_t&&>), none);
-    MAGIC_CHECK((writability_through_aggregate<const std::nullptr_t&&>), none);
+    MAGIC_CHECK((writability_through<std::nullptr_t>), none);
+    MAGIC_CHECK((writability_through<const std::nullptr_t>), none);
+    MAGIC_CHECK((writability_through<std::nullptr_t&>), none);
+    MAGIC_CHECK((writability_through<const std::nullptr_t&>), none);
+    MAGIC_CHECK((writability_through<std::nullptr_t&&>), none);
+    MAGIC_CHECK((writability_through<const std::nullptr_t&&>), none);
 
     // int: self mutable state
-    MAGIC_CHECK((writability_through_aggregate<int>), self);
-    MAGIC_CHECK((writability_through_aggregate<const int>), none);
-    MAGIC_CHECK((writability_through_aggregate<int&>), external);
-    MAGIC_CHECK((writability_through_aggregate<const int&>), none);
-    MAGIC_CHECK((writability_through_aggregate<int&&>), external);
-    MAGIC_CHECK((writability_through_aggregate<const int&&>), none);
+    MAGIC_CHECK((writability_through<int>), self);
+    MAGIC_CHECK((writability_through<const int>), none);
+    MAGIC_CHECK((writability_through<int&>), external);
+    MAGIC_CHECK((writability_through<const int&>), none);
+    MAGIC_CHECK((writability_through<int&&>), external);
+    MAGIC_CHECK((writability_through<const int&&>), none);
 
     // unknown_t: default external mutable state
-    MAGIC_CHECK((writability_through_aggregate<unknown_t>), external);
-    MAGIC_CHECK((writability_through_aggregate<const unknown_t>), external);
-    MAGIC_CHECK((writability_through_aggregate<unknown_t&>), external);
-    MAGIC_CHECK((writability_through_aggregate<const unknown_t&>), external);
-    MAGIC_CHECK((writability_through_aggregate<unknown_t&&>), external);
-    MAGIC_CHECK((writability_through_aggregate<const unknown_t&&>), external);
+    MAGIC_CHECK((writability_through<unknown_t>), external);
+    MAGIC_CHECK((writability_through<const unknown_t>), external);
+    MAGIC_CHECK((writability_through<unknown_t&>), external);
+    MAGIC_CHECK((writability_through<const unknown_t&>), external);
+    MAGIC_CHECK((writability_through<unknown_t&&>), external);
+    MAGIC_CHECK((writability_through<const unknown_t&&>), external);
 
     // none combined with none
-    MAGIC_CHECK((writability_through_aggregate<std::nullptr_t, std::nullptr_t>), none);
-    MAGIC_CHECK((writability_through_aggregate<std::nullptr_t, const std::nullptr_t>), none);
-    MAGIC_CHECK((writability_through_aggregate<std::nullptr_t&, const std::nullptr_t&>), none);
+    MAGIC_CHECK((writability_through<std::nullptr_t, std::nullptr_t>), none);
+    MAGIC_CHECK((writability_through<std::nullptr_t, const std::nullptr_t>), none);
+    MAGIC_CHECK((writability_through<std::nullptr_t&, const std::nullptr_t&>), none);
 
     // self combined with none
-    MAGIC_CHECK((writability_through_aggregate<int, std::nullptr_t>), self);
-    MAGIC_CHECK((writability_through_aggregate<std::nullptr_t, int>), self);
-    MAGIC_CHECK((writability_through_aggregate<int, const std::nullptr_t>), self);
-    MAGIC_CHECK((writability_through_aggregate<const int, std::nullptr_t>), none);
-    MAGIC_CHECK((writability_through_aggregate<const int, const std::nullptr_t>), none);
-    MAGIC_CHECK((writability_through_aggregate<const int&, std::nullptr_t>), none);
-    MAGIC_CHECK((writability_through_aggregate<const int&&, std::nullptr_t>), none);
+    MAGIC_CHECK((writability_through<int, std::nullptr_t>), self);
+    MAGIC_CHECK((writability_through<std::nullptr_t, int>), self);
+    MAGIC_CHECK((writability_through<int, const std::nullptr_t>), self);
+    MAGIC_CHECK((writability_through<const int, std::nullptr_t>), none);
+    MAGIC_CHECK((writability_through<const int, const std::nullptr_t>), none);
+    MAGIC_CHECK((writability_through<const int&, std::nullptr_t>), none);
+    MAGIC_CHECK((writability_through<const int&&, std::nullptr_t>), none);
 
     // self combined with self
-    MAGIC_CHECK((writability_through_aggregate<int, int>), self);
-    MAGIC_CHECK((writability_through_aggregate<int, const int>), self);
-    MAGIC_CHECK((writability_through_aggregate<const int, int>), self);
-    MAGIC_CHECK((writability_through_aggregate<const int, const int>), none);
+    MAGIC_CHECK((writability_through<int, int>), self);
+    MAGIC_CHECK((writability_through<int, const int>), self);
+    MAGIC_CHECK((writability_through<const int, int>), self);
+    MAGIC_CHECK((writability_through<const int, const int>), none);
 
     // reference-to-self becomes external when non-const
-    MAGIC_CHECK((writability_through_aggregate<int&>), external);
-    MAGIC_CHECK((writability_through_aggregate<int&&>), external);
-    MAGIC_CHECK((writability_through_aggregate<int, int&>), external);
-    MAGIC_CHECK((writability_through_aggregate<int, int&&>), external);
-    MAGIC_CHECK((writability_through_aggregate<const int, int&>), external);
-    MAGIC_CHECK((writability_through_aggregate<const int&, int>), self);
-    MAGIC_CHECK((writability_through_aggregate<const int&&, int>), self);
-    MAGIC_CHECK((writability_through_aggregate<const int&, const int>), none);
-    MAGIC_CHECK((writability_through_aggregate<const int&&, const int>), none);
+    MAGIC_CHECK((writability_through<int&>), external);
+    MAGIC_CHECK((writability_through<int&&>), external);
+    MAGIC_CHECK((writability_through<int, int&>), external);
+    MAGIC_CHECK((writability_through<int, int&&>), external);
+    MAGIC_CHECK((writability_through<const int, int&>), external);
+    MAGIC_CHECK((writability_through<const int&, int>), self);
+    MAGIC_CHECK((writability_through<const int&&, int>), self);
+    MAGIC_CHECK((writability_through<const int&, const int>), none);
+    MAGIC_CHECK((writability_through<const int&&, const int>), none);
 
     // external dominates none
-    MAGIC_CHECK((writability_through_aggregate<unknown_t, std::nullptr_t>), external);
-    MAGIC_CHECK((writability_through_aggregate<std::nullptr_t, unknown_t>), external);
-    MAGIC_CHECK((writability_through_aggregate<const unknown_t, std::nullptr_t>), external);
-    MAGIC_CHECK((writability_through_aggregate<const unknown_t&, std::nullptr_t>), external);
-    MAGIC_CHECK((writability_through_aggregate<unknown_t&, std::nullptr_t>), external);
-    MAGIC_CHECK((writability_through_aggregate<unknown_t&&, std::nullptr_t>), external);
+    MAGIC_CHECK((writability_through<unknown_t, std::nullptr_t>), external);
+    MAGIC_CHECK((writability_through<std::nullptr_t, unknown_t>), external);
+    MAGIC_CHECK((writability_through<const unknown_t, std::nullptr_t>), external);
+    MAGIC_CHECK((writability_through<const unknown_t&, std::nullptr_t>), external);
+    MAGIC_CHECK((writability_through<unknown_t&, std::nullptr_t>), external);
+    MAGIC_CHECK((writability_through<unknown_t&&, std::nullptr_t>), external);
 
     // external dominates self
-    MAGIC_CHECK((writability_through_aggregate<unknown_t, int>), external);
-    MAGIC_CHECK((writability_through_aggregate<int, unknown_t>), external);
-    MAGIC_CHECK((writability_through_aggregate<const unknown_t, int>), external);
-    MAGIC_CHECK((writability_through_aggregate<const unknown_t&, int>), external);
-    MAGIC_CHECK((writability_through_aggregate<unknown_t&, int>), external);
-    MAGIC_CHECK((writability_through_aggregate<unknown_t&&, int>), external);
-    MAGIC_CHECK((writability_through_aggregate<unknown_t, const int>), external);
-    MAGIC_CHECK((writability_through_aggregate<const int, unknown_t>), external);
+    MAGIC_CHECK((writability_through<unknown_t, int>), external);
+    MAGIC_CHECK((writability_through<int, unknown_t>), external);
+    MAGIC_CHECK((writability_through<const unknown_t, int>), external);
+    MAGIC_CHECK((writability_through<const unknown_t&, int>), external);
+    MAGIC_CHECK((writability_through<unknown_t&, int>), external);
+    MAGIC_CHECK((writability_through<unknown_t&&, int>), external);
+    MAGIC_CHECK((writability_through<unknown_t, const int>), external);
+    MAGIC_CHECK((writability_through<const int, unknown_t>), external);
 
     // external combined with external
-    MAGIC_CHECK((writability_through_aggregate<unknown_t, unknown_t>), external);
-    MAGIC_CHECK((writability_through_aggregate<unknown_t, const unknown_t>), external);
-    MAGIC_CHECK((writability_through_aggregate<const unknown_t, const unknown_t>), external);
-    MAGIC_CHECK((writability_through_aggregate<unknown_t&, const unknown_t&>), external);
+    MAGIC_CHECK((writability_through<unknown_t, unknown_t>), external);
+    MAGIC_CHECK((writability_through<unknown_t, const unknown_t>), external);
+    MAGIC_CHECK((writability_through<const unknown_t, const unknown_t>), external);
+    MAGIC_CHECK((writability_through<unknown_t&, const unknown_t&>), external);
 
     // three-member combinations
-    MAGIC_CHECK((writability_through_aggregate<std::nullptr_t, std::nullptr_t, std::nullptr_t>), none);
-    MAGIC_CHECK((writability_through_aggregate<std::nullptr_t, int, std::nullptr_t>), self);
-    MAGIC_CHECK((writability_through_aggregate<const int, int, const int>), self);
-    MAGIC_CHECK((writability_through_aggregate<const int, const int, const int>), none);
+    MAGIC_CHECK((writability_through<std::nullptr_t, std::nullptr_t, std::nullptr_t>), none);
+    MAGIC_CHECK((writability_through<std::nullptr_t, int, std::nullptr_t>), self);
+    MAGIC_CHECK((writability_through<const int, int, const int>), self);
+    MAGIC_CHECK((writability_through<const int, const int, const int>), none);
 
-    MAGIC_CHECK((writability_through_aggregate<std::nullptr_t, int, unknown_t>), external);
-    MAGIC_CHECK((writability_through_aggregate<unknown_t, int, std::nullptr_t>), external);
-    MAGIC_CHECK((writability_through_aggregate<int, unknown_t, std::nullptr_t>), external);
-    MAGIC_CHECK((writability_through_aggregate<const int, const std::nullptr_t, unknown_t>), external);
-    MAGIC_CHECK((writability_through_aggregate<int&, const int&, std::nullptr_t>), external);
-    MAGIC_CHECK((writability_through_aggregate<const int&, const int&&, std::nullptr_t>), none);
+    MAGIC_CHECK((writability_through<std::nullptr_t, int, unknown_t>), external);
+    MAGIC_CHECK((writability_through<unknown_t, int, std::nullptr_t>), external);
+    MAGIC_CHECK((writability_through<int, unknown_t, std::nullptr_t>), external);
+    MAGIC_CHECK((writability_through<const int, const std::nullptr_t, unknown_t>), external);
+    MAGIC_CHECK((writability_through<int&, const int&, std::nullptr_t>), external);
+    MAGIC_CHECK((writability_through<const int&, const int&&, std::nullptr_t>), none);
 }
 
 TEST(external_freeze, alias_frozen_default)

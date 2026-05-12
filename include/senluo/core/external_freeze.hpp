@@ -35,7 +35,7 @@ namespace senluo
     }
 
     template<class T>
-    inline constexpr auto writability_through = []()
+    inline constexpr auto writability_through_object = []()
     {
         if constexpr (std::is_same_v<T, std::nullptr_t> || (std::is_aggregate_v<T> && std::is_empty_v<T>)) 
         {
@@ -47,14 +47,14 @@ namespace senluo
         }
         else if constexpr(std::is_bounded_array_v<T>)
         {
-            return writability_through<std::remove_const_t<std::remove_extent_t<T>>>;
+            return writability_through_object<std::remove_const_t<std::remove_extent_t<T>>>;
         }
         else if constexpr (std::is_pointer_v<T>)
         {
             using element_type = std::remove_pointer_t<T>;
             using type = std::remove_cvref_t<element_type>;
         
-            constexpr auto mode = writability_through<type>;
+            constexpr auto mode = writability_through_object<type>;
         
             if constexpr ((mode == writability::self && std::is_const_v<element_type>) ||
                            mode == writability::none)
@@ -73,14 +73,14 @@ namespace senluo
     }();
 
     template<class... T>
-    inline constexpr writability writability_through_aggregate =
-        (writability::none & ... & writability_through_aggregate<T>);
+    inline constexpr writability writability_through =
+        (writability::none & ... & writability_through<T>);
 
     template<class T>
-    inline constexpr writability writability_through_aggregate<T> = []()
+    inline constexpr writability writability_through<T> = []()
     {
         using type = std::remove_cvref_t<T>;
-        constexpr auto mode = writability_through<type>;
+        constexpr auto mode = writability_through_object<type>;
         if constexpr (std::is_const_v<std::remove_reference_t<T>>)
         {
             if constexpr (mode == writability::external)
@@ -106,35 +106,14 @@ namespace senluo
         }
     }();
 
-    namespace detail
-    {
-        template<class T>
-        consteval bool external_frozen_impl()
-        {
-            using type = std::remove_cvref_t<T>;
-            constexpr auto mode = writability_through<type>;
-            if constexpr (
-                std::is_reference_v<T>
-                &&
-                not std::is_const_v<std::remove_reference_t<T>>) 
-            {
-                return mode == writability::none;
-            }
-            else
-            {
-                return mode != writability::external;
-            }
-        }
-    }
-
     template<class T>
-    concept external_frozen = detail::external_frozen_impl<T>();
+    concept external_frozen = (writability_through<T> != writability::external);
 }
 
 namespace senluo
 {
     // You've got this because the lib don't know how to convert T to a external_frozen type.
-    // Maybe you should customize writability_through or external_freeze.
+    // Maybe you should customize writability_through_object or external_freeze.
     template<class T>
     struct unknown_external_frozen_type_of
     {
