@@ -139,16 +139,10 @@ namespace senluo
         };
 
         template<class T>
-        inline constexpr bool has_adl_freeze = requires(T&& value)
-        {
-            { external_freeze((T&&)value) } -> external_frozen;
-        };
-
-        template<class T>
         struct external_freeze_fn
         {
         private:
-            static constexpr choice_t<strategy_t> choose() noexcept
+            static consteval choice_t<strategy_t> choose() noexcept
             {
                 if constexpr (std::is_bounded_array_v<T>) 
                 {
@@ -169,7 +163,7 @@ namespace senluo
                 {
                     return { strategy_t::as_const, true };
                 }
-                else if constexpr (has_adl_freeze<T>) 
+                else if constexpr (requires{ { external_freeze(std::declval<T>()) } -> external_frozen; }) 
                 {
                     return { strategy_t::adl, noexcept(external_freeze(std::declval<T>())) };
                 }
